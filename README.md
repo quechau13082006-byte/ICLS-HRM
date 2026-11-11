@@ -189,16 +189,6 @@ flowchart TD
 * 542 test đều qua; mỗi luồng của 38 use case có test đặt tên theo mã luồng.
 * Kịch bản demo chạy trọn vẹn 43 bước; không app nào ghi chéo bảng của app khác.
 
-### BẢNG TIÊU CHÍ NGHIỆM THU TỪNG PHASE (GATE CRITERIA)
-
-| Giai đoạn | Đầu ra bắt buộc (Deliverables) | Tiêu chí vượt qua Gate |
-| :---: | :--- | :--- |
-| **Giai đoạn 1** | Khung dự án, phân quyền, 20 models, dữ liệu mẫu | `check` 0 lỗi, migration sạch, dữ liệu mẫu chạy lại không nhân đôi |
-| **Giai đoạn 2** | UC1, UC8, UC2, UC3 | Đăng nhập 4 vai trò; ứng viên thành nhân sự ACTIVE; thanh lý hợp đồng liên thông sang lịch |
-| **Giai đoạn 3** | UC6, UC5, UC4 | Giữ chỗ ca an toàn; nghỉ phép tạo dạy thay; chấm công và giải trình đúng công thức |
-| **Giai đoạn 4** | UC7, UC9 | Lương khớp số tính tay; Dashboard theo vai trò; tác vụ hằng ngày không trùng |
-| **Giai đoạn 5** | Bộ test, kịch bản demo, tài liệu | 542 test qua; demo 43/43 bước; mọi UC có tài liệu giải thích |
-
 ---
 
 ## ⚙️ VI. VÒNG ĐỜI TRẠNG THÁI (STATE MACHINE)
@@ -310,48 +300,8 @@ Hệ thống render HTML phía server (Django Template), không có REST API ri�
 
 ---
 
-## 🗄️ IX. TỪ ĐIỂN DỮ LIỆU 20 BẢNG CƠ SỞ DỮ LIỆU
 
-Toàn bộ 20 bảng được định nghĩa trong `models.py` của từng app; khóa ngoại sang app khác viết bằng chuỗi để tránh vòng import:
-
-```text
-accounts/models.py
-└── [UC1] users (Custom User kế thừa AbstractUser, đăng nhập bằng email, role, is_active)
-core/models.py
-├── [Chung] notifications (thông báo từng người dùng)
-└── [Chung] activity_logs (nhật ký: LOGIN, APPROVE, LOCK, RUN_DAILY_JOB...)
-recruitment/models.py
-├── [UC8] recruitment_campaigns (đợt tuyển dụng OPEN/CLOSED)
-├── [UC8] candidates (ứng viên và máy trạng thái 7 bước)
-└── [UC8] recruitment_rounds (vòng phỏng vấn và dạy thử)
-employees/models.py
-├── [UC2] employees (hồ sơ nhân sự 1-1 với users; department, position, employment_type, work_shift, status)
-└── [UC2] employee_documents (giấy tờ, chứng chỉ, expiry_date, status)
-contracts/models.py
-└── [UC3] contracts (contract_number unique, chuỗi gia hạn previous_contract, thông tin thanh lý)
-schedule/models.py
-├── [UC6] classes (lớp: weekdays, giờ học, status)
-├── [UC6] class_assignments (giáo viên chính, trợ giảng)
-├── [UC6] teaching_sessions (buổi dạy: người dạy dự kiến và thực tế, status)
-├── [UC6] shift_assignments (mỗi chỗ trong khung ca Part-time, slot_group, registration_deadline)
-└── [UC6] substitute_requests (yêu cầu dạy thay SEARCHING/COMPLETED/FAILED)
-leave/models.py
-├── [UC5] leave_requests (đơn nghỉ: loại, hình thức, total_days, status)
-└── [UC5] leave_balances (quỹ phép năm: total_days, used_days, mỗi người mỗi năm một bản ghi)
-attendance/models.py
-└── [UC4] attendance (check_in, check_out, late_minutes, attendance_status, explanation_status)
-payroll/models.py
-├── [UC7] salary_configs (lương cơ bản, đơn giá giờ, phụ cấp; effective_from/to)
-├── [UC7] payrolls (mỗi nhân sự mỗi tháng một bản ghi; gross, khấu trừ, thuế, net_pay, status)
-└── [UC7] payroll_details (dòng EARNING, DEDUCTION, TAX; số tiền luôn dương)
-dashboard/ (không có bảng: chỉ đọc dữ liệu và điều phối tác vụ hằng ngày)
-```
-
-*(Ghi chú: thông tin chi tiết từng cột và ràng buộc nằm ở [`ROADMAP.md`](ROADMAP.md) mục 7.)*
-
----
-
-## 📄 X. CÀI ĐẶT, TÀI LIỆU & BẢN QUYỀN
+## 📄 IX. CÀI ĐẶT & BẢN QUYỀN
 
 ```bash
 git clone https://github.com/quechau13082006-byte/ICLS-HRM.git
@@ -369,5 +319,5 @@ python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
 
 Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
-ống là dữ liệu mẫu; `SECRET_KEY` và `DEBUG` đang ở cấu hình phát triển.  
+
 © 2026 ICLS HRM Project.
