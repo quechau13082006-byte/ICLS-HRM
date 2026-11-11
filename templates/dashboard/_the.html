@@ -1,0 +1,8 @@
+{# Một thẻ số liệu (Figma): nhãn + icon, số lớn, dòng phụ. Có link thì cả thẻ bấm được (UC 9.1 – bước 3–4). #}
+{% if the.url %}<a href="{{ the.url }}" class="db-the {% if the.can_chu_y %}db-warn{% endif %}">{% else %}<div class="db-the {% if the.can_chu_y %}db-warn{% endif %}">{% endif %}
+  <div class="d-flex justify-content-between align-items-start">
+    <span class="db-the-nhan">{{ the.nhan }}</span><i class="{{ the.icon }} db-the-icon"></i>
+  </div>
+  <div class="db-the-so">{{ the.so }}</div>
+  <div class="db-the-phu">{{ the.phu|default:"&nbsp;" }}</div>
+{% if the.url %}</a>{% else %}</div>{% endif %}

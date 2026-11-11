@@ -1,0 +1,32 @@
+{# Lịch làm việc của Quản lý / Super Admin: mỗi nhân sự một hàng, mỗi ngày một cột – nhìn cả trung tâm một lượt #}
+<div class="rs-legend">
+  <span><i class="rs-chip rs-ft1">Ca 1</i> 08:00–17:00</span><span><i class="rs-chip rs-ft2">Ca 2</i> 13:00–21:00</span>
+  <span><i class="rs-chip rs-pt">Part-time</i> ca đã chốt</span><span><i class="rs-chip rs-nghi">Nghỉ phép</i></span>
+  <span class="ms-auto text-muted">{{ bang.hang|length }} nhân sự có lịch trong tuần</span>
+</div>
+<div class="rs-wrap"><table class="rs-table">
+  <thead><tr>
+    <th class="rs-ten">Nhân sự</th>
+    {% for c in bang.cot %}<th class="{% if c.la_hom_nay %}today{% endif %} {% if c.cuoi_tuan %}weekend{% endif %}"><span class="text-muted fw-normal">{{ c.thu }}</span><br>{{ c.ngay|date:"j/n" }}<div class="rs-dem">{{ c.so_nguoi }} người làm</div></th>{% endfor %}
+  </tr></thead>
+  <tbody>
+  {% regroup bang.hang by nhom as cac_nhom %}
+  {% for nhom in cac_nhom %}
+    <tr class="rs-nhom"><td colspan="8">{{ nhom.grouper }} · {{ nhom.list|length }} người</td></tr>
+    {% for h in nhom.list %}
+    <tr>
+      <th class="rs-ten">{{ h.ten }}</th>
+      {% for o in h.cac_o %}
+      <td>
+        {% for m in o %}
+          {% if m.loai == 'nghi' %}<span class="rs-chip rs-nghi">Nghỉ phép</span>
+          {% elif m.loai == 'ca_ft' %}<span class="rs-chip rs-{{ m.mau }}" title="Ca cố định Full-time">{{ m.tieu_de }}<small>{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</small>{% if m.dong_3 %}<small>{{ m.dong_3 }}</small>{% endif %}</span>
+          {% else %}<a class="rs-chip rs-pt" href="{{ m.url }}" title="{{ m.tieu_de }}">{{ m.tieu_de }}<small>{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</small></a>{% endif %}
+        {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table></div>

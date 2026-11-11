@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{# Trang đăng nhập theo Figma "LOGIN - Web": ảnh nền tập thể, thẻ xanh nhạt, mascot, ô nhập có icon. Không có đăng nhập bằng Google. #}
+{% block auth_wrap_class %}auth-login{% endblock %}
+{% block auth_logo %}<img src="{% static 'img/login/mascot.png' %}" alt="ICLS" class="login-mascot">{% endblock %}
+{% block auth_content %}
+  <h3 class="login-title">Đăng nhập</h3>
+  <form method="post" novalidate>{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+
+    <div class="login-field">
+      <span class="login-input"><img src="{% static 'img/login/icon-email.png' %}" alt="" class="icon-email">{{ form.email }}</span>
+      {% for loi in form.email.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+    </div>
+    <div class="login-field">
+      <span class="login-input"><img src="{% static 'img/login/icon-khoa.png' %}" alt="" class="icon-khoa">{{ form.mat_khau }}</span>
+      {% for loi in form.mat_khau.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+    </div>
+
+    <button class="login-submit">Đăng nhập</button>
+  </form>
+  <p class="login-forgot"><a href="{% url 'accounts:forgot_password' %}">Quên mật khẩu</a></p>
+  <p class="login-note">Bằng việc đăng nhập, bạn đồng ý với <u>Điều khoản sử dụng</u> và <u>Chính sách quyền riêng tư</u></p>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.2 – bước 5–6: chi tiết ca làm việc (chỉ chủ ca hoặc Quản lý / Super Admin) #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lam_viec' %}
+<div class="sch-dialog">
+  <h3><i class="ri-briefcase-line"></i> Chi tiết ca làm việc</h3>
+  <dl class="kv-list mt-3">
+    <dt>Vai trò</dt><dd>{{ cho.shift_role }}</dd>
+    <dt>Ngày</dt><dd>{{ cho.work_date|date:"l"|capfirst }} · {{ cho.work_date|date:"d/m/Y" }}</dd>
+    <dt>Thời gian</dt><dd>{{ cho.planned_start|time:"H:i" }}–{{ cho.planned_end|time:"H:i" }}</dd>
+    <dt>Nhân viên</dt><dd>{% if cho.employee %}<span class="d-inline-flex align-items-center gap-2"><span class="avatar-initials {{ cho.employee.pk|mau_avatar }}">{{ cho.employee.full_name|slice:":2"|upper }}</span>{{ cho.employee.full_name }}</span>{% else %}Chưa có người{% endif %}</dd>
+    <dt>Trạng thái</dt><dd><span class="chip {{ cho.status|lower }}">{{ cho.get_status_display }}</span></dd>
+  </dl>
+  <div class="form-footer"><a href="{% url 'schedule:calendar' %}?ngay={{ cho.work_date|date:'Y-m-d' }}" class="btn btn-ghost">Quay lại lịch</a></div>
+</div>
+{% endblock %}

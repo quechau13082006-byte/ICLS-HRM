@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}PAYROLL{% endblock %}
+{% block page_title_ko %}급여{% endblock %}
+{% block content %}
+{# UC 7.2 – bảng lương tổng của tháng (theo Figma "Monthly Payroll"): tính lại, chốt, phát hành #}
+{% include 'payroll/_tab.html' %}
+<div class="card-head">
+  <div><h2 class="title">Bảng lương tháng {{ thang }}/{{ nam }}
+    {% if trang_thai %}<span class="chip plain {% if trang_thai == SENT %}approved{% elif trang_thai == LOCKED %}active{% else %}expiring{% endif %}">{% if trang_thai == SENT %}Đã phát hành{% elif trang_thai == LOCKED %}Đã chốt{% else %}Nháp{% endif %}</span>{% endif %}</h2>
+    <div class="text-muted small">Xem lại thu nhập, kiểm tra các khoản điều chỉnh rồi chốt và phát hành phiếu lương.</div></div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if trang_thai == DRAFT %}
+    <form method="post" action="{% url 'payroll:period_recalc' nam thang %}">{% csrf_token %}<button class="btn btn-ghost"><i class="ri-refresh-line"></i> Tính lại</button></form>
+    <form method="post" action="{% url 'payroll:period_lock' nam thang %}">{% csrf_token %}<button class="btn btn-icls"><i class="ri-lock-line"></i> Chốt bảng lương</button></form>
+    {% elif trang_thai == LOCKED %}
+    <form method="post" action="{% url 'payroll:period_send' nam thang %}">{% csrf_token %}<button class="btn btn-icls"><i class="ri-send-plane-line"></i> Phát hành phiếu lương</button></form>
+    {% endif %}
+    <a href="{% url 'payroll:period_list' %}" class="btn btn-ghost">Các tháng khác</a>
+  </div>
+</div>
+<form method="get" class="toolbar">
+  <div class="search"><i class="ri-search-line"></i>{{ bo_loc.q }}</div>{{ bo_loc.phong_ban }}
+  <button class="btn btn-outline-icls">Lọc</button>
+</form>
+<div class="row g-3 mb-3">
+  <div class="col-md-6"><div class="tile plain"><div class="t">Tổng thực nhận</div><div class="n">{{ tong.thuc_nhan|vnd }}</div>
+    <div class="t">Thu nhập {{ tong.gross|vnd }} − khấu trừ {{ tong.khau_tru|vnd }} − thuế {{ tong.thue|vnd }}</div></div></div>
+  <div class="col-md-6"><div class="tile plain"><div class="t">Tiến độ phát hành</div><div class="n">{{ tong.dem.DRAFT }} nháp / {{ tong.dem.LOCKED }} đã chốt / {{ tong.dem.SENT }} đã phát hành</div>
+    <div class="t">{{ tong.cac_bang|length }} nhân sự trong bảng lương này</div></div></div>
+</div>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Mã NV</th><th>Họ tên</th><th class="text-end">Thu nhập</th><th class="text-end">Khấu trừ</th><th class="text-end">Thuế TNCN</th><th class="text-end">Thực nhận</th><th>Trạng thái</th><th></th></tr></thead>
+  <tbody>
+  {% for b in tong.cac_bang %}
+    <tr>
+      <td class="id">{{ b.employee.code }}</td><td class="name">{{ b.employee.full_name }}<div class="sub">{{ b.employee.get_position_display }} · {{ b.employee.get_employment_type_display }}</div></td>
+      <td class="text-end">{{ b.gross_pay|vnd }}</td><td class="text-end">{{ b.total_deduction|vnd }}</td><td class="text-end">{{ b.total_tax|vnd }}</td>
+      <td class="text-end fw-bold {% if b.net_pay < 0 %}text-danger{% else %}text-success{% endif %}">{{ b.net_pay|vnd }}</td>
+      <td><span class="chip plain {% if b.status == 'SENT' %}approved{% elif b.status == 'LOCKED' %}active{% else %}expiring{% endif %}">{{ b.get_status_display }}</span></td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'payroll:payroll_detail' b.pk %}">{% if b.status == 'DRAFT' %}Xem / điều chỉnh{% else %}Xem phiếu{% endif %}</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">Không có nhân sự nào.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

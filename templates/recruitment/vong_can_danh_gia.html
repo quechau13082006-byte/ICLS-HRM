@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Recruitment{% endblock %}
+{% block page_title_ko %}채용{% endblock %}
+{% block content %}
+{# UC 8.3 – bước 1–2: các vòng SCHEDULED đã tới giờ diễn ra #}
+<div class="card-head">
+  <h2 class="title">Vòng tuyển dụng cần đánh giá <span class="count-badge">{{ cac_vong|length }}</span></h2>
+  <a href="{% url 'recruitment:board' %}" class="btn btn-ghost">← Bảng ứng viên</a>
+</div>
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Ứng viên</th><th>Vòng</th><th>Thời gian</th><th>Người phỏng vấn</th><th></th></tr></thead>
+  <tbody>
+  {% for v in cac_vong %}
+    <tr>
+      <td><span class="d-flex align-items-center gap-2"><span class="avatar-initials {{ v.candidate.pk|mau_avatar }}">{{ v.candidate.full_name|slice:":2"|upper }}</span>
+          <span><span class="name d-block">{{ v.candidate.full_name }}</span><span class="sub">{{ v.candidate.get_position_display }}</span></span></span></td>
+      <td>{{ v.get_round_type_display }}</td>
+      <td>{{ v.scheduled_at|date:"d/m/Y H:i" }}</td>
+      <td>{{ v.interviewer.full_name|default:v.interviewer.email }}</td>
+      <td class="text-end"><a class="btn btn-icls btn-sm" href="{% url 'recruitment:board' %}?chon={{ v.candidate_id }}">Đánh giá</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">Hiện không có vòng nào cần đánh giá.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

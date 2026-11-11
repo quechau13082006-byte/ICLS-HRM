@@ -1,0 +1,7 @@
+{# Vẽ một trường của form: nhãn, ô nhập, lỗi màu đỏ ngay bên dưới. Dùng: {% include 'core/_truong_form.html' with truong=form.email %} #}
+<div class="mb-3">
+  <label for="{{ truong.id_for_label }}" class="form-label">{{ truong.label }}</label>
+  {{ truong }}
+  {% for loi in truong.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+  {% if truong.help_text %}<div class="form-text">{{ truong.help_text }}</div>{% endif %}
+</div>

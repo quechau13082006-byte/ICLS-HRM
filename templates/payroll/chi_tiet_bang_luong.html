@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}PAYROLL{% endblock %}
+{% block page_title_ko %}급여{% endblock %}
+{% block content %}
+{# UC 7.2 – bước 8–9, luồng 8.2: xem trước phiếu lương và thêm / xóa khoản thủ công (theo Figma "Payslip Preview" + "Add Adjustment") #}
+{% include 'payroll/_tab.html' %}
+<div class="card-head no-print"><h2 class="title">Chi tiết bảng lương</h2>
+  <a href="{% url 'payroll:period' bang.period_year bang.period_month %}" class="btn btn-ghost">Về bảng lương tháng {{ bang.period_month }}/{{ bang.period_year }}</a></div>
+{% include 'payroll/_phieu.html' %}
+
+<div class="panel-white mt-3 no-print">
+  <h4>Các khoản của {{ bang.employee.full_name }}</h4>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th>Nhóm</th><th>Nội dung</th><th>Loại</th><th class="text-end">Số tiền</th><th></th></tr></thead>
+    <tbody>
+    {% for d in ct.thu_nhap %}{% include 'payroll/_dong_khoan.html' %}{% endfor %}
+    {% for d in ct.khau_tru %}{% include 'payroll/_dong_khoan.html' %}{% endfor %}
+    {% for d in ct.thue %}{% include 'payroll/_dong_khoan.html' %}{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% if sua_duoc %}
+<div class="action-block mt-3 no-print">
+  <h5>Thêm khoản thủ công</h5>
+  <form method="post" action="{% url 'payroll:detail_add' bang.pk %}">{% csrf_token %}
+    <div class="row">
+      <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.category %}</div>
+      <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.detail_type %}</div>
+      <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.amount %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.description %}
+    <div class="form-text mb-2">Thưởng và Điều chỉnh tăng là khoản cộng; Điều chỉnh giảm là khoản trừ; Thuế TNCN là thuế; "Khác" thì chọn khoản cộng hay trừ.</div>
+    <div class="d-flex justify-content-end"><button class="btn btn-icls"><i class="ri-add-circle-line"></i> Lưu khoản</button></div>
+  </form>
+</div>
+{% else %}<div class="alert alert-secondary mt-3 no-print">Bảng lương đã chốt, không thể thêm hoặc xóa khoản.</div>{% endif %}
+{% endblock %}

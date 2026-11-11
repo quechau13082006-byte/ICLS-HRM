@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+<div class="dialog-card">
+  <h3>Cập nhật file scan</h3>
+  {% include 'contracts/_thong_tin_cu.html' %}
+  <p class="text-muted small">Chỉ thay file scan. Muốn đổi điều khoản (ngày, loại hình) hãy dùng Gia hạn.</p>
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.file_url %}
+    <div class="form-footer"><a href="{% url 'contracts:contract_detail' hop_dong.pk %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Cập nhật</button></div>
+  </form>
+</div>
+{% endblock %}

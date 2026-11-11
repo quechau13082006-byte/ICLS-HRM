@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block page_title %}Change password{% endblock %}
+{% block page_title_ko %}비밀번호 변경{% endblock %}
+{% block content %}
+<div style="max-width: 460px;">
+  <h3 class="mb-3">Đổi mật khẩu</h3>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.mat_khau_hien_tai %}
+    {% include 'core/_truong_form.html' with truong=form.mat_khau_moi %}
+    {% include 'core/_truong_form.html' with truong=form.xac_nhan %}
+    <button class="btn btn-icls">Lưu thay đổi</button>
+  </form>
+</div>
+{% endblock %}

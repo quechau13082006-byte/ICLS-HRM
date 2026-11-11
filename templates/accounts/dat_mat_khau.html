@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block auth_content %}
+  <h3 class="mb-3">Đặt mật khẩu mới</h3>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.mat_khau_moi %}
+    {% include 'core/_truong_form.html' with truong=form.xac_nhan %}
+    <button class="btn btn-icls w-100">Lưu</button>
+  </form>
+{% endblock %}

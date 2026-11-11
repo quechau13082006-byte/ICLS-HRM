@@ -1,0 +1,8 @@
+{# Tab của phân hệ Lương (theo Figma): Bảng lương tháng, Cấu hình lương (chỉ Kế toán) | Phiếu lương của tôi #}
+<ul class="nav nav-tabs-icls" role="tablist">
+  {% if user.role == 'ACCOUNTANT' %}
+  <li class="nav-item"><a class="nav-link {% if tab == 'bang_luong' %}active{% endif %}" href="{% url 'payroll:period_list' %}">Bảng lương tháng</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'cau_hinh' %}active{% endif %}" href="{% url 'payroll:config_list' %}">Cấu hình lương</a></li>
+  {% endif %}
+  <li class="nav-item"><a class="nav-link {% if tab == 'cua_toi' %}active{% endif %}" href="{% url 'payroll:my_payslips' %}">Phiếu lương của tôi</a></li>
+</ul>

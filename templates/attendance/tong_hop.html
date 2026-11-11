@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block page_title %}ATTENDANCE{% endblock %}
+{% block page_title_ko %}근태{% endblock %}
+{% block content %}
+{# UC 4.5 – bảng tổng hợp công toàn trung tâm theo tháng (chỉ xem) #}
+{% include 'attendance/_tab.html' %}
+<div class="card-head">
+  <div><h2 class="title">Bảng tổng hợp công · tháng {{ thang }}/{{ nam }}</h2><div class="text-muted small">Toàn bộ nhân sự trung tâm, dữ liệu đầu vào cho tính lương.</div></div>
+  {% if tong_cho_duyet %}<span class="chip plain expiring">{{ tong_cho_duyet }} giải trình chờ duyệt</span>{% endif %}
+</div>
+<form method="get" class="toolbar">
+  <input type="month" name="thang" value="{{ thang_nhap }}" class="form-control" style="width:170px" aria-label="Tháng">
+  {{ bo_loc.phong_ban }} {{ bo_loc.vi_tri }}
+  <button class="btn btn-outline-icls">Xem</button>
+</form>
+{% if trong %}<div class="alert alert-info"><i class="ri-information-line"></i> {{ khong_co_du_lieu }}</div>{% endif %}
+<div class="banner"><i class="ri-error-warning-line"></i><div><div class="t">Dòng tô đỏ</div><div class="d">Nhân sự còn lỗi chưa giải trình hoặc có giải trình đang chờ duyệt.</div></div></div>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Mã NV</th><th>Nhân sự</th><th>Công tháng</th><th>Đi trễ</th><th>Về sớm</th><th>Vắng</th><th>Thiếu check-out</th><th>Chưa giải trình</th><th>Chờ duyệt</th><th></th></tr></thead>
+  <tbody>
+  {% for d in dong %}
+    <tr {% if d.can_chu_y %}class="hang-do"{% endif %}>
+      <td class="id">{{ d.nhan_su.code }}</td>
+      <td class="name">{{ d.nhan_su.full_name }}<div class="sub">{{ d.nhan_su.get_position_display }} · {{ d.nhan_su.get_employment_type_display }}</div></td>
+      <td><b>{{ d.cong|floatformat:"-2" }}</b> <span class="sub">{{ d.don_vi }}</span></td>
+      <td>{{ d.so_tre }}</td><td>{{ d.so_som }}</td><td>{{ d.so_vang }}</td><td>{{ d.so_thieu_checkout }}</td>
+      <td>{{ d.chua_giai_trinh }}</td><td>{{ d.cho_duyet }}</td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'attendance:summary_detail' d.nhan_su.pk %}?thang={{ thang_nhap }}">Chi tiết</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="10" class="text-center text-muted py-4">{{ khong_co_du_lieu }}</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block page_title %}Recruitment{% endblock %}
+{% block page_title_ko %}채용{% endblock %}
+{% block content %}
+<div style="max-width: 640px;">
+  <h3>Thêm ứng viên mới</h3>
+  {% if dot %}<p class="text-muted">Đợt tuyển dụng: <b>{{ dot.campaign_name }}</b></p>
+  {% else %}<div class="alert alert-warning">Chưa có đợt tuyển dụng đang mở. <a href="{% url 'recruitment:campaign_add' %}">Tạo đợt tuyển dụng</a> trước.</div>{% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% if dot %}<input type="hidden" name="dot" value="{{ dot.pk }}">{% endif %}
+    {% include 'core/_truong_form.html' with truong=form.full_name %}
+    <div class="row">
+      <div class="col-md-7">{% include 'core/_truong_form.html' with truong=form.email %}</div>
+      <div class="col-md-5">{% include 'core/_truong_form.html' with truong=form.phone %}</div>
+      <div class="col-md-7">{% include 'core/_truong_form.html' with truong=form.position %}</div>
+      <div class="col-md-5">{% include 'core/_truong_form.html' with truong=form.employment_type %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.cv_file %}
+    <button class="btn btn-icls" {% if not dot %}disabled{% endif %}>Lưu ứng viên</button>
+    <a href="{% url 'recruitment:board' %}" class="btn btn-ghost">Hủy</a>
+  </form>
+</div>
+{% endblock %}

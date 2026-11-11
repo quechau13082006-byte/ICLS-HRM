@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block page_title %}MY ATTENDANCE{% endblock %}
+{% block page_title_ko %}내 근태{% endblock %}
+{% block content %}
+{# UC 4.2 – Giải trình chấm công (theo Figma "Explanation dialog") #}
+{% include 'attendance/_tab.html' %}
+<div class="dialog-card">
+  <h3>Giải trình chấm công</h3>
+  <div class="readonly-box">
+    <div class="d-flex justify-content-between flex-wrap gap-2">
+      <span>{{ ban_ghi.employee.full_name }} · {{ ban_ghi.employee.code }} · {{ ban_ghi.employee.get_position_display }}</span>
+      <span class="chip plain rejected">{{ ban_ghi.chenh_lech }}</span>
+    </div>
+    <div class="fw-bold mt-2">{{ ban_ghi.work_date|date:"d/m/Y" }} · {{ ban_ghi.get_attendance_status_display }}{% if ban_ghi.shift_assignment %} · {{ ban_ghi.shift_assignment.shift_role }}{% endif %}</div>
+    <div class="text-muted small">Dự kiến {{ ban_ghi.planned_start|time:"H:i" }} – {{ ban_ghi.planned_end|time:"H:i" }} · Thực tế {{ ban_ghi.check_in|time:"H:i"|default:"—" }} – {{ ban_ghi.check_out|time:"H:i"|default:"—" }}</div>
+  </div>
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.ly_do %}
+    {% include 'core/_truong_form.html' with truong=form.minh_chung %}
+    <div class="alert alert-warning small"><i class="ri-time-line"></i> Sẵn sàng cho Quản lý duyệt: giải trình sẽ ở trạng thái "Chờ duyệt" sau khi gửi.</div>
+    <div class="form-footer"><a href="{% url 'attendance:my_attendance' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Gửi đơn</button></div>
+  </form>
+</div>
+{% endblock %}

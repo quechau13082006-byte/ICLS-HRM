@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block page_title %}User Management{% endblock %}
+{% block page_title_ko %}계정 설정{% endblock %}
+{% block content %}
+<div style="max-width: 460px;">
+  <h3 class="mb-3">Thêm tài khoản</h3>
+  <p class="text-muted">Chỉ dùng cho trường hợp ngoại lệ. Nhân viên thông thường được tạo qua Onboarding. Người dùng sẽ nhận email đường dẫn để tự đặt mật khẩu.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.email %}
+    {% include 'core/_truong_form.html' with truong=form.full_name %}
+    {% include 'core/_truong_form.html' with truong=form.role %}
+    <button class="btn btn-icls">Tạo tài khoản</button>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Hủy</a>
+  </form>
+</div>
+{% endblock %}

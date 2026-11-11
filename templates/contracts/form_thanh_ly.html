@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+<div class="dialog-card">
+  <h3>Thanh lý hợp đồng</h3>
+  {% include 'contracts/_thong_tin_cu.html' %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.ngay_thanh_ly %}
+    {% include 'core/_truong_form.html' with truong=form.ly_do %}
+    <div class="mb-3">
+      <label class="form-label">{{ form.hinh_thuc.label }}</label>
+      {% for r in form.hinh_thuc %}<div class="form-check"><label class="form-check-label">{{ r.tag }} {{ r.choice_label }}</label></div>{% endfor %}
+    </div>
+    <div class="banner"><i class="ri-alert-line"></i><div class="d" style="color:#7a4a00">Thao tác này sẽ khóa tài khoản đăng nhập, đóng cấu hình lương, gỡ nhân sự khỏi các lớp và ca sau ngày thanh lý; buổi dạy chính sẽ chuyển vào danh sách cần người dạy thay.</div></div>
+    <div class="form-footer"><a href="{% url 'contracts:contract_detail' hop_dong.pk %}" class="btn btn-ghost">Hủy</a>
+      <button class="btn" style="background:#ee8c7f;color:#fff;border-radius:10px" onclick="return confirm('Thanh lý hợp đồng {{ hop_dong.contract_number }}?')">Xác nhận thanh lý</button></div>
+  </form>
+</div>
+{% endblock %}

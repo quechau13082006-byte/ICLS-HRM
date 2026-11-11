@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.4 – bước 1–2: Buổi dạy cần người thay #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lop_hoc' %}
+<div class="card-head">
+  <h2 class="title">Buổi dạy cần người thay <span class="count-badge">{{ cac_yeu_cau|length }}</span></h2>
+</div>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Lớp</th><th>Ngày giờ</th><th>Phòng</th><th>Giáo viên vắng</th><th>Nguồn</th><th></th></tr></thead>
+  <tbody>
+  {% for yc in cac_yeu_cau %}
+    <tr>
+      <td class="name">{{ yc.teaching_session.study_class.class_name }}</td>
+      <td>{{ yc.teaching_session.session_date|date:"D d/m/Y" }}<div class="sub">{{ yc.teaching_session.planned_start|time:"H:i" }}–{{ yc.teaching_session.planned_end|time:"H:i" }}</div></td>
+      <td>{{ yc.teaching_session.room_name|default:"—" }}</td>
+      <td>{{ yc.giao_vien_vang.full_name }}</td>
+      <td><span class="chip plain expiring">{{ yc.nguon }}</span>{% if yc.leave_request %}<div class="sub">{{ yc.leave_request.start_date|date:"d/m" }}–{{ yc.leave_request.end_date|date:"d/m/Y" }}</div>{% endif %}</td>
+      <td class="text-end"><a class="btn btn-icls btn-sm" href="{% url 'schedule:substitute_detail' yc.pk %}">Tìm người dạy thay</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Hiện không có buổi dạy nào cần người thay.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

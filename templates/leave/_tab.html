@@ -1,0 +1,8 @@
+{# Tab của phân hệ Nghỉ phép: Đơn của tôi (mọi người có hồ sơ) | Duyệt đơn, Tổng hợp (Quản lý, Super Admin) #}
+<ul class="nav nav-tabs-icls" role="tablist">
+  {% if user.role != 'SUPER_ADMIN' %}<li class="nav-item"><a class="nav-link {% if tab == 'cua_toi' %}active{% endif %}" href="{% url 'leave:my_leaves' %}">Nghỉ phép của tôi</a></li>{% endif %}
+  {% if user.role == 'MANAGER' or user.role == 'SUPER_ADMIN' %}
+  <li class="nav-item"><a class="nav-link {% if tab == 'duyet' %}active{% endif %}" href="{% url 'leave:review' %}">Duyệt nghỉ phép</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'tong_hop' %}active{% endif %}" href="{% url 'leave:summary' %}">Tổng hợp nghỉ phép</a></li>
+  {% endif %}
+</ul>

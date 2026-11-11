@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Employees{% endblock %}
+{% block page_title_ko %}직원{% endblock %}
+{% block content %}
+{# UC 2.1 – bước 6: Kế toán/Nhân viên chỉ xem thông tin liên hệ cơ bản #}
+<p class="mb-3"><a href="{% url 'employees:employee_list' %}" class="text-decoration-none">← Danh sách nhân sự</a></p>
+<div class="d-flex align-items-center gap-3 mb-4">
+  <span class="avatar-initials lg {{ nhan_su.pk|mau_avatar }}">{{ nhan_su.full_name|slice:":1" }}</span>
+  <div>
+    <h3 class="mb-0">{{ nhan_su.full_name }}</h3>
+    <div class="text-muted">{{ nhan_su.get_position_display }} · {{ nhan_su.get_department_display }}</div>
+    <div class="id text-muted">{{ nhan_su.code }}</div>
+  </div>
+</div>
+<div class="info-grid">
+  <div><div class="k">Email</div><div class="v">{{ nhan_su.user.email }}</div></div>
+  <div><div class="k">Số điện thoại</div><div class="v">{{ nhan_su.phone }}</div></div>
+  <div><div class="k">Vị trí</div><div class="v">{{ nhan_su.get_position_display }}</div></div>
+  <div><div class="k">Phòng ban</div><div class="v">{{ nhan_su.get_department_display }}</div></div>
+</div>
+{% endblock %}

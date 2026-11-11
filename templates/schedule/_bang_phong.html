@@ -1,0 +1,28 @@
+{# Lịch lớp học: mỗi phòng học một hàng, mỗi ngày một cột – thấy phòng nào dùng lúc nào, lớp nào, giáo viên nào #}
+<div class="rs-legend">
+  <span><i class="rs-chip rs-vang">Sắp khai giảng</i></span><span><i class="rs-chip rs-xanh">Đang học</i></span>
+  <span><i class="rs-chip rs-xam">Đã kết thúc</i></span><span><i class="rs-chip rs-do">Đã hủy</i></span>
+  <span class="ms-auto text-muted">{{ bang.hang|length }} phòng có lịch trong tuần</span>
+</div>
+<div class="rs-wrap"><table class="rs-table">
+  <thead><tr>
+    <th class="rs-ten">Phòng học</th>
+    {% for c in bang.cot %}<th class="{% if c.la_hom_nay %}today{% endif %} {% if c.cuoi_tuan %}weekend{% endif %}"><span class="text-muted fw-normal">{{ c.thu }}</span><br>{{ c.ngay|date:"j/n" }}<div class="rs-dem">{{ c.so_buoi }} buổi</div></th>{% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for h in bang.hang %}
+    <tr>
+      <th class="rs-ten"><i class="ri-door-open-line"></i> {{ h.ten }}</th>
+      {% for o in h.cac_o %}
+      <td>
+        {% for m in o %}
+        <a class="rs-chip rs-{{ m.mau }}" href="{{ m.url }}" title="{{ m.tieu_de }} · {{ m.dong_3 }}">
+          <small>{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</small>{{ m.tieu_de }}<small>{{ m.dong_3 }}</small>
+        </a>
+        {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>

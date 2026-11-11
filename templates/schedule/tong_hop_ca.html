@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.3 – bước 8–9: Bảng tổng hợp duyệt ca (theo Figma "Tổng hợp ĐK ca") #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lam_viec' %}
+<div class="sch-heading">
+  <h3>Bảng tổng hợp duyệt ca</h3>
+  <p class="sub">Đăng ký ca tuần {{ ten_khoang }}</p>
+</div>
+<div class="sch-nav">{% include 'schedule/_dieu_huong_tuan.html' %}</div>
+
+<div class="tiles four">
+  <div class="tile plain"><div class="n">{{ so_ca_dang_mo }}</div><div class="t">Ca chờ chốt</div></div>
+  <div class="tile plain"><div class="n">{{ so_vi_tri }}</div><div class="t">Vị trí cần</div></div>
+  <div class="tile plain"><div class="n">{{ luot_dang_ky }}</div><div class="t">Lượt đăng ký</div></div>
+  <div class="tile orange"><div class="n">{{ so_ca_thieu }}</div><div class="t">Ca còn thiếu</div></div>
+</div>
+
+{% if khung_thieu %}
+<div class="banner"><i class="ri-alert-line"></i><div><div class="t">Thiếu nhân sự</div>
+  <div class="d">{% for k in khung_thieu %}{{ k.ngay|date:"j/n" }} {{ k.vai_tro }} thiếu {{ k.thieu }} người{% if not forloop.last %}; {% endif %}{% endfor %}. Có thể gán thêm nhân viên trong từng khung ca trước khi chốt.</div></div></div>
+{% endif %}
+
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Ngày</th><th>Ca / Thời gian</th><th>Vai trò</th><th>Cần</th><th>Đăng ký</th><th>Thiếu</th><th>Nhân viên đăng ký</th><th>Trạng thái</th><th></th></tr></thead>
+  <tbody>
+  {% for k in cac_khung %}
+    <tr>
+      <td><b>{{ k.ngay|date:"l"|capfirst }}</b><div class="sub">{{ k.ngay|date:"d/m/Y" }}</div></td>
+      <td>{{ k.bd|time:"H:i" }}–{{ k.kt|time:"H:i" }}<div class="sub">Hạn {{ k.han_chot|date:"d/m H:i" }}</div></td>
+      <td>{{ k.vai_tro }}</td>
+      <td>{{ k.so_can }}</td><td>{{ k.da_giu }}</td>
+      <td>{% if k.thieu and k.trang_thai != 'DA_CHOT' %}<b class="text-danger">{{ k.thieu }}</b>{% else %}{{ k.thieu }}{% endif %}</td>
+      <td>{% if k.nhan_vien %}<span class="avatars">{% for nv in k.nhan_vien %}<span class="avatar-initials {{ nv.pk|mau_avatar }}" title="{{ nv.full_name }}">{{ nv.full_name|slice:":2"|upper }}</span>{% endfor %} <span class="sub">{{ k.nhan_vien|length }} người</span></span>{% else %}<span class="sub">Chưa có đăng ký</span>{% endif %}</td>
+      <td>{% if k.trang_thai == 'DA_CHOT' %}<span class="chip da-chot">Đã chốt</span>
+          {% elif k.trang_thai == 'DANG_MO' %}<span class="chip dang-mo">Đang mở</span>
+          {% elif k.thieu %}<span class="chip thieu">Thiếu nhân sự</span>
+          {% else %}<span class="chip cho-duyet">Chờ duyệt</span>{% endif %}</td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'schedule:shift_group' k.ma %}">Điều chỉnh</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Tuần này chưa có khung ca nào. Nhấn "Mở đăng ký ca" để tạo.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+
+<div class="panel-white mt-4">
+  <h4>Nhân viên Part-time chưa đăng ký ca nào trong tuần ({{ chua_dang_ky|length }})</h4>
+  {% for nv in chua_dang_ky %}<span class="d-inline-flex align-items-center gap-2 me-3 mb-2"><span class="avatar-initials {{ nv.pk|mau_avatar }}">{{ nv.full_name|slice:":2"|upper }}</span>{{ nv.full_name }}</span>
+  {% empty %}<span class="text-muted">Mọi nhân viên Part-time đều đã đăng ký.</span>{% endfor %}
+</div>
+
+{% if so_can_chot %}
+<div class="d-flex justify-content-end mt-3">
+  <button class="btn btn-icls" data-bs-toggle="modal" data-bs-target="#chotCa">Chốt &amp; Công bố lịch</button>
+</div>
+<div class="modal fade" id="chotCa" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'schedule:shift_finalize_week' %}?ngay={{ ngay_neo|date:'Y-m-d' }}">{% csrf_token %}
+    <div class="modal-body p-4">
+      <h4 class="font-itim">Xác nhận và công bố lịch?</h4>
+      <p class="text-muted small">Chỗ có người chuyển thành "Đã chốt" và hiện trên lịch; chỗ còn trống bị hủy; nhân viên nhận thông báo kết quả.</p>
+      <div class="readonly-box">
+        <div class="kv"><span class="k">Số ca</span><span class="v">{{ so_can_chot }} ca</span></div>
+        <div class="kv"><span class="k">Chỗ có người</span><span class="v">{{ tong_cho_co_nguoi }}</span></div>
+        <div class="kv"><span class="k">Chỗ trống sẽ bị hủy</span><span class="v">{{ tong_cho_trong }}</span></div>
+      </div>
+      {% if chua_het_han %}<div class="alert alert-warning small">Một số ca chưa hết hạn đăng ký nên hệ thống sẽ từ chối chốt.</div>{% endif %}
+      <div class="d-flex justify-content-between"><button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Hủy</button><button class="btn btn-icls">Xác nhận và Công bố</button></div>
+    </div>
+  </form>
+</div></div></div>
+{% endif %}
+{% endblock %}

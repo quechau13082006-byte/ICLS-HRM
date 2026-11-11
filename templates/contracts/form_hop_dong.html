@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+<div class="dialog-card">
+  <h3>Thêm hợp đồng</h3>
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.nhan_su %}
+    <div class="row">
+      <div class="col-md-7">{% include 'core/_truong_form.html' with truong=form.contract_number %}</div>
+      <div class="col-md-5">{% include 'core/_truong_form.html' with truong=form.employment_type %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.file_url %}
+    <div class="form-footer"><a href="{% url 'contracts:contract_list' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Lưu hợp đồng</button></div>
+  </form>
+</div>
+{% endblock %}

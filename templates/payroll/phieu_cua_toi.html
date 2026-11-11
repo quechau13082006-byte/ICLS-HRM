@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}MY PAYROLL{% endblock %}
+{% block page_title_ko %}내 급여{% endblock %}
+{% block content %}
+{# UC 7.3 – Phiếu lương của tôi (theo Figma "My Payslip") #}
+{% include 'payroll/_tab.html' %}
+{% if not bang %}
+<div class="alert alert-info"><i class="ri-information-line"></i> {{ chua_co }}</div>
+{% else %}
+<div class="card-head no-print">
+  <div class="text-muted">Phiếu lương đã phát hành · tháng {{ bang.period_month }}/{{ bang.period_year }}</div>
+  <button type="button" class="btn btn-ghost" onclick="window.print()"><i class="ri-download-2-line"></i> In / Lưu PDF</button>
+</div>
+{% if cac_thang|length > 1 %}
+<div class="d-flex gap-2 flex-wrap mb-3 no-print">
+  {% for b in cac_thang %}<a class="btn btn-sm {% if b.pk == bang.pk %}btn-icls{% else %}btn-ghost{% endif %}" href="{% url 'payroll:payslip' b.pk %}">{{ b.period_month }}/{{ b.period_year }}</a>{% endfor %}
+</div>
+{% endif %}
+{% include 'payroll/_phieu.html' %}
+{% endif %}
+{% endblock %}

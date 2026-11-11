@@ -1,0 +1,6 @@
+{# Hai nút chọn Đạt / Không đạt (theo Figma): truyền vào truong=form.ket_qua #}
+<div class="radio-cards mb-3">
+  {% for r in truong %}
+  <label class="radio-card {% if r.data.value == 'khong_dat' %}no{% endif %}">{{ r.tag }} <span>{{ r.choice_label }}</span></label>
+  {% endfor %}
+</div>

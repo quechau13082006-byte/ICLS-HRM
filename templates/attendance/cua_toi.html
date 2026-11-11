@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block page_title %}MY ATTENDANCE{% endblock %}
+{% block page_title_ko %}내 근태{% endblock %}
+{% block content %}
+{# UC 4.1: thẻ chấm công hôm nay · UC 4.3: lịch sử chấm công theo tháng (theo Figma "NV CheckIn") #}
+{% include 'attendance/_tab.html' %}
+<div class="text-muted small mb-2">{{ nhan_su.full_name }} · {{ nhan_su.code }} · {{ nhan_su.get_position_display }}</div>
+
+<div class="cc-card">
+  <div>
+    <div class="text-muted">{{ hom_nay|date:"l, d/m/Y"|capfirst }}</div>
+    <div class="cc-clock">{{ bay_gio|time:"H:i" }}</div>
+    <div class="text-muted small">Giờ trung tâm (tải lại trang để cập nhật)</div>
+  </div>
+  <div class="cc-khung">
+    {% if man_hinh.nghi_phep %}
+      <div class="alert alert-info mb-0"><i class="ri-calendar-close-line"></i> Hôm nay bạn nghỉ phép.</div>
+    {% elif man_hinh.khong_co_lich %}
+      <div class="alert alert-secondary mb-0"><i class="ri-calendar-line"></i> Hôm nay bạn không có lịch làm việc.</div>
+    {% else %}
+      {% for m in man_hinh.khung %}
+      <div class="cc-dong">
+        <div>
+          <div class="text-muted small">{% if m.hanh_dong == 'check_in' %}Chưa chấm công{% elif m.hanh_dong == 'check_out' %}Đã check-in lúc {{ m.ban_ghi.check_in|time:"H:i" }}{% else %}Hoàn tất{% endif %}</div>
+          <div class="fw-bold fs-5">{{ m.khung.ten }}</div>
+          <div>{{ m.khung.bd|time:"H:i" }} – {{ m.khung.kt|time:"H:i" }}
+            {% if m.ban_ghi.check_out %}· ra lúc {{ m.ban_ghi.check_out|time:"H:i" }} {% include 'attendance/_chip_cc.html' with b=m.ban_ghi %}{% elif m.ban_ghi and m.hanh_dong == 'check_out' %}{% include 'attendance/_chip_cc.html' with b=m.ban_ghi %}{% endif %}</div>
+        </div>
+        {% if m.hanh_dong == 'check_in' %}
+        <form method="post" action="{% url 'attendance:check_in' %}">{% csrf_token %}{% if m.khung.ca %}<input type="hidden" name="ma_ca" value="{{ m.khung.ca.pk }}">{% endif %}
+          <button class="btn btn-icls btn-checkin"><i class="ri-login-box-line"></i> Check-In</button></form>
+        {% elif m.hanh_dong == 'check_out' %}
+        <form method="post" action="{% url 'attendance:check_out' %}">{% csrf_token %}{% if m.khung.ca %}<input type="hidden" name="ma_ca" value="{{ m.khung.ca.pk }}">{% endif %}
+          <button class="btn btn-outline-icls btn-checkin"><i class="ri-logout-box-r-line"></i> Check-Out</button></form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="card-head mt-4">
+  <h2 class="title">Lịch sử chấm công · tháng {{ thang }}/{{ nam }}</h2>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="stat-chip">{{ dem_dung_gio }} đúng giờ</span><span class="stat-chip">{{ dem_bat_thuong }} bất thường</span>
+    {% if dem_cho_duyet %}<span class="chip plain expiring">{{ dem_cho_duyet }} chờ duyệt</span>{% endif %}
+    <form method="get" class="toolbar mb-0"><input type="month" name="thang" value="{{ thang_nhap }}" class="form-control" aria-label="Tháng"><button class="btn btn-outline-icls">Xem</button></form>
+  </div>
+</div>
+{% include 'attendance/_bang_lich_su.html' with co_nut=True %}
+<div class="d-flex justify-content-between flex-wrap mt-2">
+  <span class="text-muted small">Dòng bị đi trễ, về sớm, vắng mặt hoặc quên check-out có nút "Gửi giải trình" (mỗi dòng chỉ giải trình một lần).</span>
+  <span class="fw-bold">Tổng tháng: {{ cong|floatformat:"-2" }} {{ don_vi }}</span>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+<div class="dialog-card">
+  <h3>Gia hạn hợp đồng</h3>
+  {% include 'contracts/_thong_tin_cu.html' %}
+  <p class="text-muted small">Hợp đồng cũ sẽ được chuyển sang trạng thái EXPIRED; hợp đồng mới có hiệu lực ngay.</p>
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.contract_number %}
+    {% include 'core/_truong_form.html' with truong=form.employment_type %}
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.file_url %}
+    <div class="form-footer"><a href="{% url 'contracts:contract_detail' hop_dong.pk %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Xác nhận gia hạn</button></div>
+  </form>
+</div>
+{% endblock %}

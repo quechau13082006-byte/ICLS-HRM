@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.4 – luồng thay thế 5.2: thêm buổi học bù sau khi hủy buổi #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lop_hoc' %}
+<div class="dialog-card">
+  <h3>Thêm buổi học bù</h3>
+  <p class="text-muted small">Lớp {{ buoi.study_class.class_name }} · buổi đã hủy ngày {{ buoi.session_date|date:"d/m/Y" }} {{ buoi.planned_start|time:"H:i" }}–{{ buoi.planned_end|time:"H:i" }}.
+    Nếu buổi bù sau ngày kết thúc của lớp ({{ buoi.study_class.end_date|date:"d/m/Y" }}), ngày kết thúc sẽ lùi theo.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.ngay %}
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.bat_dau %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.ket_thuc %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.room_name %}
+    {% include 'core/_truong_form.html' with truong=form.giao_vien %}
+    <div class="form-footer"><a href="{% url 'schedule:substitute_list' %}" class="btn btn-ghost">Bỏ qua</a><button class="btn btn-icls">Thêm buổi học bù</button></div>
+  </form>
+</div>
+{% endblock %}

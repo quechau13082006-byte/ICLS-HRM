@@ -1,0 +1,18 @@
+{# Hàng trên cùng của phân hệ Lịch (theo Figma): hai tab bên trái, nút thao tác theo vai trò bên phải. Tham số: tab = lam_viec | lop_hoc | (trống) #}
+<div class="sch-bar">
+  <div class="sch-tabs">
+    <a class="sch-tab {% if tab == 'lam_viec' %}active{% endif %}" href="{% url 'schedule:calendar' %}">Lịch làm việc</a>
+    <a class="sch-tab {% if tab == 'lop_hoc' %}active{% endif %}" href="{% url 'schedule:calendar' %}?tab=lop_hoc">Lịch lớp học</a>
+  </div>
+  <div class="sch-actions">
+    {% if user.role == 'MANAGER' %}
+    <a href="{% url 'schedule:substitute_list' %}" class="btn btn-ghost btn-sm-icls">Cần người thay</a>
+    <a href="{% url 'schedule:shift_review' %}" class="btn btn-ghost btn-sm-icls">Duyệt ca</a>
+    <a href="{% url 'schedule:shift_create' %}" class="btn btn-ghost btn-sm-icls">Mở đăng ký ca</a>
+    <a href="{% url 'schedule:class_create' %}" class="btn btn-icls btn-sm-icls"><i class="ri-add-line"></i> Tạo lớp học</a>
+    {% endif %}
+    {% if user.employee.employment_type == 'PART_TIME' and user.employee.status == 'ACTIVE' %}
+    <a href="{% url 'schedule:shift_register' %}" class="btn btn-icls btn-sm-icls">Đăng ký ca</a>
+    {% endif %}
+  </div>
+</div>

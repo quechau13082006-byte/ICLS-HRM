@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block page_title %}LEAVE{% endblock %}
+{% block page_title_ko %}휴가{% endblock %}
+{% block content %}
+{# Chi tiết đơn nghỉ: UC 5.2 – bước 3–5 (người duyệt), UC 5.1 – luồng 1.1 (chủ đơn hủy đơn) #}
+{% include 'leave/_tab.html' %}
+<div class="card-head">
+  <h2 class="title">Đơn nghỉ của {{ don.employee.full_name }} {% include 'leave/_chip_don.html' %}</h2>
+  <a href="{% if la_chu_don %}{% url 'leave:my_leaves' %}{% else %}{% url 'leave:review' %}{% endif %}" class="btn btn-ghost">Quay lại</a>
+</div>
+
+<div class="info-grid mb-4">
+  <div><div class="k">Nhân sự</div><div class="v">{{ don.employee.full_name }} · {{ don.employee.get_position_display }} ({{ don.employee.get_employment_type_display }})</div></div>
+  <div><div class="k">Loại nghỉ</div><div class="v">{{ don.get_leave_type_display }}</div></div>
+  <div><div class="k">Hình thức</div><div class="v">{{ don.get_duration_type_display }}</div></div>
+  <div><div class="k">Thời gian</div><div class="v">{% include 'leave/_khoang.html' %}</div></div>
+  <div><div class="k">Số ngày nghỉ</div><div class="v">{% include 'leave/_so_ngay.html' with so=don.total_days %} ngày</div></div>
+  <div><div class="k">Quỹ phép còn lại</div><div class="v">{% if quy %}{% include 'leave/_so_ngay.html' with so=quy.remaining_days %} / {% include 'leave/_so_ngay.html' with so=quy.total_days %} ngày (năm {{ quy.year }}){% else %}Part-time không có phép năm{% endif %}</div></div>
+  <div class="grid-span"><div class="k">Lý do</div><div class="v">{{ don.reason }}</div></div>
+  {% if don.reviewed_by %}
+  <div><div class="k">Người xử lý</div><div class="v">{{ don.reviewed_by.full_name|default:don.reviewed_by.email }} · {{ don.reviewed_at|date:"d/m/Y H:i" }}</div></div>
+  {% if don.review_note %}<div><div class="k">Lý do từ chối</div><div class="v">{{ don.review_note }}</div></div>{% endif %}
+  {% endif %}
+</div>
+
+{% if anh_huong %}
+<div class="panel-white mb-3">
+  <h4>Lịch bị ảnh hưởng</h4>
+  {% if anh_huong.buoi_chinh or anh_huong.buoi_tro_giang or anh_huong.ca_lam_viec %}
+    {% if anh_huong.buoi_chinh %}<p class="mb-1"><b>Buổi dạy chính ({{ anh_huong.buoi_chinh|length }})</b> – khi duyệt hệ thống tự tạo yêu cầu dạy thay:</p>
+    <ul>{% for b in anh_huong.buoi_chinh %}<li>{{ b.session_date|date:"D d/m/Y" }} {{ b.planned_start|time:"H:i" }}–{{ b.planned_end|time:"H:i" }} · {{ b.study_class.class_name }}</li>{% endfor %}</ul>{% endif %}
+    {% if anh_huong.buoi_tro_giang %}<p class="mb-1"><b>Buổi làm trợ giảng ({{ anh_huong.buoi_tro_giang|length }})</b> – Quản lý sẽ được báo để đổi trợ giảng:</p>
+    <ul>{% for b in anh_huong.buoi_tro_giang %}<li>{{ b.session_date|date:"D d/m/Y" }} {{ b.planned_start|time:"H:i" }}–{{ b.planned_end|time:"H:i" }} · {{ b.study_class.class_name }}</li>{% endfor %}</ul>{% endif %}
+    {% if anh_huong.ca_lam_viec %}<p class="mb-1"><b>Ca làm việc đã chốt ({{ anh_huong.ca_lam_viec|length }})</b> – Quản lý sẽ được báo để điều chỉnh người:</p>
+    <ul>{% for c in anh_huong.ca_lam_viec %}<li>{{ c.work_date|date:"D d/m/Y" }} {{ c.planned_start|time:"H:i" }}–{{ c.planned_end|time:"H:i" }} · {{ c.shift_role }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}<p class="text-muted mb-0">Không ảnh hưởng buổi dạy hoặc ca làm việc nào.</p>{% endif %}
+</div>
+{% endif %}
+
+{% if lich_su and not la_chu_don %}
+<div class="panel-white mb-3">
+  <h4>Lịch sử nghỉ đã duyệt trong năm {{ don.start_date.year }}</h4>
+  <ul class="mb-0">{% for d in lich_su %}<li>{% include 'leave/_khoang.html' with don=d %} · {{ d.get_leave_type_display }} · {% include 'leave/_so_ngay.html' with so=d.total_days %} ngày</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if la_chu_don and dang_cho %}
+<form method="post" action="{% url 'leave:cancel' don.pk %}" class="d-flex justify-content-end">{% csrf_token %}
+  <button class="btn btn-danger-soft">Hủy đơn</button>
+</form>
+{% endif %}
+
+{% if duoc_duyet %}
+<div class="action-block">
+  <h5>Xử lý đơn</h5>
+  <form method="post" action="{% url 'leave:decide' don.pk %}">{% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label" for="ly_do">Lý do từ chối (bắt buộc khi từ chối)</label>
+      <textarea class="form-control" name="ly_do" id="ly_do" rows="2"></textarea>
+    </div>
+    <div class="d-flex gap-2 justify-content-end">
+      <button name="hanh_dong" value="tu_choi" class="btn btn-danger-soft">Từ chối</button>
+      <button name="hanh_dong" value="duyet" class="btn btn-icls">Duyệt đơn</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

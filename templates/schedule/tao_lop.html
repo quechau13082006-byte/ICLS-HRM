@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.1 – Tạo lớp học, hai bước: (1) Thông tin lớp → (2) Phân công giáo viên & trợ giảng (theo Figma "Tạo lớp học") #}
+<div class="sch-dialog">
+  <h3>Tạo lớp học</h3>
+  <p class="sub">Tạo lớp và phân công nguồn lực giảng dạy</p>
+  <div class="stepper">
+    <span class="s {% if buoc == 1 %}on{% else %}done{% endif %}"><i class="{% if buoc == 1 %}ri-edit-line{% else %}ri-check-line{% endif %}"></i> 1 · Thông tin lớp</span>
+    <span class="line"></span>
+    <span class="s {% if buoc == 2 %}on{% endif %}"><i class="ri-team-line"></i> 2 · Phân công giáo viên</span>
+  </div>
+
+  {% if buoc == 1 %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    <h4 class="font-itim mb-3">Thông tin lớp</h4>
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.class_name %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.subject %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.room_name %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.max_students %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
+      <div class="col-12 mb-3">
+        <label class="form-label">{{ form.weekdays.label }}</label><br>
+        {% for ma, ten in thu %}<label class="chk-pill"><input type="checkbox" name="weekdays" value="{{ ma }}" {% if ma in thu_chon %}checked{% endif %}> {{ ten }}</label>{% endfor %}
+        {% for loi in form.weekdays.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+      </div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_time %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_time %}</div>
+    </div>
+    <p class="text-muted small">* Trường bắt buộc: tên lớp, môn / trình độ, sĩ số, ngày bắt đầu và kết thúc, thứ học, giờ học. Lưu xong lớp ở trạng thái "Sắp khai giảng".</p>
+    <div class="form-footer justify-content-between">
+      <a href="{% url 'schedule:calendar' %}?tab=lop_hoc" class="btn btn-ghost">Hủy</a>
+      <button name="buoc" value="1" class="btn btn-icls">Lưu &amp; tiếp tục phân công</button>
+    </div>
+  </form>
+
+  {% else %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% for k, v in an %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <div class="sum-bar">
+      <span>{{ du_lieu.class_name }} · {{ du_lieu.max_students }} học viên · {{ thu_hoc }} · {{ du_lieu.start_time|time:"H:i" }}–{{ du_lieu.end_time|time:"H:i" }}
+        {% if du_lieu.room_name %}· {{ du_lieu.room_name }}{% endif %}</span>
+      <span class="chip plain pending"><i class="ri-calendar-check-line"></i> {{ cac_ngay|length }} buổi · {{ du_lieu.start_date|date:"d/m/Y" }}–{{ du_lieu.end_date|date:"d/m/Y" }}</span>
+    </div>
+    {% for loi in phan_cong.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+
+    <h4 class="font-itim">Phân công giáo viên</h4>
+    <p class="text-muted small">Chỉ gợi ý giáo viên Full-time đang hoạt động, ca làm việc bao trọn giờ học và không trùng lịch trong các ngày học.</p>
+    <label class="form-label">Giáo viên chính · chọn đúng 1 người</label>
+    {% for loi in phan_cong.giao_vien.errors %}<div class="invalid-feedback d-block mb-2">{{ loi }}</div>{% endfor %}
+    <div class="pick-grid">
+      {% for g in giao_vien %}
+      <label class="pick-card">
+        <input type="radio" name="giao_vien" value="{{ g.nv.pk }}" {% if giao_vien_chon == g.nv.pk|stringformat:'s' %}checked{% endif %}>
+        <div class="nm">{{ g.nv.full_name }}</div>
+        <div class="meta">{{ g.nv.get_employment_type_display }}{% if g.nv.work_shift %} · {{ g.nv.get_work_shift_display }}{% endif %}</div>
+        <div class="meta mt-2 d-flex justify-content-between"><span>Số lớp đang dạy</span><b>{{ g.so_lop }}</b></div>
+        <div class="bar"><i style="width: {% widthratio g.so_lop 6 100 %}%"></i></div>
+        <span class="chip plain active"><i class="ri-calendar-check-line"></i> Không trùng lịch</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <label class="form-label">Trợ giảng · không bắt buộc</label>
+    {% for loi in phan_cong.tro_giang.errors %}<div class="invalid-feedback d-block mb-2">{{ loi }}</div>{% endfor %}
+    <div class="pick-grid">
+      <label class="pick-card">
+        <input type="radio" name="tro_giang" value="" {% if not tro_giang_chon %}checked{% endif %}>
+        <div class="nm">Không có trợ giảng</div><div class="meta">Các buổi dạy không có trợ giảng</div>
+      </label>
+      {% for t in tro_giang %}
+      <label class="pick-card">
+        <input type="radio" name="tro_giang" value="{{ t.pk }}" {% if tro_giang_chon == t.pk|stringformat:'s' %}checked{% endif %}>
+        <div class="nm">{{ t.full_name }}</div>
+        <div class="meta">{{ t.get_employment_type_display }} · Không trùng lịch</div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="form-footer justify-content-between">
+      <button name="buoc" value="0" formnovalidate class="btn btn-ghost">Quay lại</button>
+      <button name="buoc" value="2" class="btn btn-icls">Xác nhận phân công</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

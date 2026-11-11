@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+{% include 'contracts/_tab.html' with tab='sap_het_han' %}
+<div class="card-head">
+  <h2 class="title">Hợp đồng sắp hết hạn <span class="count-badge">{{ tong }}</span></h2>
+</div>
+<form method="get" class="toolbar">
+  <div class="search"><i class="ri-search-line"></i><input class="form-control" name="q" value="{{ q }}" placeholder="Tìm theo số hợp đồng / nhân sự"></div>
+  <button class="btn btn-outline-icls">Lọc</button>
+</form>
+
+{# Ba nhóm thời gian (UC 3.5 – bước 3), hiển thị dạng ô số theo Figma #}
+<div class="tiles">
+  <div class="tile red"><div class="t">Đã quá hạn</div><div class="n">{{ qua_han|length }}</div></div>
+  <div class="tile orange"><div class="t">Còn dưới 7 ngày</div><div class="n">{{ duoi_7|length }}</div></div>
+  <div class="tile yellow"><div class="t">Còn 7–30 ngày</div><div class="n">{{ tu_7_den_30|length }}</div></div>
+</div>
+
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Nhân viên</th><th>Số hợp đồng</th><th>Loại hình</th><th>Ngày kết thúc</th><th>Còn lại</th><th></th></tr></thead>
+  <tbody>
+  {% for hd, con_lai in qua_han %}{% include 'contracts/_dong_sap_het_han.html' with muc='red' %}{% endfor %}
+  {% for hd, con_lai in duoi_7 %}{% include 'contracts/_dong_sap_het_han.html' with muc='orange' %}{% endfor %}
+  {% for hd, con_lai in tu_7_den_30 %}{% include 'contracts/_dong_sap_het_han.html' with muc='yellow' %}{% endfor %}
+  {% if not tong %}<tr><td colspan="6" class="text-center text-muted py-4">{{ khong_co }}</td></tr>{% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

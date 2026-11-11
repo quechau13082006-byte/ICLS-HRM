@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}PAYROLL{% endblock %}
+{% block page_title_ko %}급여{% endblock %}
+{% block content %}
+{# UC 7.1 – bước 2–7 và luồng 1.1: cấu hình đang hiệu lực, lịch sử, thêm cấu hình mới #}
+{% include 'payroll/_tab.html' %}
+<div class="card-head">
+  <div><h2 class="title">{{ nhan_su.full_name }}</h2>
+    <div class="text-muted small">{{ nhan_su.code }} · {{ nhan_su.get_position_display }} · {{ nhan_su.get_employment_type_display }} · {{ nhan_su.get_status_display }}</div></div>
+  <a href="{% url 'payroll:config_list' %}" class="btn btn-ghost">Quay lại</a>
+</div>
+
+<div class="panel-white mb-3">
+  <h4>Cấu hình đang hiệu lực</h4>
+  {% if dang_ap_dung %}
+  <div class="info-grid">
+    {% if la_full_time %}<div><div class="k">Lương cơ bản</div><div class="v">{{ dang_ap_dung.base_salary|vnd }}</div></div>
+    {% if la_giao_vien %}<div><div class="k">Phụ cấp mỗi lớp</div><div class="v">{{ dang_ap_dung.class_allowance_rate|vnd }}</div></div>{% endif %}
+    <div><div class="k">Phụ cấp trách nhiệm</div><div class="v">{{ dang_ap_dung.responsibility_allowance|vnd }}</div></div>
+    {% else %}<div><div class="k">Đơn giá giờ</div><div class="v">{{ dang_ap_dung.hourly_rate|vnd }}</div></div>{% endif %}
+    <div><div class="k">Áp dụng từ</div><div class="v">{{ dang_ap_dung.effective_from|date:"d/m/Y" }}</div></div>
+  </div>
+  {% else %}<p class="text-muted mb-0">Chưa có cấu hình đang hiệu lực.</p>{% endif %}
+</div>
+
+<div class="panel-white mb-3">
+  <h4>Thêm cấu hình mới</h4>
+  <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    <div class="row">
+      {% if la_full_time %}
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.base_salary %}</div>
+      {% if la_giao_vien %}<div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.class_allowance_rate %}</div>{% endif %}
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.responsibility_allowance %}</div>
+      {% else %}
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.hourly_rate %}</div>
+      {% endif %}
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.effective_from %}</div>
+    </div>
+    <p class="text-muted small">Cấu hình hiện tại sẽ được đóng vào ngày trước ngày áp dụng mới; lịch sử được giữ nguyên. Không áp dụng được cho tháng đã chốt lương.</p>
+    <div class="d-flex justify-content-end"><button class="btn btn-icls">Lưu cấu hình</button></div>
+  </form>
+</div>
+
+<h4 class="font-itim">Lịch sử cấu hình lương</h4>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Từ ngày</th><th>Đến ngày</th><th>Lương cơ bản</th><th>Đơn giá giờ</th><th>Phụ cấp lớp</th><th>Phụ cấp trách nhiệm</th></tr></thead>
+  <tbody>
+  {% for c in lich_su %}
+    <tr><td>{{ c.effective_from|date:"d/m/Y" }}</td><td>{% if c.effective_to %}{{ c.effective_to|date:"d/m/Y" }}{% else %}<span class="chip plain approved">Đang áp dụng</span>{% endif %}</td>
+      <td>{{ c.base_salary|vnd }}</td><td>{{ c.hourly_rate|vnd }}</td><td>{{ c.class_allowance_rate|vnd }}</td><td>{{ c.responsibility_allowance|vnd }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="text-center text-muted py-3">Chưa có cấu hình nào.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

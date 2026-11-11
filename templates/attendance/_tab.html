@@ -1,0 +1,6 @@
+{# Tab của phân hệ Chấm công: Chấm công của tôi (người có hồ sơ) | Giải trình chờ duyệt (QL, SA) | Bảng tổng hợp công (QL, KT, SA) #}
+<ul class="nav nav-tabs-icls" role="tablist">
+  {% if user.role != 'SUPER_ADMIN' %}<li class="nav-item"><a class="nav-link {% if tab == 'cua_toi' %}active{% endif %}" href="{% url 'attendance:my_attendance' %}">Chấm công của tôi</a></li>{% endif %}
+  {% if user.role == 'MANAGER' or user.role == 'SUPER_ADMIN' %}<li class="nav-item"><a class="nav-link {% if tab == 'duyet' %}active{% endif %}" href="{% url 'attendance:review' %}">Giải trình chờ duyệt</a></li>{% endif %}
+  {% if user.role == 'MANAGER' or user.role == 'SUPER_ADMIN' or user.role == 'ACCOUNTANT' %}<li class="nav-item"><a class="nav-link {% if tab == 'tong_hop' %}active{% endif %}" href="{% url 'attendance:summary' %}">Bảng tổng hợp công</a></li>{% endif %}
+</ul>

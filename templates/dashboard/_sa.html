@@ -1,0 +1,51 @@
+{# Super Admin: tài khoản theo vai trò/trạng thái, đăng nhập thất bại, việc chờ duyệt của Quản lý, nhật ký, nút chạy tác vụ #}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h2 class="db-tieu-de">Toàn cảnh hệ thống ICLS</h2>
+    <p class="text-muted mb-0">Theo dõi tài khoản, nhật ký hoạt động và các việc đang chờ Super Admin xử lý.</p>
+  </div>
+  <form method="post" action="{% url 'dashboard:run_daily_job' %}" onsubmit="return confirm('Chạy tác vụ hằng ngày bây giờ?');">
+    {% csrf_token %}
+    <button class="btn btn-icls"><i class="ri-play-circle-line"></i> Chạy tác vụ hằng ngày</button>
+  </form>
+</div>
+
+{% include 'dashboard/_hang_the.html' with danh_sach=cac_the so_cot=4 %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="db-khoi">
+      <h3 class="db-khoi-ten">Tài khoản theo vai trò</h3>
+      <p class="db-khoi-phu">Tổng {{ tong_tai_khoan }} tài khoản</p>
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Vai trò</th><th class="text-end">Hoạt động</th><th class="text-end">Bị khóa</th></tr></thead>
+        <tbody>
+        {% for d in tai_khoan %}
+          <tr><td>{{ d.ten }}</td><td class="text-end">{{ d.hoat_dong }}</td>
+              <td class="text-end">{% if d.bi_khoa %}<span class="badge text-bg-danger">{{ d.bi_khoa }}</span>{% else %}0{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <a href="{% url 'accounts:user_list' %}" class="btn btn-sm btn-outline-icls mt-3">Quản lý tài khoản</a>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="db-khoi">
+      <h3 class="db-khoi-ten">Nhật ký hoạt động mới nhất</h3>
+      <p class="db-khoi-phu">10 dòng gần nhất</p>
+      {% if nhat_ky %}
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Nội dung</th></tr></thead>
+        <tbody>
+        {% for l in nhat_ky %}
+          <tr><td class="text-nowrap">{{ l.created_at|date:"d/m H:i" }}</td>
+              <td>{{ l.user.email|default:"Hệ thống" }}</td>
+              <td><span class="badge text-bg-light border">{{ l.action }}</span></td>
+              <td class="small">{{ l.description|truncatechars:70|default:l.model_name }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}<p class="text-muted mb-0">{{ chua_co_du_lieu }}</p>{% endif %}
+    </div>
+  </div>
+</div>

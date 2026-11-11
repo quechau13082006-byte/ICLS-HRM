@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Documents{% endblock %}
+{% block page_title_ko %}서류 승인{% endblock %}
+{% block content %}
+<div class="card-head">
+  <h2 class="title">Giấy tờ chờ duyệt <span class="count-badge">{{ giay_to|length }}</span></h2>
+  <a href="{% url 'employees:employee_list' %}" class="btn btn-ghost">← Danh sách nhân sự</a>
+</div>
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Nhân sự</th><th>Loại</th><th>Tên giấy tờ</th><th>Ngày cấp</th><th>Hết hạn</th><th>Gửi lúc</th><th></th></tr></thead>
+  <tbody>
+  {% for g in giay_to %}
+    <tr>
+      <td><span class="d-flex align-items-center gap-2"><span class="avatar-initials {{ g.employee.pk|mau_avatar }}">{{ g.employee.full_name|slice:":1" }}</span>
+          <span><span class="name d-block">{{ g.employee.full_name }}</span><span class="sub">{{ g.employee.code }}</span></span></span></td>
+      <td>{{ g.get_document_type_display }}</td><td>{{ g.document_name }}</td>
+      <td>{% if g.issue_date %}{{ g.issue_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+      <td>{% if g.expiry_date %}{{ g.expiry_date|date:"d/m/Y" }}{% else %}Không thời hạn{% endif %}</td>
+      <td>{{ g.updated_at|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><a class="btn btn-icls btn-sm" href="{% url 'employees:document_review' g.pk %}">Xem &amp; duyệt</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Không có giấy tờ nào đang chờ duyệt.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

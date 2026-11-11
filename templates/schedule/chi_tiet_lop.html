@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.1 – xem lớp vừa tạo, danh sách buổi, luồng thay thế 1.1: hủy lớp #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lop_hoc' %}
+<div class="card-head">
+  <h2 class="title">{{ lop.class_name }}
+    <span class="chip plain {% if lop.status == 'CANCELLED' %}rejected{% elif lop.status == 'ACTIVE' %}active{% elif lop.status == 'COMPLETED' %}approved{% else %}expiring{% endif %}">{{ lop.get_status_display }}</span></h2>
+  {% if la_quan_ly and huy_duoc %}<button class="btn btn-danger-soft" data-bs-toggle="collapse" data-bs-target="#huyLop"><i class="ri-close-circle-line"></i> Hủy lớp</button>{% endif %}
+</div>
+
+{% if la_quan_ly and huy_duoc %}
+<div class="collapse mb-3" id="huyLop">
+  <form method="post" action="{% url 'schedule:class_cancel' lop.pk %}" class="action-block">{% csrf_token %}
+    <h5>Hủy lớp học</h5>
+    <p class="small text-muted mb-2">Các buổi chưa dạy từ hôm nay trở đi sẽ bị hủy, phân công lớp được đóng và giáo viên, trợ giảng nhận thông báo.</p>
+    {% include 'core/_truong_form.html' with truong=form_huy.ly_do %}
+    <button class="btn btn-danger-soft">Xác nhận hủy lớp</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="info-grid mb-4">
+  <div><div class="k">Môn / Trình độ</div><div class="v">{{ lop.subject }}</div></div>
+  <div><div class="k">Phòng học</div><div class="v">{{ lop.room_name|default:"Chưa có phòng" }}</div></div>
+  <div><div class="k">Lịch học</div><div class="v">{{ thu_hoc }} · {{ lop.start_time|time:"H:i" }}–{{ lop.end_time|time:"H:i" }}</div></div>
+  <div><div class="k">Thời gian</div><div class="v">{{ lop.start_date|date:"d/m/Y" }} – {{ lop.end_date|date:"d/m/Y" }}</div></div>
+  <div><div class="k">Sĩ số tối đa</div><div class="v">{{ lop.max_students }} học viên</div></div>
+  <div><div class="k">Phân công</div>
+    <div class="v">{% for pc in phan_cong %}{{ pc.employee.full_name }} <span class="text-muted fw-normal">({{ pc.get_assignment_role_display }}{% if pc.end_date %}, đến {{ pc.end_date|date:"d/m/Y" }}{% endif %})</span>{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</div></div>
+</div>
+
+<h4 class="font-itim">Các buổi dạy ({{ cac_buoi|length }})</h4>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Ngày</th><th>Giờ</th><th>Phòng</th><th>Giáo viên</th><th>Trạng thái</th><th></th></tr></thead>
+  <tbody>
+  {% for b in cac_buoi %}
+    <tr>
+      <td>{{ b.session_date|date:"D d/m/Y" }}</td>
+      <td>{{ b.planned_start|time:"H:i" }}–{{ b.planned_end|time:"H:i" }}</td>
+      <td>{{ b.room_name|default:"—" }}</td>
+      <td>{{ b.actual_teacher.full_name|default:b.planned_teacher.full_name }}</td>
+      <td><span class="chip plain {% if b.status == 'COMPLETED' %}approved{% elif b.status == 'CANCELLED' %}rejected{% else %}pending{% endif %}">{{ b.get_status_display }}</span></td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'schedule:session_detail' b.pk %}">Chi tiết</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Lớp chưa có buổi dạy.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

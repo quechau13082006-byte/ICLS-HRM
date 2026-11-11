@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block page_title %}Employees{% endblock %}
+{% block page_title_ko %}직원{% endblock %}
+
+{% block panel %}
+<div class="page-greeting">
+  <h2 class="hello text-uppercase" style="font-size:1.4rem">{% if nhan_su %}Sửa hồ sơ nhân sự – {{ nhan_su.full_name }}{% else %}Thêm nhân sự mới{% endif %}</h2>
+</div>
+<section class="app-card" style="margin-top:14px">
+  {% include 'core/_messages.html' %}
+  {% if ung_vien %}<div class="banner"><i class="ri-user-add-line"></i><div><div class="t">Tiếp nhận ứng viên trúng tuyển: {{ ung_vien.full_name }}</div><div class="d">Họ tên, email, số điện thoại, vị trí và loại hình đã tự điền từ hồ sơ ứng viên.</div></div></div>{% endif %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% if ung_vien %}<input type="hidden" name="ung_vien" value="{{ ung_vien.pk }}">{% endif %}
+
+    <div class="form-section">
+      <h4>Thông tin cá nhân</h4>
+      <div class="row">
+        <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.full_name %}</div>
+        <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.phone %}</div>
+        <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.email %}
+          {% if nhan_su %}<div class="form-text mt-n2 mb-3">Email là tên đăng nhập, không sửa tại đây.</div>{% endif %}</div>
+        <div class="col-md-3">{% include 'core/_truong_form.html' with truong=form.gender %}</div>
+        <div class="col-md-3">{% include 'core/_truong_form.html' with truong=form.date_of_birth %}</div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.id_card_number %}</div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.nationality %}</div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.bank_account %}</div>
+        <div class="col-12">{% include 'core/_truong_form.html' with truong=form.address %}</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h4>Thông tin công việc</h4>
+      <div class="row">
+        <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.department %}</div>
+        <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.position %}</div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.employment_type %}
+          {% if nhan_su %}<div class="form-text mt-n2 mb-3">Loại hình chỉ đổi qua hợp đồng.</div>{% endif %}</div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.work_shift %}
+          <div class="form-text mt-n2 mb-3">{% if nhan_su %}Đổi ca có hiệu lực từ ngày hôm sau, không ảnh hưởng chấm công cũ.{% else %}Bắt buộc với Full-time; để trống với Part-time.{% endif %}</div></div>
+        <div class="col-md-4">{% include 'core/_truong_form.html' with truong=form.join_date %}</div>
+      </div>
+    </div>
+
+    {% if not nhan_su %}
+    <div class="form-section">
+      <h4>Tài khoản hệ thống</h4>
+      <div class="row g-3">
+        <div class="col-md-4"><div class="p-3" style="border:2px solid var(--icls-primary);border-radius:10px;background:#f4fbf4">
+          <div class="fw-bold"><i class="ri-checkbox-circle-fill text-success"></i> Nhân viên</div><div class="small text-muted">Chỉ xem lịch và lương cá nhân</div></div></div>
+        <div class="col-md-8"><div class="small text-muted">Tài khoản mới có vai trò <b>Nhân viên</b> và chưa có mật khẩu: hệ thống gửi email đường dẫn để nhân sự tự đặt mật khẩu (hiệu lực 24 giờ). Nếu vị trí là Quản lý hoặc Kế toán, hệ thống báo Super Admin để cấp vai trò tương ứng.</div></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="form-footer">
+      <a href="{% if nhan_su %}{% url 'employees:employee_detail' nhan_su.pk %}{% else %}{% url 'employees:employee_list' %}{% endif %}" class="btn btn-ghost">Hủy</a>
+      <button class="btn btn-icls">{% if nhan_su %}Lưu thay đổi{% else %}<i class="ri-add-line"></i> Lưu hồ sơ{% endif %}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

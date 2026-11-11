@@ -1,0 +1,7 @@
+{% load icls_filters %}
+<tr>
+  <td>{{ d.get_category_display }}</td><td>{{ d.description }}</td>
+  <td>{% if d.detail_type == 'EARNING' %}Cộng{% elif d.detail_type == 'DEDUCTION' %}Trừ{% else %}Thuế{% endif %}{% if d.tu_dong %} <span class="text-muted small">(tự động)</span>{% endif %}</td>
+  <td class="text-end">{{ d.amount|vnd }}</td>
+  <td class="text-end">{% if sua_duoc and not d.tu_dong %}<form method="post" action="{% url 'payroll:detail_delete' d.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-danger-soft btn-sm">Xóa</button></form>{% endif %}</td>
+</tr>

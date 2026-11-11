@@ -1,0 +1,4 @@
+{# Một hàng thẻ: Bootstrap lưới – 1 cột trên điện thoại, 2 trên máy tính bảng, tối đa 5 trên màn rộng #}
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-{{ so_cot|default:5 }} mb-4">
+  {% for the in danh_sach %}<div class="col">{% include 'dashboard/_the.html' %}</div>{% endfor %}
+</div>

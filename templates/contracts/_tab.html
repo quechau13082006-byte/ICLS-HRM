@@ -1,0 +1,5 @@
+{# Hai tab của phân hệ Hợp đồng (theo Figma): Tất cả hợp đồng | Sắp hết hạn (chỉ Quản lý) #}
+<ul class="nav nav-tabs-icls" role="tablist">
+  <li class="nav-item"><a class="nav-link {% if tab == 'tat_ca' %}active{% endif %}" href="{% url 'contracts:contract_list' %}">Tất cả hợp đồng</a></li>
+  {% if user.role == 'MANAGER' %}<li class="nav-item"><a class="nav-link {% if tab == 'sap_het_han' %}active{% endif %}" href="{% url 'contracts:contract_expiring' %}">Sắp hết hạn</a></li>{% endif %}
+</ul>

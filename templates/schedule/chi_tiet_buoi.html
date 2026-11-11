@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.2 – bước 5–6: chi tiết buổi dạy; luồng 5.1: giáo viên thực tế ghi nội dung buổi học #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lop_hoc' %}
+<div class="sch-dialog">
+  <h3><i class="ri-graduation-cap-line"></i> Chi tiết lớp học</h3>
+  <dl class="kv-list mt-3">
+    <dt>Tên lớp</dt><dd><a href="{% url 'schedule:class_detail' buoi.study_class.pk %}">{{ buoi.study_class.class_name }}</a></dd>
+    <dt>Môn / Trình độ</dt><dd>{{ buoi.study_class.subject }}</dd>
+    <dt>Ngày</dt><dd>{{ buoi.session_date|date:"l"|capfirst }} · {{ buoi.session_date|date:"d/m/Y" }}</dd>
+    <dt>Thời gian</dt><dd>{{ buoi.planned_start|time:"H:i" }}–{{ buoi.planned_end|time:"H:i" }}</dd>
+    <dt>Phòng</dt><dd>{{ buoi.room_name|default:"Chưa có phòng" }}</dd>
+    <dt>Giáo viên</dt><dd>{{ giao_vien.full_name }}{% if buoi.actual_teacher_id and buoi.actual_teacher_id != buoi.planned_teacher_id %} <span class="chip plain expiring">Dạy thay cho {{ buoi.planned_teacher.full_name }}</span>{% endif %}</dd>
+    <dt>Trợ giảng</dt><dd>{{ buoi.actual_assistant.full_name|default:"Không có" }}</dd>
+    <dt>Trạng thái</dt><dd><span class="chip {% if buoi.status == 'COMPLETED' %}approved{% elif buoi.status == 'CANCELLED' %}rejected{% else %}pending{% endif %}">{{ buoi.get_status_display }}</span></dd>
+  </dl>
+
+  <h4 class="font-itim mt-4">Nội dung buổi học</h4>
+  {% if la_gv_thuc_te %}
+  <form method="post">{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.lesson_note %}
+    <button class="btn btn-icls">Ghi nội dung buổi học</button>
+  </form>
+  {% elif buoi.lesson_note %}<div class="readonly-box" style="white-space:pre-line">{{ buoi.lesson_note }}</div>
+  {% else %}<p class="text-muted">Chưa có nội dung.</p>{% endif %}
+  {% if doi_duoc %}
+  <h4 class="font-itim mt-4">Đổi trợ giảng</h4>
+  <form method="post" action="{% url 'schedule:assistant_change' buoi.pk %}" class="d-flex gap-2 flex-wrap">{% csrf_token %}
+    <select name="tro_giang" class="form-select" style="max-width:320px" aria-label="Trợ giảng">
+      <option value="" {% if not buoi.actual_assistant %}selected{% endif %}>Không có trợ giảng</option>
+      {% if buoi.actual_assistant %}<option value="{{ buoi.actual_assistant.pk }}" selected>{{ buoi.actual_assistant.full_name }} (hiện tại)</option>{% endif %}
+      {% for t in tro_giang_goi_y %}<option value="{{ t.pk }}">{{ t.full_name }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-ghost">Đổi trợ giảng</button>
+  </form>
+  <div class="form-text">Chỉ gợi ý trợ giảng đang hoạt động và không trùng giờ.</div>
+  {% endif %}
+  {% if hoc_bu_duoc %}<div class="mt-4"><a href="{% url 'schedule:makeup_create' buoi.pk %}" class="btn btn-icls">Thêm buổi học bù</a></div>{% endif %}
+  <div class="form-footer"><a href="{% url 'schedule:calendar' %}?tab=lop_hoc&ngay={{ buoi.session_date|date:'Y-m-d' }}" class="btn btn-ghost">Quay lại lịch</a></div>
+</div>
+{% endblock %}

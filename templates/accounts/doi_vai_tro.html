@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block page_title %}User Management{% endblock %}
+{% block page_title_ko %}계정 설정{% endblock %}
+{% block content %}
+<div style="max-width: 520px;">
+  <h3 class="mb-3">Đổi vai trò</h3>
+  <table class="table table-sm">
+    <tr><th>Tài khoản</th><td>{{ tai_khoan.email }} – {{ tai_khoan.full_name }}</td></tr>
+    <tr><th>Vai trò hiện tại</th><td>{{ tai_khoan.get_role_display }}</td></tr>
+    <tr><th>Chức danh trong hồ sơ</th><td>{% if nhan_su %}{{ nhan_su.get_position_display }}{% else %}<span class="text-muted">Không có hồ sơ nhân sự</span>{% endif %}</td></tr>
+  </table>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.role %}
+    <button class="btn btn-icls" onclick="return confirm('Xác nhận đổi vai trò tài khoản {{ tai_khoan.email }}?')">Xác nhận</button>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Hủy</a>
+  </form>
+</div>
+{% endblock %}

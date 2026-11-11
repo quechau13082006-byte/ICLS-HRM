@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+<p class="text-muted small mb-1"><a href="{% url 'contracts:contract_list' %}" class="text-decoration-none">Contract</a> / {{ hop_dong.contract_number }}</p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <h2 class="mb-2" style="font-family:'Plus Jakarta Sans',sans-serif">{{ hop_dong.contract_number }}</h2>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="avatar-initials {{ hop_dong.employee.pk|mau_avatar }}">{{ hop_dong.employee.full_name|slice:":2"|upper }}</span>
+      <span class="name">{{ hop_dong.employee.full_name }}</span>
+      <span class="chip-type">{{ hop_dong.get_employment_type_display }}</span>
+      {% with hd=hop_dong %}{% include 'contracts/_chip_hop_dong.html' %}{% endwith %}
+      {% if sap_het_han %}<span class="chip {% if con_lai < 0 %}expired{% else %}expiring{% endif %}">{% if con_lai < 0 %}Quá hạn{% else %}Sắp hết hạn{% endif %}</span>{% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-ghost" href="{% url 'contracts:contract_print' hop_dong.pk %}"><i class="ri-printer-line"></i> In hợp đồng</a>
+  {% if la_quan_ly and dang_hieu_luc %}
+    <a class="btn btn-ghost" href="{% url 'contracts:contract_update_file' hop_dong.pk %}">Cập nhật file scan</a>
+    <a class="btn btn-icls" href="{% url 'contracts:contract_renew' hop_dong.pk %}">Gia hạn hợp đồng</a>
+    <a class="btn" style="background:#ee8c7f;color:#fff;border-radius:10px" href="{% url 'contracts:contract_terminate' hop_dong.pk %}">Thanh lý hợp đồng</a>
+  {% endif %}
+  </div>
+</div>
+
+{% if sap_het_han %}
+<div class="banner"><i class="ri-alert-line"></i><div class="t">{% if con_lai < 0 %}Hợp đồng đã quá hạn {{ con_lai|cut:"-" }} ngày mà chưa được xử lý.{% else %}Hợp đồng này sẽ hết hạn trong vòng {{ con_lai }} ngày.{% endif %}</div></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="panel-white" style="box-shadow:none;border:1px solid var(--icls-border)">
+      <h4>Thông tin hợp đồng</h4>
+      <div class="info-grid">
+        <div><div class="k">Nhân viên</div><div class="v">{{ hop_dong.employee.full_name }} ({{ hop_dong.employee.code }})</div></div>
+        <div><div class="k">Số hợp đồng</div><div class="v">{{ hop_dong.contract_number }}</div></div>
+        <div><div class="k">Loại hình</div><div class="v">{{ hop_dong.get_employment_type_display }}</div></div>
+        <div><div class="k">Trạng thái</div><div class="v">{{ hop_dong.get_status_display }}</div></div>
+        <div><div class="k">Ngày bắt đầu</div><div class="v">{{ hop_dong.start_date|date:"d/m/Y" }}</div></div>
+        <div><div class="k">Ngày kết thúc</div><div class="v">{% if hop_dong.end_date %}{{ hop_dong.end_date|date:"d/m/Y" }}{% else %}Không xác định thời hạn{% endif %}</div></div>
+        {% if hop_dong.previous_contract %}
+        <div><div class="k">Hợp đồng trước</div><div class="v"><a href="{% url 'contracts:contract_detail' hop_dong.previous_contract.pk %}">{{ hop_dong.previous_contract.contract_number }}</a></div></div>
+        {% endif %}
+        {% if hop_dong.termination_date %}
+        <div><div class="k">Ngày thanh lý</div><div class="v">{{ hop_dong.termination_date|date:"d/m/Y" }}</div></div>
+        <div class="grid-span"><div class="k">Lý do thanh lý</div><div class="v">{{ hop_dong.termination_reason }}</div></div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="panel-white mt-3" style="box-shadow:none;border:1px solid var(--icls-border)">
+      <h4>File hợp đồng</h4>
+      <div class="d-flex align-items-center justify-content-between">
+        <span><i class="ri-file-text-line"></i> {{ hop_dong.file_url.name|cut:"contracts/" }}</span>
+        <span class="d-flex gap-2">
+          <a class="btn btn-ghost btn-sm" href="{% url 'core:tai_file' hop_dong.file_url.name %}" target="_blank">Xem</a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'core:tai_file' hop_dong.file_url.name %}" download>Tải về</a>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="panel-white" style="box-shadow:none;border:1px solid var(--icls-border)">
+      <h4>Lịch sử gia hạn</h4>
+      {% for c in truoc %}<div class="kv"><a href="{% url 'contracts:contract_detail' c.pk %}">{{ c.contract_number }}</a><span class="v">{{ c.start_date|date:"m/Y" }}</span></div>{% endfor %}
+      <div class="kv"><span class="v">{{ hop_dong.contract_number }} (hiện tại)</span><span class="v">{{ hop_dong.start_date|date:"m/Y" }}</span></div>
+      {% for c in sau %}<div class="kv"><a href="{% url 'contracts:contract_detail' c.pk %}">{{ c.contract_number }}</a><span class="v">{{ c.start_date|date:"m/Y" }}</span></div>{% endfor %}
+      {% if not truoc and not sau %}<p class="small text-muted mb-0">Chưa có lần gia hạn nào.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

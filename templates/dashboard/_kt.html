@@ -1,0 +1,76 @@
+{# Kế toán – theo Figma "DB kế toán": quỹ lương kỳ gần nhất, cột 6 tháng, phân bổ loại hình, bảng tóm tắt, chấm công tháng #}
+{% load icls_filters %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h2 class="db-tieu-de">Theo dõi quỹ lương trong kỳ</h2>
+    <p class="text-muted mb-0">Kế toán theo dõi chi phí lương và tình hình chấm công của tháng hiện tại.</p>
+  </div>
+  <a href="{% url 'payroll:period_list' %}" class="btn btn-icls">Xem bảng lương <i class="ri-arrow-right-up-line"></i></a>
+</div>
+
+{% if luong %}
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-4">
+  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thu nhập</div><div class="db-the-so">{{ luong.gross|vnd }}</div><div class="db-the-phu">Tháng {{ luong.thang }}/{{ luong.nam }} · {{ luong.so_nhan_su }} nhân sự</div></a></div>
+  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thực nhận</div><div class="db-the-so">{{ luong.thuc_nhan|vnd }}</div><div class="db-the-phu">Sau khấu trừ và thuế</div></a></div>
+  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thuế</div><div class="db-the-so">{{ luong.thue|vnd }}</div><div class="db-the-phu">Thuế TNCN</div></a></div>
+  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Trạng thái bảng lương</div>
+    <div class="db-the-so">{% if luong.trang_thai == 'SENT' %}Đã phát hành{% elif luong.trang_thai == 'LOCKED' %}Đã chốt{% else %}Nháp{% endif %}</div>
+    <div class="db-the-phu">Tháng {{ luong.thang }}/{{ luong.nam }}</div></a></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Quỹ lương theo tháng</h3>
+      <p class="db-khoi-phu">Tổng thực nhận của các tháng đã lập gần nhất</p>
+      <div class="db-cot-wrap">
+        {% for c in cot %}
+        <div class="db-cot-o"><span class="db-cot-so">{{ c.so|vnd }}</span>
+          <div class="db-cot {% if c.moi_nhat %}moi{% endif %}" style="height: {{ c.cao|stringformat:'.0f' }}%"></div>
+          <span class="db-cot-nhan">{{ c.nhan }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Phân bổ theo loại hình</h3>
+      <p class="db-khoi-phu">Tổng thực nhận · tháng {{ luong.thang }}/{{ luong.nam }}</p>
+      <div class="db-donut mb-3" style="--p: {{ luong.pt_ft|stringformat:'.1f' }}"><div><b>{{ luong.pt_ft|stringformat:'.0f' }}%</b><small>Full-time</small></div></div>
+      <div><span class="db-cham db-cham-dam"></span>Toàn thời gian: <b>{{ luong.ft|vnd }}</b></div>
+      <div><span class="db-cham db-cham-nhat"></span>Bán thời gian: <b>{{ luong.pt|vnd }}</b></div>
+    </div>
+  </div>
+</div>
+
+<div class="db-khoi mb-3">
+  <h3 class="db-khoi-ten">Tóm tắt lương nhân sự</h3>
+  <p class="db-khoi-phu">Một số nhân sự đầu bảng · {{ luong.dong|length }} / {{ luong.so_nhan_su }} nhân sự</p>
+  <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Nhân sự</th><th>Vị trí</th><th class="text-end">Thu nhập</th><th class="text-end">Thực nhận</th></tr></thead>
+    <tbody>
+    {% for b in luong.dong %}
+      <tr><td>{{ b.employee.full_name }}</td><td>{{ b.employee.get_position_display }}</td>
+          <td class="text-end">{{ b.gross_pay|vnd }}</td><td class="text-end text-success fw-bold">{{ b.net_pay|vnd }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}
+  <div class="alert alert-light border">{{ chua_co_du_lieu }}: chưa có bảng lương nào được lập. <a href="{% url 'payroll:period_list' %}">Lập bảng lương</a></div>
+{% endif %}
+
+<div class="db-khoi">
+  <h3 class="db-khoi-ten">Chấm công tháng {{ thang_nay }}/{{ nam_nay }}</h3>
+  <p class="db-khoi-phu">Tổng {{ tong_cham_cong }} bản ghi · <a href="{% url 'attendance:summary' %}">Xem bảng tổng hợp công</a></p>
+  {% if tong_cham_cong %}
+  <div class="row g-2 text-center">
+    <div class="col"><div class="db-mini">{{ cham_cong.ON_TIME }}<small>Đúng giờ</small></div></div>
+    <div class="col"><div class="db-mini">{{ cham_cong.LATE }}<small>Đi trễ</small></div></div>
+    <div class="col"><div class="db-mini">{{ cham_cong.EARLY_LEAVE }}<small>Về sớm</small></div></div>
+    <div class="col"><div class="db-mini">{{ cham_cong.ABSENT }}<small>Vắng mặt</small></div></div>
+    <div class="col"><div class="db-mini">{{ cham_cong.MISSING_CHECKOUT }}<small>Quên check-out</small></div></div>
+    <div class="col"><div class="db-mini">{{ gt_cho_duyet }}<small>Giải trình chờ</small></div></div>
+  </div>
+  {% else %}<p class="text-muted mb-0">{{ chua_co_du_lieu }}</p>{% endif %}
+</div>

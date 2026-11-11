@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_title_ko %}알림{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Thông báo</h3>
+  <form method="post" action="{% url 'core:notifications_read_all' %}">{% csrf_token %}
+    <button class="btn btn-outline-secondary btn-sm">Đánh dấu tất cả đã đọc</button>
+  </form>
+</div>
+<div class="list-group">
+  {% for n in page %}
+  <div class="list-group-item {% if not n.is_read %}list-group-item-success{% endif %}">
+    <div class="d-flex justify-content-between">
+      <strong>{{ n.title }}</strong><small>{{ n.created_at|date:"d/m/Y H:i" }}</small>
+    </div>
+    <div>{{ n.message }}</div>
+    <div class="mt-1">
+      {% if n.related_url %}<a href="{{ n.related_url }}">Xem chi tiết</a>{% endif %}
+      {% if not n.is_read %}
+      <form method="post" action="{% url 'core:notification_read' n.pk %}" class="d-inline">{% csrf_token %}
+        <button class="btn btn-link btn-sm">Đánh dấu đã đọc</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="list-group-item">Chưa có thông báo nào.</div>
+  {% endfor %}
+</div>
+{% if page.has_other_pages %}
+<nav class="mt-3">
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">« Trước</a>{% endif %}
+  Trang {{ page.number }}/{{ page.paginator.num_pages }}
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Sau »</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

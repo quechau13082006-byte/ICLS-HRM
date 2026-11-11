@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.3 – bước 8, luồng 8.1: điều chỉnh từng chỗ của một khung ca trước khi chốt #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lam_viec' %}
+<div class="card-head">
+  <h2 class="title">{{ khung.vai_tro }} · {{ khung.ngay|date:"d/m/Y" }} · {{ khung.bd|time:"H:i" }}–{{ khung.kt|time:"H:i" }}
+    <span class="chip {% if khung.trang_thai == 'DA_CHOT' %}da-chot{% elif khung.trang_thai == 'DANG_MO' %}dang-mo{% elif khung.trang_thai == 'DA_HUY' %}da-huy{% else %}cho-duyet{% endif %}">
+      {% if khung.trang_thai == 'DA_CHOT' %}Đã chốt{% elif khung.trang_thai == 'DANG_MO' %}Đang mở{% elif khung.trang_thai == 'DA_HUY' %}Đã hủy{% else %}Chờ duyệt{% endif %}</span></h2>
+  <a href="{% url 'schedule:shift_review' %}?ngay={{ khung.ngay|date:'Y-m-d' }}" class="btn btn-ghost">Về bảng tổng hợp</a>
+</div>
+<p class="text-muted">Cần {{ khung.so_can }} người · Đã có {{ khung.da_giu }} · Hạn chót đăng ký {{ khung.han_chot|date:"d/m/Y H:i" }}</p>
+
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Chỗ</th><th>Nhân viên</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+  <tbody>
+  {% for c in khung.cac_cho %}
+    <tr>
+      <td class="id">#{{ forloop.counter }}</td>
+      <td>{% if c.employee %}<span class="d-inline-flex align-items-center gap-2"><span class="avatar-initials {{ c.employee.pk|mau_avatar }}">{{ c.employee.full_name|slice:":2"|upper }}</span>{{ c.employee.full_name }}</span>{% else %}<span class="text-muted">Còn trống</span>{% endif %}</td>
+      <td><span class="chip {% if c.status == 'SCHEDULED' %}scheduled{% elif c.status == 'PENDING' %}cho-duyet{% elif c.status == 'CANCELLED' %}da-huy{% else %}open{% endif %}">{{ c.get_status_display }}</span></td>
+      <td>
+        {% if c.status == 'PENDING' %}
+          <form method="post" action="{% url 'schedule:shift_seat_remove' c.pk %}">{% csrf_token %}<button class="btn btn-danger-soft btn-sm">Bỏ khỏi chỗ</button></form>
+        {% elif c.status == 'OPEN' or c.status == 'SCHEDULED' %}
+          <form method="post" class="d-flex gap-2" action="{% if c.status == 'OPEN' %}{% url 'schedule:shift_seat_assign' c.pk %}{% else %}{% url 'schedule:shift_seat_change' c.pk %}{% endif %}">{% csrf_token %}
+            <select name="nhan_su" class="form-select form-select-sm" style="max-width:240px" required aria-label="Nhân viên Part-time">
+              <option value="">{% if c.status == 'OPEN' %}Gán nhân viên…{% else %}Đổi sang…{% endif %}</option>
+              {% for nv in ung_vien %}<option value="{{ nv.pk }}">{{ nv.full_name }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-ghost btn-sm">{% if c.status == 'OPEN' %}Gán{% else %}Đổi người{% endif %}</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+<p class="text-muted small mt-2">Danh sách chọn chỉ có nhân viên Part-time đang làm việc, chưa có chỗ trong khung này và không trùng lịch.</p>
+
+{% if khung.trang_thai == 'DANG_MO' or khung.trang_thai == 'CHO_DUYET' %}
+<form method="post" action="{% url 'schedule:shift_group_finalize' khung.ma %}" class="d-flex justify-content-end mt-3">{% csrf_token %}
+  <button class="btn btn-icls">Chốt khung ca này</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{# Lưới theo giờ (Figma): lịch làm việc cá nhân. Ca cố định Full-time vẽ làm NỀN mờ, buổi dạy / ca Part-time nằm đè lên. #}
+<div class="sch-grid">
+  <div class="sch-head">Giờ</div>
+  {% for c in cot_tuan %}<div class="sch-head {% if c.la_hom_nay %}today{% endif %} {% if c.cuoi_tuan %}weekend{% endif %}"><span>{{ c.thu }}</span><b>{{ c.ngay|date:"j/n" }}</b>{% if c.so_an %}<a class="sch-more" href="{{ c.url_ngay }}">+{{ c.so_an }} buổi khác</a>{% endif %}</div>{% endfor %}
+  <div class="sch-hours">{% for g in moc_gio %}<span>{{ g }}</span>{% endfor %}</div>
+  {% for c in cot_tuan %}
+  <div class="sch-col {% if c.la_hom_nay %}today{% endif %} {% if c.cuoi_tuan %}weekend{% endif %}">
+    {% for m in c.nen %}<div class="sch-ev ev-nen ev-{{ m.mau }}" style="{{ m.style }}" title="{{ m.tieu_de }} cố định {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}"><span class="nen-nhan">{{ m.tieu_de }} · {{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</span></div>{% endfor %}
+    {% for m in c.cac_muc %}
+    <a class="sch-ev ev-{{ m.mau }}" style="{{ m.style }}" href="{{ m.url }}" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">
+      <b><i class="{% if m.loai == 'ca' %}ri-briefcase-line{% else %}ri-graduation-cap-line{% endif %}"></i> {{ m.tieu_de }}</b>
+      {{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}<br>{{ m.dong_2 }}{% if m.dong_3 %}<br>{{ m.dong_3 }}{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+<div class="small text-muted mt-2"><span class="lg lg-nen"></span> Ca cố định Full-time (nền) &nbsp; <span class="lg lg-ca"></span> Ca Part-time đã chốt &nbsp; <span class="lg lg-buoi"></span> Buổi dạy / trợ giảng</div>

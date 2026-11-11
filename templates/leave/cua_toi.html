@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}MY LEAVE{% endblock %}
+{% block page_title_ko %}내 휴가{% endblock %}
+{% block content %}
+{# UC 5.3 – quỹ phép cá nhân + danh sách đơn nghỉ của tôi; nút "Tạo đơn xin nghỉ phép" (UC 5.1) #}
+{% include 'leave/_tab.html' %}
+<div class="card-head">
+  <div>
+    <h2 class="title">Nghỉ phép của tôi</h2>
+    <div class="text-muted small">Theo dõi đơn nghỉ của bạn và các buổi dạy bị ảnh hưởng · năm {{ nam }}</div>
+  </div>
+  <a href="{% url 'leave:leave_create' %}" class="btn btn-icls"><i class="ri-add-line"></i> Tạo đơn xin nghỉ phép</a>
+</div>
+
+{% if la_full_time and quy %}
+<div class="tiles four">
+  <div class="tile plain"><div class="t">Phép còn lại</div><div class="n">{% include 'leave/_so_ngay.html' with so=quy.remaining_days %} ngày</div><div class="t">Số dư năm {{ quy.year }}</div></div>
+  <div class="tile plain"><div class="t">Đã sử dụng</div><div class="n">{% include 'leave/_so_ngay.html' with so=quy.used_days %} ngày</div><div class="t">Hạn mức năm {{ quy.year }}: {% include 'leave/_so_ngay.html' with so=quy.total_days %} ngày</div></div>
+  <div class="tile plain"><div class="t">Đang chờ duyệt</div><div class="n">{{ dem.PENDING }}</div><div class="t">Chưa trừ vào số dư phép</div></div>
+  <div class="tile plain"><div class="t">Đã duyệt</div><div class="n">{{ dem.APPROVED }}</div><div class="t">Trong năm {{ nam }}</div></div>
+</div>
+{% else %}
+<div class="alert alert-info"><i class="ri-information-line"></i> {{ khong_co_quy }}</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <ul class="nav nav-tabs-icls mb-0">
+    <li class="nav-item"><a class="nav-link {% if not trang_thai %}active{% endif %}" href="?nam={{ nam }}">Tất cả ({{ tong }})</a></li>
+    <li class="nav-item"><a class="nav-link {% if trang_thai == 'PENDING' %}active{% endif %}" href="?nam={{ nam }}&trang_thai=PENDING">Chờ duyệt ({{ dem.PENDING }})</a></li>
+    <li class="nav-item"><a class="nav-link {% if trang_thai == 'APPROVED' %}active{% endif %}" href="?nam={{ nam }}&trang_thai=APPROVED">Đã duyệt ({{ dem.APPROVED }})</a></li>
+    <li class="nav-item"><a class="nav-link {% if trang_thai == 'REJECTED' %}active{% endif %}" href="?nam={{ nam }}&trang_thai=REJECTED">Từ chối ({{ dem.REJECTED }})</a></li>
+  </ul>
+  <form method="get" class="toolbar mb-0">
+    <input type="hidden" name="trang_thai" value="{{ trang_thai }}">
+    <input type="number" name="nam" value="{{ nam }}" min="2000" max="2100" class="form-control" style="width:110px" aria-label="Năm">
+    <button class="btn btn-outline-icls">Xem năm</button>
+  </form>
+</div>
+
+<div class="table-wrap mt-3"><table class="tbl">
+  <thead><tr><th>Thời gian</th><th>Loại nghỉ</th><th>Số ngày</th><th>Lý do</th><th>Ảnh hưởng lịch dạy</th><th>Trạng thái</th><th></th></tr></thead>
+  <tbody>
+  {% for don in trang %}
+    <tr>
+      <td><b>{% include 'leave/_khoang.html' %}</b><div class="sub">{{ don.get_duration_type_display }}</div></td>
+      <td>{{ don.get_leave_type_display }}</td>
+      <td>{% include 'leave/_so_ngay.html' with so=don.total_days %}</td>
+      <td>{{ don.reason|truncatechars:40 }}</td>
+      <td>{% if don.so_anh_huong %}<span class="chip plain expiring"><i class="ri-error-warning-line"></i> Ảnh hưởng {{ don.so_anh_huong }} buổi{% if don.ten_lop_anh_huong %} · {{ don.ten_lop_anh_huong }}{% endif %}</span>{% else %}<span class="text-muted">Không ảnh hưởng</span>{% endif %}</td>
+      <td>{% include 'leave/_chip_don.html' %}</td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'leave:detail' don.pk %}">Chi tiết</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Chưa có đơn nghỉ nào.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+<div class="pager">
+  <span>Hiển thị {{ trang.start_index }}–{{ trang.end_index }} / {{ trang.paginator.count }} đơn của {{ nhan_su.full_name }}</span>
+  {% if trang.has_other_pages %}
+  <div class="pages">
+    {% if trang.has_previous %}<a href="?{{ tham_so_trang.urlencode }}&page={{ trang.previous_page_number }}">‹</a>{% else %}<span class="off">‹</span>{% endif %}
+    {% for so in trang.paginator.page_range %}{% if so == trang.number %}<span class="cur">{{ so }}</span>{% else %}<a href="?{{ tham_so_trang.urlencode }}&page={{ so }}">{{ so }}</a>{% endif %}{% endfor %}
+    {% if trang.has_next %}<a href="?{{ tham_so_trang.urlencode }}&page={{ trang.next_page_number }}">›</a>{% else %}<span class="off">›</span>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

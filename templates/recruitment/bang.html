@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Recruitment{% endblock %}
+{% block page_title_ko %}채용{% endblock %}
+
+{% block panel %}
+{# ===== Dòng tiêu đề: Bảng ứng viên + số liệu + công cụ ===== #}
+<div class="page-greeting">
+  <div>
+    <p class="hello"><i class="ri-layout-column-line"></i> Bảng ứng viên
+      <span class="fs-6 text-muted ms-2"><b>{{ tong }}</b> ứng viên · {{ so_vi_tri }} vị trí đang tuyển</span></p>
+    <p class="sub">
+      {% if dot %}Đợt: <b>{{ dot.campaign_name }}</b> ({{ dot.get_status_display }}){% else %}Tất cả các đợt tuyển dụng{% endif %}
+      {% if so_vong_can_danh_gia %} ·
+      <a href="{% url 'recruitment:rounds_due' %}" class="fw-bold" style="color:#a35a00">{{ so_vong_can_danh_gia }} vòng cần đánh giá</a>{% endif %}
+    </p>
+  </div>
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-center board-tools">
+    <label class="search-field bg-white"><i class="ri-search-line"></i>{{ bo_loc.q }}</label>
+    {{ bo_loc.vi_tri }} {{ bo_loc.dot }}
+    <button class="btn btn-ghost" style="height:44px">Lọc</button>
+    <a class="btn btn-ghost d-inline-flex align-items-center" style="height:44px" href="{% url 'recruitment:campaign_add' %}">Tạo đợt</a>
+    <a class="btn btn-icls d-inline-flex align-items-center" style="height:44px"
+       href="{% url 'recruitment:candidate_add' %}{% if dot %}?dot={{ dot.pk }}{% endif %}"><i class="ri-add-line"></i> Thêm ứng viên mới</a>
+  </form>
+</div>
+
+<section class="app-card" style="margin-top:14px">
+  {% include 'core/_messages.html' %}
+  {% if dot and dot.status == 'OPEN' %}
+  <form method="post" action="{% url 'recruitment:campaign_close' dot.pk %}" class="text-end mb-2">{% csrf_token %}
+    <button class="btn btn-sm btn-danger-soft" onclick="return confirm('Đóng đợt “{{ dot.campaign_name }}”? Đợt đã đóng không nhận thêm ứng viên.')">
+      <i class="ri-lock-line"></i> Đóng đợt</button>
+  </form>
+  {% endif %}
+
+  {# ===== Các cột kanban ===== #}
+  <div class="board">
+    {% for c in cot %}
+    <div class="board-col">
+      <div class="board-col-head" style="border-left-color: {{ c.mau }}">
+        <span>{{ c.tieu_de }}</span><span class="count-badge">{{ c.the|length }}</span>
+      </div>
+      {% for t in c.the %}
+      <a class="cand-card {% if ung_vien and ung_vien.pk == t.ung_vien.pk %}selected{% endif %}"
+         href="?{% if tham_so_dot %}{{ tham_so_dot }}&{% endif %}chon={{ t.ung_vien.pk }}">
+        <div class="d-flex align-items-center gap-2">
+          <span class="avatar-initials {{ t.ung_vien.pk|mau_avatar }}">{{ t.ung_vien.full_name|slice:":2"|upper }}</span>
+          <div class="overflow-hidden">
+            <div class="cn">{{ t.ung_vien.full_name }}</div>
+            <div class="cs">{{ t.ung_vien.get_position_display }} · {{ t.ung_vien.get_employment_type_display }}</div>
+          </div>
+        </div>
+        <div class="cd"><i class="ri-calendar-line"></i> {{ t.ung_vien.created_at|date:"d/m/Y" }}</div>
+        <div class="ct {{ t.loai }}">{{ t.nhan }}</div>
+      </a>
+      {% empty %}<div class="text-muted small text-center py-3">Chưa có ứng viên</div>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-muted small mt-3 mb-0">Chọn thẻ ứng viên để xem hồ sơ và thao tác.</p>
+</section>
+
+{# ===== Ngăn hồ sơ ứng viên (theo Figma, bên phải) ===== #}
+{% if ung_vien %}
+<a class="drawer-backdrop" href="{% url 'recruitment:board' %}{% if tham_so_dot %}?{{ tham_so_dot }}{% endif %}" aria-label="Đóng"></a>
+<aside class="drawer" aria-label="Hồ sơ ứng viên">
+  <div class="drawer-body">
+    {% include 'core/_messages.html' %}
+    <div class="d-flex gap-3 align-items-start mb-3">
+      <div class="text-center" style="min-width:90px">
+        <span class="avatar-initials lg {{ ung_vien.pk|mau_avatar }} mx-auto" style="width:64px;height:64px;font-size:1.2rem">{{ ung_vien.full_name|slice:":2"|upper }}</span>
+        <div class="mt-2">{% include 'recruitment/_chip_ung_vien.html' %}</div>
+        <div class="small text-muted mt-2">Nộp hồ sơ<br>{{ ung_vien.created_at|date:"d/m/Y" }}</div>
+      </div>
+      <div class="flex-grow-1">
+        <div class="small text-muted">Họ và tên</div>
+        <h3 class="mb-0" style="font-family:'Plus Jakarta Sans',sans-serif">{{ ung_vien.full_name }}</h3>
+        <div class="text-muted small">Hồ sơ ứng viên · {{ ung_vien.get_position_display }} · {{ ung_vien.get_employment_type_display }} · {{ ung_vien.campaign.campaign_name }}</div>
+      </div>
+      <a href="{% url 'recruitment:board' %}{% if tham_so_dot %}?{{ tham_so_dot }}{% endif %}" class="btn btn-ghost" aria-label="Đóng"><i class="ri-close-line"></i></a>
+    </div>
+
+    <div class="info-grid mb-3">
+      <div><div class="k">Số điện thoại</div><div class="v">{{ ung_vien.phone }}</div></div>
+      <div><div class="k">Email</div><div class="v">{{ ung_vien.email }}</div></div>
+    </div>
+    {% if ung_vien.cv_file %}
+    <a class="btn btn-ghost mb-3" href="{% url 'core:tai_file' ung_vien.cv_file.name %}" target="_blank"><i class="ri-file-text-line"></i> Xem CV</a>
+    {% else %}<p class="text-muted small">Chưa có CV.</p>{% endif %}
+
+    <hr>
+    <h4 class="font-itim">Tiến trình tuyển dụng</h4>
+
+    {# --- Bước 1: Sơ tuyển --- #}
+    <div class="step done">
+      <div class="step-title">Sơ tuyển
+        <span class="ms-auto small {% if ung_vien.status == 'REJECTED' and not cac_vong %}text-danger{% else %}text-success{% endif %}">
+          {% if ung_vien.status == 'NEW' %}Chờ đánh giá{% elif ung_vien.status == 'REJECTED' and not cac_vong %}Không đạt sơ tuyển{% else %}Đạt sơ tuyển{% endif %}</span></div>
+      {% if ung_vien.screening_note %}<div class="small text-muted">{{ ung_vien.screening_note|linebreaksbr }}</div>{% endif %}
+    </div>
+
+    {# --- Các vòng phỏng vấn / Demo đã có --- #}
+    {% for v in cac_vong %}
+    <div class="step {% if v.status == 'COMPLETED' %}done{% elif v.status == 'CANCELLED' %}off{% endif %}">
+      <div class="step-title">{{ v.get_round_type_display }}
+        <span class="chip plain {% if v.status == 'COMPLETED' %}{% if v.result == 'PASSED' %}active{% else %}terminated{% endif %}{% elif v.status == 'CANCELLED' %}pending{% else %}onboarding{% endif %} ms-auto">
+          {% if v.status == 'COMPLETED' %}{{ v.get_result_display }}{% else %}{{ v.get_status_display }}{% endif %}</span></div>
+      <div class="small text-muted">{{ v.scheduled_at|date:"d/m/Y H:i" }} · {{ v.interviewer.full_name|default:v.interviewer.email }}{% if v.location %} · {{ v.location }}{% endif %}</div>
+      {% if v.status == 'COMPLETED' %}<div class="small mt-1"><b>{{ v.score }}</b>/10 — {{ v.note|default:"Không có nhận xét" }}</div>{% endif %}
+    </div>
+    {% endfor %}
+
+    <hr>
+    {# ===================== Thao tác theo trạng thái ===================== #}
+    {% if sua_duoc_so_tuyen %}
+    <div class="action-block">
+      <h5>{% if ung_vien.status == 'NEW' %}Đánh giá sơ tuyển{% else %}Sửa kết quả sơ tuyển{% endif %}</h5>
+      <form method="post" action="{% url 'recruitment:candidate_screen' ung_vien.pk %}" novalidate>{% csrf_token %}
+        {% include 'recruitment/_radio_ket_qua.html' with truong=form_so_tuyen.ket_qua %}
+        {% include 'core/_truong_form.html' with truong=form_so_tuyen.ghi_chu %}
+        <button class="btn btn-icls">Lưu kết quả sơ tuyển</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if ung_vien.status == 'SCREENING' %}
+    <div class="action-block">
+      <h5>Xếp lịch phỏng vấn</h5>
+      {% include 'recruitment/_form_lich.html' with form=form_lich url=schedule_interview_url nut='Xác nhận lịch phỏng vấn' %}
+    </div>
+    {% endif %}
+
+    {% if vong_dang_cho %}
+    <div class="action-block">
+      <h5>{{ vong_dang_cho.get_round_type_display }} đang chờ — {{ vong_dang_cho.scheduled_at|date:"d/m/Y H:i" }}</h5>
+      {% if den_gio %}
+      <form method="post" action="{% url 'recruitment:round_evaluate' vong_dang_cho.pk %}" novalidate>{% csrf_token %}
+        {% include 'core/_truong_form.html' with truong=form_danh_gia.score %}
+        {% include 'core/_truong_form.html' with truong=form_danh_gia.note %}
+        {% include 'recruitment/_radio_ket_qua.html' with truong=form_danh_gia.ket_qua %}
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-icls">Lưu đánh giá</button>
+        </div>
+      </form>
+      <form method="post" action="{% url 'recruitment:round_absent' vong_dang_cho.pk %}" class="mt-2">{% csrf_token %}
+        <button class="btn btn-ghost btn-sm" onclick="return confirm('Đánh dấu ứng viên vắng mặt? Vòng này sẽ bị hủy.')">Ứng viên vắng mặt</button>
+      </form>
+      {% else %}
+      <p class="small text-muted">Chưa tới giờ diễn ra — chưa thể nhập đánh giá. Bạn có thể sửa hoặc hủy lịch.</p>
+      {% endif %}
+      <details class="mt-3" {% if loi_dang_mo == 'form_sua_vong' %}open{% endif %}>
+        <summary class="fw-bold" style="cursor:pointer">Sửa lịch</summary>
+        <div class="mt-2">{% include 'recruitment/_form_lich.html' with form=form_sua_vong url=sua_vong_url nut='Cập nhật lịch' %}</div>
+      </details>
+      <form method="post" action="{% url 'recruitment:round_cancel' vong_dang_cho.pk %}" class="mt-2">{% csrf_token %}
+        <button class="btn btn-danger-soft btn-sm" onclick="return confirm('Hủy vòng này?')">Hủy lịch</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if duoc_xep_demo %}
+    <div class="action-block">
+      <h5>Xếp lịch Demo</h5>
+      {% include 'recruitment/_form_lich.html' with form=form_lich url=schedule_demo_url nut='Xác nhận lịch Demo' %}
+    </div>
+    {% endif %}
+
+    {% if ung_vien.status == 'SCREENING' or ung_vien.status == 'TEACHING_TRIAL' and not vong_dang_cho %}
+    <form method="post" action="{% url 'recruitment:candidate_reject' ung_vien.pk %}">{% csrf_token %}
+      <button class="btn btn-danger-soft btn-sm" onclick="return confirm('Đánh giá ứng viên này Không đạt?')">Đánh giá không đạt</button>
+    </form>
+    {% endif %}
+
+    {% if ung_vien.status == 'PASSED' %}
+    <div class="action-block">
+      <h5>Ứng viên đã đạt</h5>
+      <a class="btn btn-icls" href="{% url 'employees:employee_add' %}?ung_vien={{ ung_vien.pk }}"><i class="ri-user-add-line"></i> Chuyển sang Onboarding</a>
+    </div>
+    {% elif ung_vien.status == 'HIRED' %}
+    <div class="action-block">
+      <h5>Đã tiếp nhận</h5>
+      {% if nhan_su %}<a class="btn btn-ghost" href="{% url 'employees:employee_detail' nhan_su.pk %}">Xem hồ sơ nhân sự {{ nhan_su.code }}</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</aside>
+{% endif %}
+{% endblock %}

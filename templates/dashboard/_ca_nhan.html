@@ -1,0 +1,63 @@
+{# Nhân viên – theo Figma "DB cá nhân": lời chào, 5 thẻ, lịch hôm nay, chấm công, thông báo, lịch tuần #}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h2 class="db-tieu-de">Xin chào, {{ user.full_name|default:user.email }}</h2>
+    <p class="text-muted mb-0">{{ nhan_su.get_position_display }} · {{ nhan_su.code }} · thông tin cá nhân tháng {{ hom_nay|date:"m/Y" }}</p>
+  </div>
+  <a href="{% url 'payroll:my_payslips' %}" class="btn btn-icls">Xem bảng lương <i class="ri-arrow-right-up-line"></i></a>
+</div>
+
+{% include 'dashboard/_hang_the.html' with danh_sach=cac_the so_cot=5 %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Lịch hôm nay</h3>
+      <p class="db-khoi-phu">{{ hom_nay|date:"l, d/m/Y" }}</p>
+      {% for m in hom_nay_muc %}
+        <div class="db-muc"><b>{{ m.tieu_de }}</b><div class="small">{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}{% if m.phong %} · {{ m.phong }}{% endif %}</div></div>
+      {% empty %}<p class="text-muted mb-0">Hôm nay bạn không có lịch.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Chấm công</h3>
+      <p class="db-khoi-phu">Hôm nay · ghi nhận theo ca</p>
+      {% if nghi_phep %}<span class="badge text-bg-info">Bạn nghỉ phép hôm nay</span>
+      {% elif khong_co_lich %}<p class="text-muted mb-0">Hôm nay không có lịch làm việc.</p>
+      {% else %}
+        {% for c in cham_cong %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div><b>{{ c.ten }}</b><div class="small text-muted">{{ c.bd|time:"H:i" }}–{{ c.kt|time:"H:i" }}</div></div>
+            <span class="badge text-bg-{{ c.mau }}">{{ c.trang_thai }}</span>
+          </div>
+        {% endfor %}
+        <a href="{% url 'attendance:my_attendance' %}" class="btn btn-sm btn-outline-icls mt-3">Mở chấm công</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Thông báo chưa đọc</h3>
+      <p class="db-khoi-phu">5 thông báo mới nhất</p>
+      {% for t in thong_bao_moi %}
+        <a href="{% if t.related_url %}{{ t.related_url }}{% else %}{% url 'core:notifications' %}{% endif %}" class="db-chu-y"><i class="ri-notification-3-line"></i>
+          <div><b>{{ t.title }}</b><div class="small text-muted">{{ t.message|truncatechars:70 }}</div></div></a>
+      {% empty %}<p class="text-muted mb-0">Bạn đã đọc hết thông báo.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="db-khoi">
+  <h3 class="db-khoi-ten">Lịch làm việc tuần này</h3>
+  <p class="db-khoi-phu">Từ {{ thu_hai|date:"d/m" }} · ca làm việc và buổi dạy của riêng bạn</p>
+  <div class="row g-2 row-cols-2 row-cols-md-4 row-cols-xl-7">
+    {% for ngay in tuan %}
+    <div class="col"><div class="db-ngay {% if ngay.ngay == hom_nay %}hom-nay{% endif %}">
+      <div class="fw-bold small">{{ ngay.ngay|date:"D d/m" }}</div>
+      {% for m in ngay.muc %}<div class="small">{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}<br><span class="text-muted">{{ m.tieu_de }}</span></div>
+      {% empty %}<div class="small text-muted">—</div>{% endfor %}
+    </div></div>
+    {% endfor %}
+  </div>
+</div>

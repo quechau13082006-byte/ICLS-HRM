@@ -1,0 +1,40 @@
+{# Phiếu lương (theo Figma "Payslip receipt"). Tham số: bang (Payroll), ct (thu_nhap, khau_tru, thue). Dùng cho UC 7.3 và xem trước của Kế toán. #}
+{% load icls_filters static %}
+<div class="slip">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <img src="{% static 'img/icls-logo.png' %}" alt="ICLS" width="44" height="44" class="rounded-circle">
+      <div><div class="fw-bold fs-5">ICLS Education</div><div class="text-muted small">Phiếu lương tháng {{ bang.period_month }}/{{ bang.period_year }}</div></div>
+    </div>
+    <span class="chip plain {% if bang.status == 'SENT' %}approved{% elif bang.status == 'LOCKED' %}active{% else %}expiring{% endif %}">{{ bang.get_status_display }}</span>
+  </div>
+  <div class="d-flex justify-content-between flex-wrap gap-2 mt-3">
+    <div><div class="fs-4 fw-bold">{{ bang.employee.full_name }}</div>
+      <div class="text-muted small">{{ bang.employee.code }} · {{ bang.employee.get_position_display }} · {{ bang.employee.get_employment_type_display }}</div></div>
+    <div class="text-end small text-muted">Kỳ lương tháng {{ bang.period_month }}/{{ bang.period_year }}<br>{% if bang.sent_at %}Phát hành {{ bang.sent_at|date:"d/m/Y" }}{% else %}Chưa phát hành{% endif %}</div>
+  </div>
+
+  <div class="slip-net">
+    <div class="small">Thực nhận (net)</div>
+    <div class="slip-net-so">{{ bang.net_pay|vnd }}</div>
+    <div class="small">{{ bang.gross_pay|vnd }} thu nhập − {{ bang.total_deduction|vnd }} khấu trừ − {{ bang.total_tax|vnd }} thuế TNCN</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="slip-nhom text-success"><span>THU NHẬP</span><span>{{ bang.gross_pay|vnd }}</span></div>
+      {% for d in ct.thu_nhap %}<div class="slip-dong"><div><div class="fw-semibold">{{ d.get_category_display }}</div><div class="text-muted small">{{ d.description }}</div></div><div class="text-success fw-bold">+{{ d.amount|vnd }}</div></div>
+      {% empty %}<div class="text-muted small">Không có khoản thu nhập.</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <div class="slip-nhom" style="color:#a35a00"><span>KHẤU TRỪ</span><span>{{ bang.total_deduction|vnd }}</span></div>
+      {% for d in ct.khau_tru %}<div class="slip-dong"><div><div class="fw-semibold">{{ d.get_category_display }}</div><div class="text-muted small">{{ d.description }}</div></div><div class="fw-bold" style="color:#a35a00">−{{ d.amount|vnd }}</div></div>
+      {% empty %}<div class="text-muted small">Không có khoản khấu trừ.</div>{% endfor %}
+      <div class="slip-nhom mt-3"><span>THUẾ</span><span>{{ bang.total_tax|vnd }}</span></div>
+      {% for d in ct.thue %}<div class="slip-dong"><div><div class="fw-semibold">{{ d.get_category_display }}</div><div class="text-muted small">{{ d.description }}</div></div><div class="fw-bold" style="color:#a35a00">−{{ d.amount|vnd }}</div></div>
+      {% empty %}<div class="text-muted small">Không có thuế TNCN.</div>{% endfor %}
+    </div>
+  </div>
+  <hr>
+  <div class="text-muted small">{% if bang.status == 'SENT' %}Phiếu lương đã phát hành, chỉ xem. Liên hệ Kế toán nếu có thắc mắc.{% else %}{{ bang.get_status_display }} · chỉ để kiểm tra, số liệu có thể đổi cho đến khi chốt bảng lương.{% endif %}</div>
+</div>

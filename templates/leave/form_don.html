@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block page_title %}MY LEAVE{% endblock %}
+{% block page_title_ko %}내 휴가{% endblock %}
+{% block content %}
+{# UC 5.1 – bước 1–3: form "Tạo đơn xin nghỉ phép" (theo Figma) #}
+{% include 'leave/_tab.html' with tab='cua_toi' %}
+<div class="dialog-card">
+  <h3>Tạo đơn xin nghỉ phép</h3>
+  <p class="text-muted small">{{ nhan_su.full_name }} · {{ nhan_su.get_position_display }} · {{ nhan_su.get_department_display }}</p>
+
+  {% if quy %}
+  <div class="alert alert-info"><b>Bạn còn {% include 'leave/_so_ngay.html' with so=quy.remaining_days %} ngày phép</b><br>
+    <span class="small">Hạn mức năm {{ quy.year }}: {% include 'leave/_so_ngay.html' with so=quy.total_days %} ngày, đã dùng {% include 'leave/_so_ngay.html' with so=quy.used_days %} ngày.</span></div>
+  {% else %}
+  <div class="alert alert-secondary small">Nhân sự Part-time không có phép năm: chỉ chọn được Nghỉ ốm, Nghỉ không lương hoặc Khác.</div>
+  {% endif %}
+
+  <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger"><i class="ri-error-warning-line"></i> {{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.leave_type %}
+    <div class="mb-3">
+      <label class="form-label">Hình thức</label><br>
+      <div class="btn-group" role="group" aria-label="Hình thức nghỉ">
+        {% for ma, ten in form.duration_type.field.choices %}
+        <input type="radio" class="btn-check" name="duration_type" id="ht_{{ ma }}" value="{{ ma }}" autocomplete="off" {% if hinh_thuc == ma %}checked{% endif %}>
+        <label class="btn btn-outline-icls" for="ht_{{ ma }}">{{ ten }}</label>
+        {% endfor %}
+      </div>
+      {% for loi in form.duration_type.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+      <div class="form-text">Nghỉ nửa ngày thì Từ ngày và Đến ngày phải trùng nhau; Chủ nhật không tính là ngày làm việc.</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
+    </div>
+    {% include 'core/_truong_form.html' with truong=form.reason %}
+    <div class="form-footer"><a href="{% url 'leave:my_leaves' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Gửi đơn</button></div>
+  </form>
+</div>
+{% endblock %}

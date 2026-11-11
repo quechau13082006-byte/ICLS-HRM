@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Documents{% endblock %}
+{% block page_title_ko %}서류 승인{% endblock %}
+{% block content %}
+{# UC 2.6 – bước 3–6: xem chi tiết một giấy tờ và Duyệt / Từ chối #}
+<p class="mb-3"><a href="{% url 'employees:pending_documents' %}" class="text-decoration-none">← Giấy tờ chờ duyệt</a></p>
+<h3>{{ giay_to.document_name }}</h3>
+<div class="info-grid mb-4">
+  <div><div class="k">Nhân sự</div><div class="v">{{ giay_to.employee.full_name }} ({{ giay_to.employee.code }})</div></div>
+  <div><div class="k">Loại giấy tờ</div><div class="v">{{ giay_to.get_document_type_display }}</div></div>
+  <div><div class="k">Ngày cấp</div><div class="v">{% if giay_to.issue_date %}{{ giay_to.issue_date|date:"d/m/Y" }}{% else %}—{% endif %}</div></div>
+  <div><div class="k">Ngày hết hạn</div><div class="v">{% if giay_to.expiry_date %}{{ giay_to.expiry_date|date:"d/m/Y" }}{% else %}Không thời hạn{% endif %}</div></div>
+  <div class="grid-span"><div class="k">File đính kèm</div>
+    <div class="v"><a href="{% url 'core:tai_file' giay_to.file_url.name %}" target="_blank"><i class="ri-attachment-2"></i> {{ giay_to.file_url.name|cut:"employee_documents/" }}</a></div></div>
+</div>
+
+<form method="post" novalidate>{% csrf_token %}
+  {% include 'core/_truong_form.html' with truong=form.ly_do %}
+  <div class="d-flex justify-content-end gap-2">
+    <button name="hanh_dong" value="tu_choi" class="btn btn-danger-soft"><i class="ri-close-line"></i> Từ chối</button>
+    <button name="hanh_dong" value="duyet" class="btn btn-icls"><i class="ri-check-line"></i> Duyệt</button>
+  </div>
+</form>
+{% endblock %}

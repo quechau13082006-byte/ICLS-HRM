@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block page_title %}ATTENDANCE{% endblock %}
+{% block page_title_ko %}근태{% endblock %}
+{% block content %}
+{# UC 4.4 – bước 1–2: danh sách giải trình chờ duyệt (theo Figma "Consolidated Timesheet & Approvals") #}
+{% include 'attendance/_tab.html' %}
+<div class="card-head">
+  <div><h2 class="title">Giải trình chờ duyệt</h2><div class="text-muted small">Xem lý do và minh chứng trước khi chốt lương.</div></div>
+  <span class="chip plain expiring">{{ so_cho_duyet }} chờ duyệt</span>
+</div>
+<form method="get" class="toolbar">
+  <div class="search"><i class="ri-search-line"></i>{{ bo_loc.q }}</div>
+  {{ bo_loc.phong_ban }} {{ bo_loc.trang_thai }} {{ bo_loc.thang }}
+  <button class="btn btn-outline-icls">Lọc</button>
+  <a href="{% url 'attendance:review' %}" class="btn btn-ghost">Xóa bộ lọc</a>
+</form>
+<div class="banner"><i class="ri-error-warning-line"></i><div><div class="t">Giải trình chờ duyệt</div><div class="d">Các dòng tô vàng đã có lý do/minh chứng và đang chờ quyết định của người duyệt.</div></div></div>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Mã NV</th><th>Tên</th><th>Ngày</th><th>Ca</th><th>Check-in</th><th>Check-out</th><th>Chênh lệch</th><th>Giải trình</th><th></th></tr></thead>
+  <tbody>
+  {% for b in trang %}
+    <tr {% if b.explanation_status == 'PENDING' %}class="hang-cho"{% endif %}>
+      <td class="id">{{ b.employee.code }}</td>
+      <td class="name">{{ b.employee.full_name }}<div class="sub">{{ b.employee.get_position_display }}</div></td>
+      <td>{{ b.work_date|date:"d/m/Y" }}</td>
+      <td>{% if b.shift_assignment %}{{ b.shift_assignment.shift_role }}{% else %}Cả ngày{% endif %}<div class="sub">{{ b.planned_start|time:"H:i" }} – {{ b.planned_end|time:"H:i" }}</div></td>
+      <td>{{ b.check_in|time:"H:i"|default:"—" }}</td><td>{{ b.check_out|time:"H:i"|default:"—" }}</td>
+      <td>{{ b.chenh_lech }}</td>
+      <td>{% include 'attendance/_chip_gt.html' %}</td>
+      <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'attendance:review_detail' b.pk %}">{% if b.explanation_status == 'PENDING' %}Duyệt{% else %}Chi tiết{% endif %}</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Không có giải trình nào.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+<div class="pager">
+  <span>Hiển thị {{ trang.start_index }}–{{ trang.end_index }} / {{ trang.paginator.count }} giải trình</span>
+  {% if trang.has_other_pages %}
+  <div class="pages">
+    {% if trang.has_previous %}<a href="?{{ tham_so_trang.urlencode }}&page={{ trang.previous_page_number }}">‹</a>{% else %}<span class="off">‹</span>{% endif %}
+    {% for so in trang.paginator.page_range %}{% if so == trang.number %}<span class="cur">{{ so }}</span>{% else %}<a href="?{{ tham_so_trang.urlencode }}&page={{ so }}">{{ so }}</a>{% endif %}{% endfor %}
+    {% if trang.has_next %}<a href="?{{ tham_so_trang.urlencode }}&page={{ trang.next_page_number }}">›</a>{% else %}<span class="off">›</span>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

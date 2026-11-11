@@ -1,0 +1,67 @@
+{# Quản lý – theo Figma "DB tổng quan": thẻ nhân sự, cơ cấu, việc cần xử lý, lịch hôm nay, cần chú ý #}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h2 class="db-tieu-de">Toàn cảnh nhân sự ICLS</h2>
+    <p class="text-muted mb-0">Theo dõi nhân sự, hoạt động giảng dạy và các nội dung cần chú ý.</p>
+  </div>
+  <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-icls">Xem danh sách nhân sự <i class="ri-arrow-right-up-line"></i></a>
+</div>
+
+{% include 'dashboard/_hang_the.html' with danh_sach=cac_the so_cot=5 %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Cơ cấu nhân sự</h3>
+      <p class="db-khoi-phu">Theo loại hình · tháng {{ hom_nay|date:"m/Y" }}</p>
+      {% if co_cau.tong %}
+      <div class="d-flex align-items-center gap-4 flex-wrap">
+        <div class="db-donut" style="--p: {{ co_cau.pt_full|stringformat:'.1f' }}"><div><b>{{ co_cau.tong }}</b><small>nhân sự</small></div></div>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><span class="db-cham db-cham-dam"></span><b>Toàn thời gian</b><div class="small text-muted">{{ co_cau.full_time }} người · {{ co_cau.pt_full|stringformat:'.1f' }}%</div></li>
+          <li><span class="db-cham db-cham-nhat"></span><b>Bán thời gian</b><div class="small text-muted">{{ co_cau.part_time }} người · {{ co_cau.pt_part|stringformat:'.1f' }}%</div></li>
+        </ul>
+      </div>
+      {% else %}<p class="text-muted mb-0">{{ chua_co_du_lieu }}</p>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Việc cần xử lý</h3>
+      <p class="db-khoi-phu">Bấm vào thẻ để mở trang xử lý</p>
+      {% include 'dashboard/_hang_the.html' with danh_sach=cho_xu_ly so_cot=2 %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Lịch hoạt động / lịch dạy hôm nay</h3>
+      <p class="db-khoi-phu">Hôm nay, {{ hom_nay|date:"d/m/Y" }}</p>
+      {% if lich_hom_nay %}
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Thời gian</th><th>Hoạt động</th><th>Phụ trách</th><th>Địa điểm</th></tr></thead>
+        <tbody>
+        {% for m in lich_hom_nay %}
+          <tr><td class="text-nowrap">{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</td>
+              <td>{% if m.url %}<a href="{{ m.url }}">{{ m.tieu_de }}</a>{% else %}{{ m.tieu_de }}{% endif %}</td>
+              <td>{{ m.ten|default:m.dong_2 }}</td><td>{{ m.phong|default:"Văn phòng" }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}<p class="text-muted mb-0">{{ chua_co_du_lieu }}</p>{% endif %}
+      <a href="{% url 'schedule:calendar' %}" class="btn btn-sm btn-outline-icls mt-3">Mở lịch đầy đủ</a>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="db-khoi h-100">
+      <h3 class="db-khoi-ten">Cần chú ý</h3>
+      <p class="db-khoi-phu">Trong 30 ngày tới</p>
+      {% for c in chu_y %}
+        <a href="{{ c.url }}" class="db-chu-y"><i class="ri-error-warning-line"></i>
+          <div><b>{{ c.tieu_de }}</b><div class="small text-muted">{{ c.phu }}</div></div></a>
+      {% empty %}<p class="text-muted mb-0">Không có hợp đồng hay giấy tờ nào sắp hết hạn.</p>{% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.2 – hai tab: Lịch làm việc (cá nhân / toàn trung tâm) và Lịch lớp học (toàn trung tâm) #}
+{% include 'schedule/_thanh_cong_cu.html' with tab=tab %}
+
+<div class="sch-heading">
+  {% if tab == 'lam_viec' %}
+  <h3>Lịch làm việc</h3>
+  <p class="sub">{% if la_quan_ly %}Ca làm việc đã chốt của toàn trung tâm{% else %}Ca làm việc và buổi dạy / trợ giảng của bạn{% endif %}</p>
+  {% else %}
+  <h3>Lịch học</h3>
+  <p class="sub">Theo dõi lớp học, giáo viên và phòng học dùng chung</p>
+  {% endif %}
+</div>
+
+{% if la_quan_ly %}
+<form method="get" class="sch-filters">
+  <input type="hidden" name="tab" value="{{ tab }}"><input type="hidden" name="che_do" value="{{ che_do }}">
+  {% if tab == 'lam_viec' %}
+  <select name="nv" class="form-select" aria-label="Nhân sự">
+    <option value="">Nhân sự: Tất cả</option>
+    {% for nv in tuy_chon.nhan_vien %}<option value="{{ nv.pk }}" {% if loc.nv == nv.pk|stringformat:'s' %}selected{% endif %}>{{ nv.full_name }}</option>{% endfor %}
+  </select>
+  {% else %}
+  <select name="gv" class="form-select" aria-label="Giáo viên">
+    <option value="">Giáo viên: Tất cả</option>
+    {% for nv in tuy_chon.giao_vien %}<option value="{{ nv.pk }}" {% if loc.gv == nv.pk|stringformat:'s' %}selected{% endif %}>{{ nv.full_name }}</option>{% endfor %}
+  </select>
+  <select name="lop" class="form-select" aria-label="Lớp học">
+    <option value="">Lớp học: Tất cả</option>
+    {% for l in tuy_chon.lop %}<option value="{{ l.pk }}" {% if loc.lop == l.pk|stringformat:'s' %}selected{% endif %}>{{ l.class_name }}</option>{% endfor %}
+  </select>
+  <select name="phong" class="form-select" aria-label="Phòng học">
+    <option value="">Phòng học: Tất cả</option>
+    {% for p in tuy_chon.phong %}<option value="{{ p }}" {% if loc.phong == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <button class="btn btn-outline-icls btn-sm-icls">Lọc</button>
+</form>
+{% endif %}
+
+<div class="sch-nav">
+  {% include 'schedule/_dieu_huong_tuan.html' %}
+  <div class="sch-switch"><a href="{{ url_ngay }}" class="{% if che_do == 'ngay' %}on{% endif %}">Ngày</a><a href="{{ url_tuan }}" class="{% if che_do == 'tuan' %}on{% endif %}">Tuần</a></div>
+</div>
+
+{% if not co_lich %}<div class="alert alert-info"><i class="ri-calendar-line"></i> {{ khong_co_lich }}</div>{% endif %}
+
+{% if che_do == 'tuan' %}
+{% if kieu == 'bang_nhan_su' %}{% include 'schedule/_bang_nhan_su.html' %}
+{% elif kieu == 'bang_phong' %}{% include 'schedule/_bang_phong.html' %}
+{% else %}{% include 'schedule/_luoi_gio.html' %}{% endif %}
+{% else %}
+{# Chế độ ngày: danh sách theo giờ #}
+{% if muc_ngay %}
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Giờ</th><th>Nội dung</th><th>Chi tiết</th><th></th></tr></thead>
+  <tbody>
+  {% for m in muc_ngay %}
+    <tr>
+      <td class="id">{{ m.bd|time:"H:i" }}–{{ m.kt|time:"H:i" }}</td>
+      <td><span class="sch-ev ev-{{ m.mau }}" style="position:static;display:inline-block;padding:.15rem .6rem"><i class="{% if m.loai == 'buoi' %}ri-graduation-cap-line{% elif m.loai == 'nghi' %}ri-calendar-close-line{% else %}ri-briefcase-line{% endif %}"></i> {{ m.tieu_de }}</span></td>
+      <td>{{ m.dong_2 }}{% if m.dong_3 %} · {{ m.dong_3 }}{% endif %}{% if m.loai == 'ca_ft' %} <span class="text-muted small">(ca cố định Full-time)</span>{% endif %}</td>
+      <td class="text-end">{% if m.url %}<a class="btn btn-ghost btn-sm" href="{{ m.url }}">Xem chi tiết</a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+{% endif %}
+{% endblock %}

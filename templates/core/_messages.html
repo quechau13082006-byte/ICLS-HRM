@@ -1,0 +1,4 @@
+{# Thông báo thành công/lỗi sau khi bấm nút (django.contrib.messages) #}
+{% for message in messages %}
+<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}">{{ message }}</div>
+{% endfor %}

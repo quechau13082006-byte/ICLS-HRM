@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block page_title %}User Management{% endblock %}
+{% block page_title_ko %}계정 설정{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3>Quản lý tài khoản</h3>
+  <a href="{% url 'accounts:user_add' %}" class="btn btn-icls">Thêm tài khoản</a>
+</div>
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select name="vai_tro" class="form-select">
+      <option value="">Tất cả vai trò</option>
+      {% for ma, ten in cac_vai_tro %}<option value="{{ ma }}" {% if ma == vai_tro %}selected{% endif %}>{{ ten }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="trang_thai" class="form-select">
+      <option value="">Tất cả trạng thái</option>
+      <option value="ACTIVE" {% if trang_thai == 'ACTIVE' %}selected{% endif %}>Đang hoạt động</option>
+      <option value="LOCKED" {% if trang_thai == 'LOCKED' %}selected{% endif %}>Đã khóa</option>
+    </select>
+  </div>
+  <div class="col-md-4"><input name="q" value="{{ q }}" class="form-control" placeholder="Tìm theo Email / Họ tên"></div>
+  <div class="col-md-2"><button class="btn btn-outline-secondary w-100">Lọc</button></div>
+</form>
+<table class="table table-hover align-middle">
+  <thead><tr><th>Email</th><th>Họ tên</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr></thead>
+  <tbody>
+  {% for tk in trang %}
+    <tr>
+      <td>{{ tk.email }}</td><td>{{ tk.full_name }}</td><td>{{ tk.get_role_display }}</td>
+      <td>{% if tk.is_active %}<span class="badge bg-success">Hoạt động</span>{% else %}<span class="badge bg-secondary">Đã khóa</span>{% endif %}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'accounts:user_change_role' tk.pk %}">Đổi vai trò</a>
+        <form method="post" action="{% url 'accounts:user_toggle_lock' tk.pk %}" class="d-inline">{% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('{% if tk.is_active %}Khóa{% else %}Mở khóa{% endif %} tài khoản {{ tk.email }}?')">
+            {% if tk.is_active %}Khóa{% else %}Mở khóa{% endif %}</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted">Không có tài khoản nào.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if trang.has_other_pages %}
+<nav>
+  {% if trang.has_previous %}<a href="?page={{ trang.previous_page_number }}&vai_tro={{ vai_tro }}&trang_thai={{ trang_thai }}&q={{ q }}">« Trước</a>{% endif %}
+  Trang {{ trang.number }}/{{ trang.paginator.num_pages }}
+  {% if trang.has_next %}<a href="?page={{ trang.next_page_number }}&vai_tro={{ vai_tro }}&trang_thai={{ trang_thai }}&q={{ q }}">Sau »</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

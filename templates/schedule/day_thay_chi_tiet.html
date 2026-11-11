@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.4 – bước 3–7: gợi ý giáo viên, chốt dạy thay; luồng 5.1: hủy buổi học #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lop_hoc' %}
+<div class="card-head">
+  <h2 class="title">Tìm người dạy thay
+    <span class="chip plain {% if yc.status == 'COMPLETED' %}approved{% elif yc.status == 'FAILED' %}rejected{% else %}expiring{% endif %}">{{ yc.get_status_display }}</span></h2>
+  <a href="{% url 'schedule:substitute_list' %}" class="btn btn-ghost">Quay lại danh sách</a>
+</div>
+<div class="info-grid mb-4">
+  <div><div class="k">Lớp</div><div class="v">{{ buoi.study_class.class_name }}</div></div>
+  <div><div class="k">Ngày giờ</div><div class="v">{{ buoi.session_date|date:"D d/m/Y" }} · {{ buoi.planned_start|time:"H:i" }}–{{ buoi.planned_end|time:"H:i" }}</div></div>
+  <div><div class="k">Phòng</div><div class="v">{{ buoi.room_name|default:"Chưa có phòng" }}</div></div>
+  <div><div class="k">Giáo viên vắng</div><div class="v">{{ giao_vien_vang.full_name }}</div></div>
+  <div><div class="k">Nguồn</div><div class="v">{{ nguon }}</div></div>
+  {% if yc.substitute_employee %}<div><div class="k">Giáo viên dạy thay</div><div class="v">{{ yc.substitute_employee.full_name }}</div></div>{% endif %}
+</div>
+
+{% if dang_tim %}
+  {% if loi %}<div class="alert alert-danger"><i class="ri-error-warning-line"></i> {{ loi }}</div>{% endif %}
+  <form method="post">{% csrf_token %}
+    <h4 class="font-itim">Giáo viên gợi ý</h4>
+    <p class="text-muted small">Giáo viên đang hoạt động, khác giáo viên vắng, ca làm việc bao trọn giờ buổi dạy (Full-time), không trùng lịch và không nghỉ phép vào ngày đó.</p>
+    {% if goi_y %}
+    <div class="pick-grid">
+      {% for gv in goi_y %}
+      <label class="pick-card">
+        <input type="radio" name="giao_vien" value="{{ gv.pk }}" {% if giao_vien_chon == gv.pk|stringformat:'s' %}checked{% endif %}>
+        <div class="nm">{{ gv.full_name }}</div>
+        <div class="meta">{{ gv.get_employment_type_display }}{% if gv.work_shift %} · {{ gv.get_work_shift_display }}{% endif %}</div>
+        <span class="chip plain active mt-2"><i class="ri-calendar-check-line"></i> Không trùng lịch</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% else %}<div class="alert alert-warning">Không có giáo viên phù hợp. Bạn có thể hủy buổi học bên dưới.</div>{% endif %}
+    <div class="d-flex justify-content-between flex-wrap gap-2">
+      <button name="hanh_dong" value="huy_buoi" class="btn btn-danger-soft" formnovalidate>Hủy buổi học</button>
+      {% if goi_y %}<button name="hanh_dong" value="chot" class="btn btn-icls">Chốt dạy thay</button>{% endif %}
+    </div>
+  </form>
+{% else %}
+  <div class="alert alert-secondary">Yêu cầu này đã được xử lý.</div>
+{% endif %}
+{% endblock %}

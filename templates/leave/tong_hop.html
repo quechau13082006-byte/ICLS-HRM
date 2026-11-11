@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block page_title %}LEAVE{% endblock %}
+{% block page_title_ko %}휴가{% endblock %}
+{% block content %}
+{# UC 5.4 – tổng hợp lịch sử nghỉ phép toàn trung tâm theo tháng (chỉ xem) #}
+{% include 'leave/_tab.html' %}
+<div class="card-head"><h2 class="title">Tổng hợp nghỉ phép · tháng {{ thang }}/{{ nam }}</h2></div>
+<form method="get" class="toolbar">
+  <input type="month" name="thang" value="{{ thang_nhap }}" class="form-control" style="width:170px" aria-label="Tháng">
+  {{ bo_loc.phong_ban }} {{ bo_loc.vi_tri }} {{ bo_loc.loai }}
+  <button class="btn btn-outline-icls">Xem</button>
+</form>
+
+{% if not ket_qua.dong %}
+<div class="alert alert-info"><i class="ri-information-line"></i> {{ khong_co_du_lieu }}</div>
+{% else %}
+<div class="tiles four">
+  {% for ten, so in ket_qua.tong_theo_loai %}<div class="tile plain"><div class="t">{{ ten }}</div><div class="n">{{ so|floatformat:"-1" }}</div><div class="t">ngày trong tháng</div></div>{% endfor %}
+</div>
+<h4 class="font-itim">Đơn đã duyệt ({{ ket_qua.dong|length }})</h4>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Nhân sự</th><th>Loại nghỉ</th><th>Từ ngày – đến ngày</th><th>Số ngày (trong tháng)</th></tr></thead>
+  <tbody>
+  {% for d in ket_qua.dong %}
+    <tr><td class="name">{{ d.don.employee.full_name }}<div class="sub">{{ d.don.employee.get_position_display }}</div></td>
+      <td>{{ d.don.get_leave_type_display }}</td>
+      <td>{{ d.don.start_date|date:"d/m/Y" }} – {{ d.don.end_date|date:"d/m/Y" }}</td>
+      <td>{{ d.so_ngay|floatformat:"-1" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
+<h4 class="font-itim mt-4">Phép năm còn lại – nhân sự Full-time (năm {{ nam }})</h4>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Nhân sự</th><th>Tổng phép</th><th>Đã dùng</th><th>Còn lại</th></tr></thead>
+  <tbody>
+  {% for dong in ket_qua.phep_con_lai %}
+    <tr><td class="name">{{ dong.nhan_su.full_name }}</td>
+      {% if dong.quy %}<td>{{ dong.quy.total_days|floatformat:"-1" }}</td><td>{{ dong.quy.used_days|floatformat:"-1" }}</td><td><b>{{ dong.quy.remaining_days|floatformat:"-1" }}</b></td>
+      {% else %}<td colspan="3" class="text-muted">Chưa có quỹ phép năm {{ nam }}</td>{% endif %}</tr>
+  {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">Không có nhân sự Full-time phù hợp bộ lọc.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

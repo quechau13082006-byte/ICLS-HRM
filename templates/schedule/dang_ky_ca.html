@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.3 – bước 3–7: nhân viên Part-time xem khung ca của tuần và giữ chỗ (theo Figma "NV đăng ký ca") #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lam_viec' %}
+<div class="sch-heading">
+  <h3>Đăng ký ca làm việc</h3>
+  <p class="sub">Đăng ký ca tuần {{ ten_khoang }} · ai giữ chỗ trước được trước</p>
+</div>
+<div class="banner">
+  <i class="ri-user-line"></i>
+  <div><div class="t">{{ nhan_su.full_name }} · {{ nhan_su.get_position_display }}
+    <span class="stat-chip green ms-2">{{ so_da_chon }} ca đã chọn</span></div>
+    <div class="d">Bạn có thể hủy giữ chỗ trước hạn chót đăng ký của từng ca.</div></div>
+</div>
+<div class="sch-nav">
+  {% include 'schedule/_dieu_huong_tuan.html' %}
+  <div class="stat-chips"><span class="stat-chip">{{ so_ca }} ca</span><span class="stat-chip green">{{ so_ca_mo }} ca mở</span><span class="stat-chip blue">{{ so_vi_tri }} vị trí</span></div>
+</div>
+
+<div class="shift-week">
+  {% for c in cot %}
+  <div>
+    <div class="shift-day-head {% if c.ngay == hom_nay %}today{% endif %}">{{ c.thu }}<b>{{ c.ngay|date:"d/m" }}</b></div>
+    {% for k in c.cac_khung %}
+    <div class="shift-card {% if k.trang_thai_toi == 'DA_CHON' %}chon{% elif k.trang_thai_toi == 'DONG' or k.trang_thai_toi == 'DA_DU' %}dong{% endif %}">
+      <div class="nm">{{ k.buoi_trong_ngay }}</div>
+      <div class="mut">{{ k.ngay|date:"d/m/Y" }}</div>
+      <div><b>{{ k.bd|time:"H:i" }}–{{ k.kt|time:"H:i" }}</b></div>
+      <div>{{ k.vai_tro }}</div>
+      <div class="mut">Cần {{ k.so_can }} người · Đã giữ {{ k.da_giu }}/{{ k.so_can }}</div>
+      <div class="mut">Hạn: {{ k.han_chot|date:"d/m H:i" }}</div>
+      {% if k.trang_thai_toi == 'DA_CHON' %}
+        {% if k.cua_toi.status == 'SCHEDULED' %}<div class="mt-1"><span class="chip plain approved">Đã chốt</span></div>
+        {% else %}<div class="mt-1"><b>Đã chọn</b></div>
+        {% if not k.het_han %}<form method="post" action="{% url 'schedule:shift_release' k.ma %}">{% csrf_token %}<button class="btn btn-danger-soft">Hủy giữ chỗ</button></form>{% endif %}{% endif %}
+      {% elif k.trang_thai_toi == 'DANG_MO' %}
+        <form method="post" action="{% url 'schedule:shift_hold' k.ma %}">{% csrf_token %}<button class="btn btn-icls">Giữ chỗ</button></form>
+      {% elif k.trang_thai_toi == 'DA_DU' %}<div class="mt-1 mut">Đã đủ người</div>
+      {% else %}<div class="mt-1 mut">Ca đóng</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% if not so_ca %}<div class="alert alert-info mt-3">Chưa có khung ca nào trong tuần này.</div>{% endif %}
+{% endblock %}

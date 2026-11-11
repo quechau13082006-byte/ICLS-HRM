@@ -1,0 +1,128 @@
+{% load static %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ICLS – Quản lý nhân sự{% endblock %}</title>
+  {# Icon trên tab trình duyệt: logo ICLS nền trong suốt. "?v=2" ép trình duyệt bỏ icon cũ đã lưu; đổi số khi thay logo #}
+  <link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon.png' %}?v=2">
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}?v=2">
+  <link rel="apple-touch-icon" href="{% static 'img/icls-logo.png' %}?v=2">
+  {# Chỉ dùng Bootstrap 5 qua CDN; phông chữ và icon cũng nhúng qua CDN (không cài thêm thư viện) – theo thiết kế Figma #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Itim&family=Plus+Jakarta+Sans:wght@400;700&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+  {# "?v=3": đổi số mỗi khi sửa icls.css để trình duyệt bỏ bản CSS cũ đã lưu #}
+  <link href="{% static 'css/icls.css' %}?v=6" rel="stylesheet">
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="app-shell">
+
+  {# ===== Thanh trái: logo, menu theo vai trò, thẻ tài khoản ===== #}
+  <aside class="app-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="thanhTrai" aria-label="Menu chính">
+    <div class="offcanvas-body d-flex flex-column p-0">
+      <a href="{% url 'dashboard:dashboard' %}"><img src="{% static 'img/icls-logo.png' %}" alt="ICLS" class="sidebar-logo"></a>
+      <hr class="sidebar-divider">
+      <ul class="sidebar-nav">
+        {% for muc in menu_chinh %}
+        <li>
+          <a class="sidebar-link {% if muc.dang_chon %}active{% endif %} {% if not muc.url %}disabled{% endif %}"
+             href="{{ muc.url|default:'#' }}" {% if not muc.url %}aria-disabled="true" tabindex="-1" title="Sắp có"{% endif %}>
+            <i class="{{ muc.icon }}"></i>
+            <span><span class="ten-anh">{{ muc.ten_anh }}</span><span class="ten-han">{{ muc.ten_han }}</span></span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      <hr class="sidebar-divider">
+
+      {# Thẻ tài khoản; bấm nút ở góc phải để mở menu nổi (UC 1.4, 1.3, 1.5, 1.6) #}
+      <div class="profile-wrap">
+        <div class="profile-card dropup">
+          {% if user.avatar %}
+          <img class="profile-avatar" src="{% url 'core:tai_file' user.avatar.name %}" alt="">
+          {% else %}
+          <span class="profile-avatar">{{ user.email|slice:":1"|upper }}</span>
+          {% endif %}
+          <div class="overflow-hidden">
+            <div class="profile-name">{{ user.full_name|default:user.email }}</div>
+            <div class="profile-role">{{ user.get_role_display }}</div>
+          </div>
+          <button type="button" class="profile-trigger" data-bs-toggle="dropdown" data-bs-reference="parent" aria-label="Menu tài khoản">
+            <i class="ri-arrow-up-s-line"></i>
+          </button>
+        <ul class="dropdown-menu account-menu">
+          {% if user.role != 'SUPER_ADMIN' %}
+          <li><a class="dropdown-item {% if request.resolver_match.url_name == 'my_profile' or request.resolver_match.url_name == 'my_profile_edit' %}active{% endif %}" href="{% url 'employees:my_profile' %}">
+            <i class="ri-contacts-book-2-line"></i><span><span class="ten-anh">My profile</span><span class="ten-han">내 프로필</span></span></a></li>
+          {% endif %}
+          <li><a class="dropdown-item {% if request.resolver_match.url_name == 'my_account' %}active{% endif %}" href="{% url 'accounts:my_account' %}">
+            <i class="ri-settings-3-line"></i><span><span class="ten-anh">Account settings</span><span class="ten-han">계정 설정</span></span></a></li>
+          <li><a class="dropdown-item {% if request.resolver_match.url_name == 'change_password' %}active{% endif %}" href="{% url 'accounts:change_password' %}">
+            <i class="ri-lock-password-line"></i><span><span class="ten-anh">Change password</span><span class="ten-han">비밀번호 변경</span></span></a></li>
+          {% if user.role == 'SUPER_ADMIN' %}
+          <li><a class="dropdown-item {% if request.resolver_match.app_name == 'accounts' and 'user_' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+            <i class="ri-file-settings-line"></i><span><span class="ten-anh">User Management</span><span class="ten-han">계정 설정</span></span></a></li>
+          {% endif %}
+          <li>
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+              <button class="dropdown-item text-logout w-100">
+                <i class="ri-logout-box-line"></i><span><span class="ten-anh">Log out</span><span class="ten-han">로그아웃</span></span></button>
+            </form>
+          </li>
+        </ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  {# ===== Vùng chính: khung xanh có lưới, thanh tiêu đề, thẻ nội dung trắng ===== #}
+  <main class="app-main">
+    <div class="app-panel">
+      <header class="app-navbar">
+        <button class="btn btn-outline-icls d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#thanhTrai" aria-label="Mở menu">
+          <i class="ri-menu-line"></i>
+        </button>
+        <h1 class="app-title">{% block page_title %}ICLS{% endblock %}<span class="ko">{% block page_title_ko %}{% endblock %}</span></h1>
+        <div class="global-tools">
+          {# Ô tìm kiếm toàn hệ thống chỉ là hình thức trong thiết kế; ROADMAP chưa có chức năng này nên tạm khóa #}
+          <label class="search-field"><i class="ri-search-line"></i><input type="search" placeholder="Search across ICLS..." disabled></label>
+          <a class="bell" href="{% url 'core:notifications' %}" aria-label="Thông báo">
+            <i class="ri-notification-3-line"></i>
+            {% if so_thong_bao_chua_doc %}<span class="dot">{{ so_thong_bao_chua_doc }}</span>{% endif %}
+          </a>
+        </div>
+      </header>
+
+      {# Mặc định: thẻ trắng chứa nội dung. Trang nào cần bố cục riêng (nhiều thẻ, lời chào phía trên) thì ghi đè khối "panel". #}
+      {% block panel %}
+      {% block pre_card %}{% endblock %}
+      <section class="app-card">
+        {% include 'core/_messages.html' %}
+        {% block content %}{% endblock %}
+      </section>
+      {% endblock %}
+    </div>
+  </main>
+</div>
+
+{% else %}
+{# ===== Trang chưa đăng nhập: thẻ xanh nằm giữa màn hình ===== #}
+<div class="auth-wrap {% block auth_wrap_class %}{% endblock %}">
+  <div class="auth-card">
+    {% block auth_logo %}<img src="{% static 'img/icls-logo.png' %}" alt="ICLS" class="auth-logo">{% endblock %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+    {% block auth_content %}{% endblock %}
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

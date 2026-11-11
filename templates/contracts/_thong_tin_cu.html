@@ -1,0 +1,9 @@
+{# Khung thông tin hợp đồng hiện tại (chỉ đọc) trong các hộp thoại gia hạn / cập nhật / thanh lý #}
+<div class="readonly-box">
+  <div class="kv"><span class="k">Nhân viên</span><span class="v">{{ hop_dong.employee.code }} · {{ hop_dong.employee.full_name }}</span></div>
+  <div class="kv"><span class="k">Số hợp đồng</span><span class="v">{{ hop_dong.contract_number }}</span></div>
+  <div class="kv"><span class="k">Loại hình</span><span class="v">{{ hop_dong.get_employment_type_display }}</span></div>
+  <div class="kv"><span class="k">Ngày bắt đầu</span><span class="v">{{ hop_dong.start_date|date:"d/m/Y" }}</span></div>
+  <div class="kv"><span class="k">Ngày kết thúc</span><span class="v">{% if hop_dong.end_date %}{{ hop_dong.end_date|date:"d/m/Y" }}{% else %}Không xác định{% endif %}</span></div>
+  <div class="kv"><span class="k">Trạng thái</span><span class="v">{{ hop_dong.get_status_display }}</span></div>
+</div>

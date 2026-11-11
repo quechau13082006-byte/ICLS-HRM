@@ -1,0 +1,15 @@
+{% load icls_filters %}
+{# Một dòng của bảng hợp đồng sắp hết hạn. Biến: hd, con_lai, muc (red/orange/yellow) #}
+<tr>
+  <td><span class="d-flex align-items-center gap-2"><span class="avatar-initials {{ hd.employee.pk|mau_avatar }}">{{ hd.employee.full_name|slice:":2"|upper }}</span>
+      <span class="name">{{ hd.employee.full_name }}</span></span></td>
+  <td class="id">{{ hd.contract_number }}</td>
+  <td><span class="chip-type">{{ hd.get_employment_type_display }}</span></td>
+  <td>{{ hd.end_date|date:"d/m/Y" }}</td>
+  <td><span class="days {{ muc }}">{% if con_lai < 0 %}quá hạn {{ con_lai|cut:"-" }} ngày{% else %}{{ con_lai }} ngày{% endif %}</span></td>
+  <td class="text-end text-nowrap">
+    <a class="btn btn-ghost btn-sm" href="{% url 'contracts:contract_detail' hd.pk %}">Xem</a>
+    <a class="btn btn-ghost btn-sm" href="{% url 'contracts:contract_renew' hd.pk %}">Gia hạn</a>
+    <a class="btn btn-sm btn-danger-soft" style="background:#ee8c7f;color:#fff;border-color:#ee8c7f" href="{% url 'contracts:contract_terminate' hd.pk %}">Thanh lý</a>
+  </td>
+</tr>
