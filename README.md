@@ -21,9 +21,9 @@
 * **Quy mô:** 10 app Django, 9 phân hệ, 38 use case, 4 vai trò, 20 bảng dữ liệu
 * **Đội ngũ sinh viên thực hiện (Nhóm 4 thành viên):**
   1. **Huỳnh Ngọc Quế Châu (Trưởng nhóm):** Phụ trách **UC2** (Nhân sự, Onboarding), **UC6** (Lịch, lớp, ca, dạy thay).
-  2. **Đặng Gia Huy:** Phụ trách **UC4** (Chấm công), **UC9** (Dashboard, tác vụ hằng ngày), **UC 5.3 - 5.4** (Quỹ phép, tổng hợp nghỉ phép).
-  3. **Võ Ngọc Ngân Giao:** Phụ trách **UC1** phần phân quyền (**1.1, 1.5, 1.6**), **UC3** (Hợp đồng), **UC 5.1 - 5.2** (Gửi và duyệt đơn nghỉ).
-  4. **Trần Hoàng Yến Trang:** Phụ trách **UC7** (Lương), **UC8** (Tuyển dụng), **UC 1.2 - 1.4** (Quên và đổi mật khẩu, tài khoản cá nhân).
+  2. **Đặng Gia Huy:** Phụ trách **UC4** (Chấm công), **UC9** (Dashboard, tác vụ hằng ngày), **UC5** (Nghỉ phép).
+  3. **Võ Ngọc Ngân Giao:** Phụ trách **UC1** (Tài khoản và phân quyền), **UC3** (Hợp đồng)
+  4. **Trần Hoàng Yến Trang:** Phụ trách **UC7** (Lương), **UC8** (Tuyển dụng)
 
 ---
 
@@ -232,9 +232,9 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 | STT | Phân hệ | Mã UC | Tên Use Case | Phụ trách | Màn hình giao diện | Hàm service chính | Bảng CSDL liên quan | Test |
 | :---: | :---: | :---: | :--- | :---: | :--- | :--- | :--- | :---: |
 | 1 | UC1 | UC-1.1 | Đăng nhập | **Ngân Giao** | Form đăng nhập | `dang_nhap` | users, activity_logs | 9 |
-| 2 | UC1 | UC-1.2 | Quên mật khẩu | **Yến Trang** | Trang quên mật khẩu, trang đặt mật khẩu mới | `yeu_cau_dat_lai_mat_khau`, `tim_nguoi_dung_theo_link`, `dat_lai_mat_khau` | users | 8 |
-| 3 | UC1 | UC-1.3 | Đổi mật khẩu | **Yến Trang** | Form đổi mật khẩu | `doi_mat_khau` | users | 6 |
-| 4 | UC1 | UC-1.4 | Xem & cập nhật tài khoản cá nhân | **Yến Trang** | Trang tài khoản cá nhân (ảnh đại diện) | `cap_nhat_tai_khoan`, `dong_bo_tu_ho_so` | users, employees | 8 |
+| 2 | UC1 | UC-1.2 | Quên mật khẩu | **Ngân Giao** | Trang quên mật khẩu, trang đặt mật khẩu mới | `yeu_cau_dat_lai_mat_khau`, `tim_nguoi_dung_theo_link`, `dat_lai_mat_khau` | users | 8 |
+| 3 | UC1 | UC-1.3 | Đổi mật khẩu | **Ngân Giao** | Form đổi mật khẩu | `doi_mat_khau` | users | 6 |
+| 4 | UC1 | UC-1.4 | Xem & cập nhật tài khoản cá nhân | **Ngân Giao** | Trang tài khoản cá nhân (ảnh đại diện) | `cap_nhat_tai_khoan`, `dong_bo_tu_ho_so` | users, employees | 8 |
 | 5 | UC1 | UC-1.5 | Quản lý tài khoản người dùng | **Ngân Giao** | Bảng quản lý tài khoản, form thêm tài khoản | `danh_sach_tai_khoan`, `tao_tai_khoan`, `doi_vai_tro`, `khoa_tai_khoan`, `mo_khoa_tai_khoan` | users, activity_logs | 10 |
 | 6 | UC1 | UC-1.6 | Đăng xuất | **Ngân Giao** | Nút Đăng xuất trong menu tài khoản | `dang_xuat` | users, activity_logs | 3 |
 | 7 | UC2 | UC-2.1 | Xem danh sách nhân sự | **Quế Châu** | Bảng danh sách nhân sự có tìm kiếm và lọc | `danh_sach_nhan_su`, `dem_nhan_su_theo_trang_thai` | employees | 10 |
@@ -253,8 +253,8 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 | 20 | UC4 | UC-4.3 | Xem lịch sử chấm công cá nhân | **Gia Huy** | Lịch sử chấm công theo tháng | `lich_su_cham_cong`, `tong_thoi_gian_lam` | attendance | 4 |
 | 21 | UC4 | UC-4.4 | Duyệt giải trình chấm công | **Gia Huy** | Danh sách và chi tiết giải trình chờ duyệt | `chap_thuan_giai_trinh`, `tu_choi_giai_trinh`, `danh_sach_giai_trinh` | attendance, notifications | 5 |
 | 22 | UC4 | UC-4.5 | Quản lý bảng tổng hợp công | **Gia Huy** | Bảng tổng hợp công, chi tiết từng nhân sự | `tong_hop_cong`, `tinh_ngay_cong`, `tinh_gio_cong` | attendance, leave_requests | 5 |
-| 23 | UC5 | UC-5.1 | Gửi đơn xin nghỉ phép | **Ngân Giao** | Form gửi đơn nghỉ | `gui_don_nghi`, `tinh_so_ngay_nghi`, `huy_don_nghi` | leave_requests, leave_balances | 14 |
-| 24 | UC5 | UC-5.2 | Duyệt đơn xin nghỉ phép | **Ngân Giao** | Danh sách đơn chờ duyệt, trang quyết định | `duyet_don_nghi`, `tu_choi_don_nghi`, `tom_tat_anh_huong` | leave_requests, leave_balances, substitute_requests | 12 |
+| 23 | UC5 | UC-5.1 | Gửi đơn xin nghỉ phép | **Gia Huy** | Form gửi đơn nghỉ | `gui_don_nghi`, `tinh_so_ngay_nghi`, `huy_don_nghi` | leave_requests, leave_balances | 14 |
+| 24 | UC5 | UC-5.2 | Duyệt đơn xin nghỉ phép | **Gia Huy** | Danh sách đơn chờ duyệt, trang quyết định | `duyet_don_nghi`, `tu_choi_don_nghi`, `tom_tat_anh_huong` | leave_requests, leave_balances, substitute_requests | 12 |
 | 25 | UC5 | UC-5.3 | Tra cứu quỹ phép cá nhân | **Gia Huy** | Trang Nghỉ phép của tôi (quỹ phép) | `thong_tin_quy_phep`, `don_cua_nhan_su` | leave_balances, leave_requests | 4 |
 | 26 | UC5 | UC-5.4 | Tổng hợp lịch sử nghỉ phép | **Gia Huy** | Bảng tổng hợp nghỉ phép | `tong_hop_nghi_phep` | leave_requests, leave_balances | 6 |
 | 27 | UC6 | UC-6.1 | Tạo và phân công lớp học | **Quế Châu** | Form tạo lớp hai bước, trang chi tiết lớp | `goi_y_giao_vien`, `tao_lop_va_phan_cong`, `huy_lop` | classes, class_assignments, teaching_sessions | 14 |
@@ -369,13 +369,5 @@ python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
 
 Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
-
-| | |
-|---|---|
-| <img src="icls_hrm/docs/images/uc9_1_dashboard_quan_ly.jpg" alt="Dashboard Quản lý"> **Dashboard Quản lý** | <img src="icls_hrm/docs/images/uc6_2_lich_lam_viec_ql.jpg" alt="Lịch làm việc"> **Lịch làm việc** |
-| <img src="icls_hrm/docs/images/uc4_1_cham_cong.jpg" alt="Chấm công"> **Chấm công** | <img src="icls_hrm/docs/images/uc7_2_bang_luong_thang.jpg" alt="Bảng lương"> **Bảng lương tháng** |
-
-**Tài liệu:** [`ROADMAP.md`](ROADMAP.md) (đặc tả đầy đủ) | [`icls_hrm/docs/GIAI_THICH.md`](icls_hrm/docs/GIAI_THICH.md) (giải thích từng use case) | [`icls_hrm/docs/BaoCao_GiaiDoan3_ICLS.docx`](icls_hrm/docs/BaoCao_GiaiDoan3_ICLS.docx) (báo cáo giai đoạn 3, 55 màn hình).
-
-Dự án được xây dựng phục vụ mục đích học tập và nghiên cứu. Dữ liệu trong hệ thống là dữ liệu mẫu; `SECRET_KEY` và `DEBUG` đang ở cấu hình phát triển.  
+ống là dữ liệu mẫu; `SECRET_KEY` và `DEBUG` đang ở cấu hình phát triển.  
 © 2026 ICLS HRM Project.
