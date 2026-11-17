@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}MY PAYROLL{% endblock %}
+{% block page_title_ko %}내 급여{% endblock %}
+{% block content %}
+{# UC 7.3 – Lương của tôi: bảng các tháng đã nhận lương ở trên, bấm một tháng thì phiếu lương tháng đó hiện bên dưới #}
+{% include 'payroll/_tab.html' %}
+{% if not bang %}
+<div class="alert alert-info"><i class="ri-information-line"></i> {{ chua_co }}</div>
+{% else %}
+<p class="text-muted no-print mb-2">
+  Đã nhận lương <b>{{ ls.so_thang }}</b> tháng · thực nhận trung bình <b>{{ ls.trung_binh|vnd }}</b> / tháng
+</p>
+
+<div class="table-wrap no-print mb-4"><table class="tbl">
+  <thead><tr><th>Tháng</th><th class="text-end">Thu nhập</th><th class="text-end">Thực nhận</th>
+    <th class="text-end">So với tháng trước</th><th></th></tr></thead>
+  <tbody>
+  {% for d in ls.dong %}{% with b=d.bang %}
+    <tr{% if b.pk == bang.pk %} style="background:#f1f7f1"{% endif %}>
+      <td class="name">{{ b.period_month }}/{{ b.period_year }}</td>
+      <td class="text-end">{{ b.gross_pay|vnd }}</td>
+      <td class="text-end fw-bold text-success">{{ b.net_pay|vnd }}</td>
+      <td class="text-end">{% if d.chenh is None %}<span class="text-muted">—</span>{% elif d.chenh > 0 %}<span class="text-success">▲ {{ d.chenh|vnd }}</span>{% elif d.chenh < 0 %}<span class="text-danger">▼ {{ d.chenh|vnd|slice:"1:" }}</span>{% else %}<span class="text-muted">Không đổi</span>{% endif %}</td>
+      <td class="text-end">{% if b.pk == bang.pk %}<span class="chip plain active">Đang xem</span>{% else %}<a class="btn btn-ghost btn-sm" href="{% url 'payroll:payslip' b.pk %}">Xem phiếu</a>{% endif %}</td>
+    </tr>
+  {% endwith %}{% endfor %}
+  </tbody>
+</table></div>
+
+<div class="card-head no-print">
+  <div class="fw-bold">Phiếu lương tháng {{ bang.period_month }}/{{ bang.period_year }}</div>
+  <button type="button" class="btn btn-ghost" onclick="window.print()"><i class="ri-download-2-line"></i> In / Lưu PDF</button>
+</div>
+{% include 'payroll/_phieu.html' %}
+{% endif %}
+{% endblock %}

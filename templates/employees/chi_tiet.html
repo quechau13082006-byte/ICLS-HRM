@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block page_title %}Employees{% endblock %}
+{% block page_title_ko %}직원{% endblock %}
+
+{% block panel %}
+<div class="breadcrumb-lite">
+  <a href="{% url 'employees:employee_list' %}">← Quản lý nhân sự</a> / {{ nhan_su.full_name }}
+</div>
+{% include 'core/_messages.html' %}
+<div class="profile-grid">
+  {# ===== Thẻ trái: ảnh, tên, vị trí, trạng thái ===== #}
+  <aside class="side-card">
+    {% if nhan_su.user.avatar %}
+    <img src="{% url 'core:tai_file' nhan_su.user.avatar.name %}" alt="" class="rounded-circle" style="width:96px;height:96px;object-fit:cover;">
+    {% else %}
+    <span class="avatar-initials lg {{ nhan_su.pk|mau_avatar }} mx-auto">{{ nhan_su.full_name|slice:":1" }}</span>
+    {% endif %}
+    <p class="nm">{{ nhan_su.full_name }}</p>
+    <div class="role">{{ nhan_su.get_position_display }}</div>
+    <div class="mt-2">{% include 'employees/_chip_nhan_su.html' %} <span class="id ms-1">{{ nhan_su.code }}</span></div>
+    {% if user.role == 'MANAGER' %}
+    <a href="{% url 'employees:employee_edit' nhan_su.pk %}" class="btn btn-ghost w-100 mt-3"><i class="ri-pencil-line"></i> Sửa hồ sơ</a>
+    {% if nhan_su.status == 'ONBOARDING' %}
+    <a href="{% url 'contracts:contract_add' %}?nhan_su={{ nhan_su.pk }}" class="btn btn-icls w-100 mt-2"><i class="ri-file-add-line"></i> Tạo hợp đồng</a>
+    <div class="small text-muted mt-1">Hợp đồng đầu tiên sẽ kích hoạt nhân sự.</div>
+    {% endif %}
+    {% endif %}
+    <div class="lbl">Thông tin liên hệ</div>
+    <div class="kv"><span class="k"><i class="ri-mail-line"></i></span><span class="v">{{ nhan_su.user.email }}</span></div>
+    <div class="kv"><span class="k"><i class="ri-phone-line"></i></span><span class="v">{{ nhan_su.phone }}</span></div>
+    <div class="lbl">Công việc</div>
+    <div class="kv"><span class="k">Loại hình</span><span class="v">{{ nhan_su.get_employment_type_display }}</span></div>
+    <div class="kv"><span class="k">Phòng ban</span><span class="v">{{ nhan_su.get_department_display }}</span></div>
+    {% if nhan_su.work_shift %}<div class="kv"><span class="k">Ca làm việc</span><span class="v">{{ nhan_su.get_work_shift_display }}</span></div>{% endif %}
+    <div class="kv"><span class="k">Ngày vào làm</span><span class="v">{{ nhan_su.join_date|date:"d/m/Y" }}</span></div>
+    {% if quy_phep %}<div class="kv"><span class="k">Phép năm {{ quy_phep.year }}</span><span class="v">còn {{ quy_phep.remaining_days }}/{{ quy_phep.total_days }} ngày</span></div>{% endif %}
+  </aside>
+
+  {# ===== Nội dung phải: 3 tab (thông tin, giấy tờ, hợp đồng) ===== #}
+  <div class="panel-white">
+    <ul class="nav nav-tabs-icls" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-tt" type="button">Thông tin cá nhân</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gt" type="button">Giấy tờ, chứng chỉ <span class="count-badge">{{ so_giay_to }}</span></button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-hd" type="button">Hợp đồng</button></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tab-tt">
+        <div class="info-grid">
+          <div><div class="k">Họ và tên</div><div class="v">{{ nhan_su.full_name }}</div></div>
+          <div><div class="k">Giới tính</div><div class="v">{{ nhan_su.get_gender_display|default:"Chưa cập nhật" }}</div></div>
+          <div><div class="k">Ngày sinh</div><div class="v">{% if nhan_su.date_of_birth %}{{ nhan_su.date_of_birth|date:"d/m/Y" }}{% else %}Chưa cập nhật{% endif %}</div></div>
+          <div><div class="k">Số CCCD</div><div class="v">{{ nhan_su.id_card_number|default:"Chưa cập nhật" }}</div></div>
+          <div><div class="k">Quốc tịch</div><div class="v">{{ nhan_su.nationality }}</div></div>
+          <div><div class="k">Tài khoản ngân hàng</div><div class="v">{{ nhan_su.bank_account|default:"Chưa cập nhật" }}</div></div>
+          <div class="grid-span"><div class="k">Địa chỉ</div><div class="v">{{ nhan_su.address|default:"Chưa cập nhật" }}</div></div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tab-gt">
+        {% if cho_duyet and duoc_duyet %}
+        <div class="banner"><i class="ri-time-line"></i><div><div class="t">{{ cho_duyet|length }} giấy tờ đang chờ bạn duyệt</div><div class="d">Mở từng giấy tờ để Duyệt hoặc Từ chối.</div></div></div>
+        {% endif %}
+        {% for g, muc in giay_to %}
+        <div class="doc-row">
+          <span class="doc-ico {% if g.document_type == 'CERTIFICATION' %}t-cert{% elif g.document_type == 'PERSONAL_ID' %}t-id{% endif %}"><i class="ri-file-text-line"></i></span>
+          <div class="me-auto">
+            <div class="nm">{{ g.document_name }}</div>
+            <div class="meta">{{ g.get_document_type_display }} · Cấp {% if g.issue_date %}{{ g.issue_date|date:"d/m/Y" }}{% else %}—{% endif %} · Hết hạn {% if g.expiry_date %}{{ g.expiry_date|date:"d/m/Y" }}{% else %}không thời hạn{% endif %}</div>
+            {% if g.status == 'REJECTED' and g.rejection_reason %}<div class="meta text-danger">Lý do từ chối: {{ g.rejection_reason }}</div>{% endif %}
+          </div>
+          {% include 'employees/_chip_giay_to.html' %}
+          <a class="btn btn-ghost btn-sm" href="{% url 'core:tai_file' g.file_url.name %}" title="Tải file"><i class="ri-download-2-line"></i></a>
+          {% if g.status == 'PENDING' and duoc_duyet %}<a class="btn btn-icls btn-sm" href="{% url 'employees:document_review' g.pk %}">Xem &amp; duyệt</a>{% endif %}
+        </div>
+        {% empty %}<p class="text-muted mb-0">Chưa cập nhật</p>{% endfor %}
+      </div>
+
+      <div class="tab-pane fade" id="tab-hd">
+        <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Số HĐ</th><th>Loại</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody>
+          {% for hd in hop_dong %}
+            <tr><td>{{ hd.contract_number }}</td><td>{{ hd.get_employment_type_display }}</td><td>{{ hd.start_date|date:"d/m/Y" }}</td>
+                <td>{% if hd.end_date %}{{ hd.end_date|date:"d/m/Y" }}{% else %}Không xác định{% endif %}</td>
+                <td><span class="chip {% if hd.status == 'ACTIVE' %}active{% elif hd.status == 'EXPIRED' %}expired{% else %}terminated{% endif %}">{{ hd.get_status_display }}</span></td>
+                <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'contracts:contract_detail' hd.pk %}">Xem chi tiết</a></td></tr>
+          {% empty %}<tr><td colspan="6" class="text-muted">Chưa cập nhật</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

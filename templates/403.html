@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block page_title %}Access denied{% endblock %}
+{% block page_title_ko %}접근 불가{% endblock %}
+{% block content %}
+<h3>Không có quyền truy cập</h3>
+<p>{{ khong_co_quyen }}</p>
+<a href="{% url 'dashboard:dashboard' %}" class="btn btn-icls">Về trang chủ</a>
+{% endblock %}

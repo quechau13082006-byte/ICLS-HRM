@@ -1,0 +1,18 @@
+# Môi trường ảo và file biên dịch Python
+.venv/
+__pycache__/
+*.pyc
+
+# Dữ liệu chỉ để trên máy (DB, file tải lên, bản sao lưu DB khi chạy lại dữ liệu mẫu)
+db.sqlite3
+db.sqlite3.bak*
+media/
+
+# Bí mật: mật khẩu ứng dụng Gmail (mẫu xem .env.example)
+.env
+
+# File của hệ điều hành, IDE trên máy
+.DS_Store
+.idea/
+skills/
+~$*

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block page_title %}My profile{% endblock %}
+{% block page_title_ko %}내 프로필{% endblock %}
+{% block content %}
+<h3 class="mb-3">Tài khoản của tôi</h3>
+<div class="row">
+  <div class="col-md-5">
+    <table class="table table-sm">
+      <tr><th>Email</th><td>{{ user.email }}</td></tr>
+      <tr><th>Vai trò</th><td>{{ user.get_role_display }}</td></tr>
+      {% if nhan_su %}
+      <tr><th>Phòng ban</th><td>{{ nhan_su.get_department_display }}</td></tr>
+      <tr><th>Vị trí</th><td>{{ nhan_su.get_position_display }}</td></tr>
+      {% endif %}
+    </table>
+    {% if user.avatar %}<img src="{% url 'core:tai_file' user.avatar.name %}" alt="Ảnh đại diện" class="img-thumbnail" style="max-width: 160px;">{% endif %}
+  </div>
+  <div class="col-md-6">
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      {% include 'core/_truong_form.html' with truong=form.full_name %}
+      {% include 'core/_truong_form.html' with truong=form.phone %}
+      {% include 'core/_truong_form.html' with truong=form.avatar %}
+      <button class="btn btn-icls">Lưu</button>
+      <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary">Đổi mật khẩu</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

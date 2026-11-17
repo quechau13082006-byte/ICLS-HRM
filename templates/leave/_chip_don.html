@@ -1,0 +1,2 @@
+{# Chip trạng thái đơn nghỉ (màu theo Figma: Đã duyệt xanh lá, Chờ duyệt vàng, Từ chối đỏ) #}
+<span class="chip {% if don.status == 'APPROVED' %}approved{% elif don.status == 'PENDING' %}expiring{% elif don.status == 'REJECTED' %}rejected{% endif %}">{{ don.get_status_display }}</span>

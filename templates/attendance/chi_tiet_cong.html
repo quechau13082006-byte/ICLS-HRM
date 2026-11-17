@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block page_title %}ATTENDANCE{% endblock %}
+{% block page_title_ko %}근태{% endblock %}
+{% block content %}
+{# UC 4.5 – bước 6–7: chi tiết từng ngày công của một nhân sự (theo Figma "Daily attendance & history") #}
+{% include 'attendance/_tab.html' %}
+<div class="card-head">
+  <div><h2 class="title">{{ nhan_su.full_name }} · tháng {{ thang }}/{{ nam }}</h2>
+    <div class="text-muted small">{{ nhan_su.code }} · {{ nhan_su.get_position_display }} · {{ nhan_su.get_employment_type_display }}</div></div>
+  <div class="d-flex gap-2 flex-wrap">
+    <form method="get" class="toolbar mb-0"><input type="month" name="thang" value="{{ thang_nhap }}" class="form-control" aria-label="Tháng"><button class="btn btn-outline-icls">Xem</button></form>
+    <a href="{% url 'attendance:summary' %}?thang={{ thang_nhap }}" class="btn btn-ghost">Về bảng tổng hợp</a>
+  </div>
+</div>
+{% include 'attendance/_bang_lich_su.html' with co_nut=False %}
+<div class="text-end fw-bold mt-2">Tổng tháng: {{ cong|floatformat:"-2" }} {{ don_vi }}</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+{% if don.start_date == don.end_date %}{{ don.start_date|date:"d/m/Y" }}{% else %}{{ don.start_date|date:"d/m" }} – {{ don.end_date|date:"d/m/Y" }}{% endif %}

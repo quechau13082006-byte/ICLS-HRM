@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load icls_filters %}
+{% block title %}Hợp đồng {{ hop_dong.contract_number }}{% endblock %}
+{% block page_title %}CONTRACT{% endblock %}
+{% block page_title_ko %}계약{% endblock %}
+{% block content %}
+{% comment %}Mẫu hợp đồng lao động (đã rà theo Bộ luật Lao động 2019), tự điền từ hồ sơ nhân sự, hợp đồng và cấu hình lương.
+   Chỗ hệ thống chưa có dữ liệu thì in dòng chấm để điền tay. Bấm "In / Lưu PDF" (window.print, giống phiếu lương).{% endcomment %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 no-print">
+  <p class="text-muted small mb-0"><a href="{% url 'contracts:contract_list' %}" class="text-decoration-none">Contract</a> /
+    <a href="{% url 'contracts:contract_detail' hop_dong.pk %}" class="text-decoration-none">{{ hop_dong.contract_number }}</a> / In hợp đồng</p>
+  <div class="d-flex gap-2">
+    <a class="btn btn-ghost" href="{% url 'contracts:contract_detail' hop_dong.pk %}">Quay lại</a>
+    <button type="button" class="btn btn-icls" onclick="window.print()"><i class="ri-printer-line"></i> In / Lưu PDF</button>
+  </div>
+</div>
+{% if not cau_hinh %}
+<div class="alert alert-warning no-print">Nhân sự này chưa có cấu hình lương (UC 7.1), nên mục tiền lương ở Điều 4 đang để trống để điền tay.</div>
+{% endif %}
+
+{% with cham='..............................' %}
+<article class="hd-giay">
+  <div class="hd-quoc-hieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br><span>Độc lập – Tự do – Hạnh phúc</span></div>
+  <h1 class="hd-tieu-de">HỢP ĐỒNG LAO ĐỘNG</h1>
+  <p class="text-center">Số: <b>{{ hop_dong.contract_number }}</b></p>
+
+  <p>Căn cứ Bộ luật Lao động số 45/2019/QH14 và các văn bản hướng dẫn thi hành;<br>
+  Hôm nay, ngày ...... tháng ...... năm ........, tại {{ trung_tam.ten|default:"Trung tâm tiếng Hàn ICLS" }}, chúng tôi gồm:</p>
+
+  <h2>BÊN A: NGƯỜI SỬ DỤNG LAO ĐỘNG</h2>
+  <ul class="hd-ds">
+    <li>Tên đơn vị: <b>{{ trung_tam.ten }}</b></li>
+    <li>Địa chỉ: {{ trung_tam.dia_chi|default:cham }}</li>
+    <li>Điện thoại: {{ trung_tam.dien_thoai|default:cham }} &nbsp; Email: {{ trung_tam.email|default:cham }}</li>
+    <li>Đại diện: Ông/Bà {{ trung_tam.dai_dien|default:cham }} &nbsp; Chức vụ: {{ trung_tam.chuc_vu|default:cham }}</li>
+  </ul>
+
+  <h2>BÊN B: NGƯỜI LAO ĐỘNG</h2>
+  <ul class="hd-ds">
+    <li>Họ và tên: <b>{{ nhan_su.full_name }}</b> &nbsp; Mã nhân sự: {{ nhan_su.code }} &nbsp; Giới tính: {{ nhan_su.get_gender_display|default:"........" }}</li>
+    <li>Ngày sinh: {{ nhan_su.date_of_birth|date:"d/m/Y"|default:"....../....../........" }} &nbsp; Quốc tịch: {{ nhan_su.nationality|default:cham }}</li>
+    <li>Số CCCD/Căn cước/Hộ chiếu: {{ nhan_su.id_card_number|default:cham }} &nbsp; Ngày cấp: ....../....../........ &nbsp; Nơi cấp: ....................</li>
+    <li>Địa chỉ: {{ nhan_su.address|default:cham }}</li>
+    <li>Điện thoại: {{ nhan_su.phone|default:cham }} &nbsp; Email: {{ nhan_su.user.email }}</li>
+  </ul>
+  <p>Hai bên thỏa thuận ký kết Hợp đồng lao động với các điều khoản sau:</p>
+
+  <h2>Điều 1. Công việc và địa điểm làm việc</h2>
+  <ol class="hd-dk">
+    <li>Chức danh: <b>{{ nhan_su.get_position_display }}</b> &nbsp; Bộ phận: {{ nhan_su.get_department_display }}.</li>
+    <li>Địa điểm làm việc: {{ trung_tam.dia_chi|default:cham }}.</li>
+    <li>Công việc: giảng dạy hoặc thực hiện công việc chuyên môn theo phân công của Bên A (lịch dạy, ca làm việc được phân công và thông báo trên hệ thống ICLS HRM); tuân thủ quy định về chất lượng đào tạo và dịch vụ của Trung tâm.</li>
+  </ol>
+
+  <h2>Điều 2. Loại hợp đồng và thời hạn</h2>
+  <ol class="hd-dk">
+    <li>Loại hợp đồng:
+      {% if so_thang is None %}☒{% else %}☐{% endif %} Không xác định thời hạn &nbsp;
+      {% if so_thang is not None %}☒{% else %}☐{% endif %} Xác định thời hạn{% if so_thang is not None %} <b>{{ so_thang }} tháng</b>{% endif %} (không quá 36 tháng).</li>
+    <li>Hình thức làm việc: {% if la_full_time %}☒{% else %}☐{% endif %} Toàn thời gian (Full-time) &nbsp; {% if la_full_time %}☐{% else %}☒{% endif %} Bán thời gian (Part-time).</li>
+    <li>Thời hạn: từ ngày <b>{{ hop_dong.start_date|date:"d/m/Y" }}</b>{% if hop_dong.end_date %} đến ngày <b>{{ hop_dong.end_date|date:"d/m/Y" }}</b>{% endif %}.</li>
+  </ol>
+
+  <h2>Điều 3. Thời giờ làm việc, thời giờ nghỉ ngơi</h2>
+  <ol class="hd-dk">
+    {% if la_full_time %}
+    <li>Thời giờ làm việc: 6 ngày/tuần (Thứ Hai – Thứ Bảy), {% if ca %}từ {{ ca.0 }} đến {{ ca.1 }}{% else %}theo ca làm việc ...................{% endif %} mỗi ngày, gồm thời gian nghỉ giữa ca; không quá 48 giờ/tuần.</li>
+    {% else %}
+    <li>Thời giờ làm việc: theo ca làm việc Bên B đăng ký và được Bên A chốt hằng tuần trên hệ thống; không quá 48 giờ/tuần.</li>
+    {% endif %}
+    <li>Bên B chấm công (check-in, check-out) trên hệ thống; trường hợp đi trễ, về sớm, quên chấm công được gửi giải trình theo quy chế.</li>
+    <li>Nghỉ hằng năm: {% if la_full_time %}<b>{{ phep_nam }} ngày</b>/năm hưởng nguyên lương, cứ đủ 05 năm làm việc được cộng thêm 01 ngày{% else %}theo tỷ lệ thời gian làm việc thực tế, theo quy định của pháp luật{% endif %}. Nghỉ Lễ, Tết và việc riêng hưởng nguyên lương theo Bộ luật Lao động.</li>
+  </ol>
+
+  <h2>Điều 4. Tiền lương, phụ cấp và hình thức trả lương</h2>
+  <ol class="hd-dk">
+    {% if la_full_time %}
+    <li>Mức lương theo công việc: <b>{% if cau_hinh %}{{ cau_hinh.base_salary|vnd }}{% else %}{{ cham }} đ{% endif %}</b>/tháng, tính theo ngày công thực tế trên {{ ngay_cong_chuan }} ngày công chuẩn.</li>
+    {% else %}
+    <li>Đơn giá theo giờ làm việc thực tế: <b>{% if cau_hinh %}{{ cau_hinh.hourly_rate|vnd }}{% else %}{{ cham }} đ{% endif %}</b>/giờ.</li>
+    {% endif %}
+    <li>Phụ cấp: phụ cấp lớp {% if cau_hinh %}{{ cau_hinh.class_allowance_rate|vnd }}{% else %}........................ đ{% endif %}/buổi dạy; phụ cấp trách nhiệm {% if cau_hinh %}{{ cau_hinh.responsibility_allowance|vnd }}{% else %}........................ đ{% endif %}/tháng; các khoản thưởng khác theo quy chế của Trung tâm.</li>
+    <li>Hình thức trả lương: chuyển khoản vào tài khoản {{ nhan_su.bank_account|default:cham }}; trả mỗi tháng một lần, chậm nhất ngày {{ ngay_tra_luong }} của tháng kế tiếp; có phiếu lương chi tiết trên hệ thống.</li>
+    <li>Thuế thu nhập cá nhân do Bên A khấu trừ và nộp thay theo quy định. Mỗi lần điều chỉnh mức lương, hai bên ký phụ lục hợp đồng ghi rõ mức lương mới và ngày áp dụng.</li>
+  </ol>
+
+  <h2>Điều 5. Bảo hiểm và đào tạo</h2>
+  <ol class="hd-dk">
+    <li>Hai bên tham gia bảo hiểm xã hội, bảo hiểm y tế, bảo hiểm thất nghiệp bắt buộc theo quy định của pháp luật; phần Bên B đóng được khấu trừ vào tiền lương hằng tháng.</li>
+    <li>Bên B được tham gia các chương trình đào tạo, tập huấn chuyên môn do Bên A tổ chức.</li>
+  </ol>
+
+  <h2>Điều 6. Quyền và nghĩa vụ của Bên B</h2>
+  <ol class="hd-dk">
+    <li>Được trả lương đầy đủ, đúng hạn; được cung cấp trang thiết bị, tài liệu, phòng học và điều kiện làm việc an toàn.</li>
+    <li>Hoàn thành công việc được giao, chấp hành nội quy, quy chế và sự phân công hợp pháp của Bên A.</li>
+    <li>Không tiết lộ tài liệu giảng dạy, thông tin học viên và thông tin nội bộ của Trung tâm, kể cả sau khi chấm dứt hợp đồng.</li>
+    <li>Bồi thường thiệt hại do vi phạm theo quy định của pháp luật và quy chế của Trung tâm.</li>
+  </ol>
+
+  <h2>Điều 7. Quyền và nghĩa vụ của Bên A</h2>
+  <ol class="hd-dk">
+    <li>Điều hành, phân công công việc, khen thưởng và xử lý kỷ luật theo quy định của pháp luật và nội quy lao động.</li>
+    <li>Trả lương đầy đủ, đúng hạn; đóng bảo hiểm cho Bên B; bảo đảm điều kiện làm việc theo Điều 6.</li>
+  </ol>
+
+  <h2>Điều 8. Gia hạn, chấm dứt và thanh lý hợp đồng</h2>
+  <ol class="hd-dk">
+    <li>Gia hạn: trước khi hợp đồng hết hạn ít nhất 30 ngày, Bên A thông báo cho Bên B. Nếu hai bên tiếp tục, ký <b>hợp đồng lao động mới</b> (không dùng phụ lục để kéo dài thời hạn). Hợp đồng xác định thời hạn chỉ được ký thêm 01 lần; sau đó nếu tiếp tục làm việc phải ký hợp đồng không xác định thời hạn.</li>
+    <li>Nếu hết hạn mà Bên B vẫn làm việc, trong 30 ngày hai bên phải ký hợp đồng mới; quá thời hạn này hợp đồng trở thành hợp đồng không xác định thời hạn.</li>
+    <li>Đơn phương chấm dứt: bên muốn chấm dứt phải báo trước bằng văn bản ít nhất <b>{{ bao_truoc }} {% if bao_truoc_ngay_lam_viec %}ngày làm việc{% else %}ngày{% endif %}</b> (theo Điều 35, 36 Bộ luật Lao động 2019), trừ các trường hợp không phải báo trước theo luật.</li>
+    <li>Khi chấm dứt hợp đồng, hai bên lập biên bản thanh lý và thanh toán đầy đủ các khoản liên quan trong 14 ngày làm việc. Lịch dạy, ca làm việc sau ngày chấm dứt được Bên A bố trí người thay.</li>
+  </ol>
+
+  <h2>Điều 9. Điều khoản thi hành</h2>
+  <ol class="hd-dk">
+    <li>Hợp đồng có hiệu lực từ ngày {{ hop_dong.start_date|date:"d/m/Y" }}. Những nội dung không ghi trong hợp đồng thực hiện theo nội quy của Trung tâm và pháp luật lao động.</li>
+    <li>Tranh chấp được giải quyết bằng thương lượng; không thương lượng được thì giải quyết theo quy định của pháp luật.</li>
+    <li>Hợp đồng lập thành 02 bản có giá trị như nhau, mỗi bên giữ 01 bản. Bản của Bên A được scan và lưu trên hệ thống.</li>
+  </ol>
+
+  <div class="hd-ky">
+    <div><b>NGƯỜI LAO ĐỘNG (BÊN B)</b><br><i>(Ký và ghi rõ họ tên)</i><div class="hd-ky-ten">{{ nhan_su.full_name }}</div></div>
+    <div><b>ĐẠI DIỆN BÊN A</b><br><i>(Ký, đóng dấu và ghi rõ họ tên)</i><div class="hd-ky-ten">{{ trung_tam.dai_dien }}</div></div>
+  </div>
+
+  <div class="hd-quan-ly">
+    <b>THÔNG TIN QUẢN LÝ HỆ THỐNG</b> (bộ phận Hành chính – Nhân sự)
+    <div>Số hợp đồng: {{ hop_dong.contract_number }} &nbsp; Mã nhân sự: {{ nhan_su.code }}</div>
+    <div>Trạng thái:
+      {% if hop_dong.status == 'ACTIVE' %}☒{% else %}☐{% endif %} Đang hiệu lực &nbsp;
+      {% if hop_dong.status == 'EXPIRED' %}☒{% else %}☐{% endif %} Đã hết hạn &nbsp;
+      {% if hop_dong.status == 'TERMINATED' %}☒{% else %}☐{% endif %} Đã thanh lý</div>
+    <div>Gia hạn từ hợp đồng: {{ hop_dong.previous_contract.contract_number|default:"(không)" }} &nbsp;
+      Ngày thanh lý: {{ hop_dong.termination_date|date:"d/m/Y"|default:"(không)" }}</div>
+    <div>File scan hợp đồng: ☒ Đã tải lên hệ thống</div>
+  </div>
+</article>
+{% endwith %}
+{% endblock %}

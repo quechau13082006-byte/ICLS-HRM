@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.3 – bước 1–2: Quản lý mở khung ca có số người và hạn chót đăng ký #}
+{% include 'schedule/_thanh_cong_cu.html' with tab='lam_viec' %}
+<div class="dialog-card">
+  <h3>Mở đăng ký ca</h3>
+  <p class="text-muted small">Hệ thống tạo đúng số chỗ cần và mời mọi nhân viên Part-time đang làm việc đăng ký.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
+    {% include 'core/_truong_form.html' with truong=form.vai_tro %}
+    {% include 'core/_truong_form.html' with truong=form.ngay %}
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.bat_dau %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.ket_thuc %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.so_nguoi %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.han_chot %}</div>
+    </div>
+    <div class="form-footer"><a href="{% url 'schedule:shift_review' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Tạo khung ca</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{# Hàng điều hướng tuần: Hôm nay, ‹ ›, khoảng ngày. Tham số: url_hom_nay, url_truoc, url_sau, ten_khoang #}
+<div class="d-flex align-items-center gap-2 flex-wrap">
+  <a href="{{ url_hom_nay }}" class="btn btn-ghost btn-sm-icls">Hôm nay</a>
+  <a href="{{ url_truoc }}" class="btn btn-ghost nav-step" aria-label="Tuần trước"><i class="ri-arrow-left-s-line"></i></a>
+  <a href="{{ url_sau }}" class="btn btn-ghost nav-step" aria-label="Tuần sau"><i class="ri-arrow-right-s-line"></i></a>
+  <span class="range">{{ ten_khoang }}</span>
+</div>

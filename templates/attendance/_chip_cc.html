@@ -1,0 +1,2 @@
+{# Chip trạng thái chấm công: Đúng giờ (xanh lá), Đi trễ / Về sớm / Vắng mặt (đỏ), Quên check-out (vàng) #}
+<span class="chip plain {% if b.attendance_status == 'ON_TIME' %}approved{% elif b.attendance_status == 'MISSING_CHECKOUT' %}expiring{% else %}rejected{% endif %}">{{ b.get_attendance_status_display }}</span>

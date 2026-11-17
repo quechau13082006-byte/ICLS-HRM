@@ -1,0 +1,49 @@
+{% load icls_filters %}
+{% comment %}Lịch làm việc dạng bảng tuần – mỗi nhân sự một hàng, mỗi ngày một cột. Cột hôm nay tô nền.
+   - Quản lý / Giám đốc: cả trung tâm. Nhóm hay thay đổi lên trước: Part-time (kèm dòng "Chỗ còn trống") → Trợ giảng →
+     Full-time (thu gọn: chỉ hiện người có ngày nghỉ; Full-time đi làm đúng ca cố định chỉ là dấu ·).
+   - Nhân viên (lịch cá nhân): một hàng là chính mình, không chia nhóm; ca cố định Full-time ghi rõ "Ca 1 8–17".{% endcomment %}
+{% if la_quan_ly %}<div class="rs-legend">
+  <span><i class="rs-chip rs-pt">Ca Part-time</i></span><span><i class="rs-chip rs-tg">Trợ giảng</i></span>
+  <span><i class="rs-chip rs-nghi">Nghỉ phép</i></span><span><i class="rs-chip rs-trong">Chỗ còn trống</i></span>
+  <span class="text-muted">· = Full-time đi làm đúng ca cố định</span>
+</div>{% endif %}
+<div class="rs-wrap"><table class="rs-table gon">
+  <thead><tr>
+    <th class="rs-ten">Nhân sự</th>
+    {% for c in bang.cot %}<th class="{% if c.la_hom_nay %}today{% endif %} {% if c.cuoi_tuan %}weekend{% endif %}"><span class="text-muted fw-normal">{{ c.thu }}</span> {{ c.ngay|date:"j/n" }}{% if la_quan_ly %}<div class="rs-dem">{{ c.so_nguoi }} người làm</div>{% endif %}</th>{% endfor %}
+  </tr></thead>
+  {% for nhom in bang.nhom %}
+  <tbody class="rs-khoi {% if nhom.ten == 'Full-time' and la_quan_ly %}thu-gon{% endif %}">
+    {% if la_quan_ly %}<tr class="rs-nhom"><td colspan="8">
+      {% if nhom.ten == 'Full-time' %}<button type="button" class="rs-mo" onclick="this.closest('tbody').classList.toggle('thu-gon')"><i class="ri-arrow-right-s-line"></i></button>{% endif %}
+      {{ nhom.ten }} · {{ nhom.hang|length }} người
+      <span class="rs-ghi-chu">{% if nhom.ten == 'Part-time' %}lịch thay đổi theo tuần{% elif nhom.ten == 'Trợ giảng' %}theo lớp được phân công{% else %}ca cố định, đang thu gọn: chỉ hiện người có ngày nghỉ (bấm mũi tên để xem cả nhóm){% endif %}</span>
+    </td></tr>{% endif %}
+    {% for h in nhom.hang %}
+    <tr class="{% if nhom.ten == 'Full-time' and not h.co_nghi %}rs-binh-thuong{% endif %}">
+      <th class="rs-ten">{{ h.ten }}{% if h.ca %} <span class="rs-ca">{{ h.ca }}</span>{% endif %}</th>
+      {% for o in h.cac_o %}
+      <td class="{% if forloop.counter0 == bang.chi_so_hom_nay %}today{% endif %}">
+        {% for m in o %}
+          {% if m.loai == 'nghi' %}<span class="rs-chip rs-nghi">Nghỉ phép</span>
+          {% elif m.loai == 'ca_ft' %}{% if m.dong_3 %}<span class="rs-chip rs-nghi" title="Nghỉ nửa ngày">½ nghỉ</span>{% else %}{% if la_quan_ly %}<span class="rs-cham" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">·</span>{% else %}<span class="rs-chip rs-ft">{{ m.tieu_de }} {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</span>{% endif %}{% endif %}
+          {% elif m.loai == 'buoi' %}<a class="rs-chip rs-tg" href="{{ m.url }}" title="Dạy {{ m.ten_lop|default:m.tieu_de }} · {{ m.dong_2 }}"><b>{{ m.tieu_de }}</b> {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>
+          {% elif m.loai == 'tro_giang' %}<a class="rs-chip rs-tg" href="{{ m.url }}" title="Trợ giảng {{ m.ten_lop|default:m.tieu_de }} · {{ m.dong_2 }}"><b>{{ m.tieu_de }}</b> {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>
+          {% else %}<a class="rs-chip rs-pt" href="{{ m.url }}" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">{{ m.tieu_de }} {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>{% endif %}
+        {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% empty %}{% if la_quan_ly and nhom.ten == 'Part-time' and not bang.cho_trong %}<tr><td colspan="8" class="text-muted">Không có ca Part-time trong tuần.</td></tr>{% endif %}
+    {% endfor %}
+    {% if la_quan_ly and nhom.ten == 'Part-time' and bang.cho_trong %}
+    <tr class="rs-hang-trong">
+      <th class="rs-ten text-muted">Chỗ còn trống</th>
+      {% for o in bang.cho_trong %}<td class="{% if forloop.counter0 == bang.chi_so_hom_nay %}today{% endif %}">{% for c in o %}<a class="rs-chip rs-trong" href="{{ c.url }}" title="Bấm để gán người">{{ c.tieu_de }} {{ c.bd|gio_gon }}–{{ c.kt|gio_gon }}</a>{% endfor %}</td>{% endfor %}
+    </tr>
+    {% endif %}
+    {% if la_quan_ly and nhom.ten == 'Full-time' and not nhom.co_nghi %}<tr class="rs-ft-trong"><td colspan="8" class="text-muted">Tuần này không ai trong nhóm Full-time nghỉ phép.</td></tr>{% endif %}
+  </tbody>
+  {% endfor %}
+</table></div>

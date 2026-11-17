@@ -1,0 +1,8 @@
+{# Vẽ một trường của form: nhãn, ô nhập, lỗi màu đỏ ngay bên dưới. Dùng: {% include 'core/_truong_form.html' with truong=form.email %} #}
+{# Trường bắt buộc tự có dấu * đỏ. Trường kiểm tra bắt buộc trong service (form để required=False) thì truyền thêm bat_buoc=True #}
+<div class="mb-3">
+  <label for="{{ truong.id_for_label }}" class="form-label">{{ truong.label }}{% if truong.field.required or bat_buoc %} <span class="bat-buoc" title="Bắt buộc">*</span>{% endif %}</label>
+  {{ truong }}
+  {% for loi in truong.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+  {% if truong.help_text %}<div class="form-text">{{ truong.help_text }}</div>{% endif %}
+</div>

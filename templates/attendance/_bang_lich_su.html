@@ -1,0 +1,22 @@
+{# Bảng lịch sử chấm công (UC 4.3 và chi tiết UC 4.5). Tham số: lich_su, co_nut (hiện nút "Gửi giải trình" khi True) #}
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Ngày</th><th>Ca</th><th>Giờ dự kiến</th><th>Check-in</th><th>Check-out</th><th>Trễ / sớm</th><th>Trạng thái</th><th>Giải trình</th></tr></thead>
+  <tbody>
+  {% for b in lich_su %}
+    <tr>
+      <td><b>{{ b.work_date|date:"d/m/Y" }}</b><div class="sub">{{ b.work_date|date:"l"|capfirst }}</div></td>
+      <td>{% if b.shift_assignment %}{{ b.shift_assignment.shift_role }}{% else %}<span class="text-muted">Cả ngày</span>{% endif %}</td>
+      <td>{{ b.planned_start|time:"H:i" }} – {{ b.planned_end|time:"H:i" }}</td>
+      <td>{{ b.check_in|time:"H:i"|default:"—" }}</td>
+      <td>{{ b.check_out|time:"H:i"|default:"—" }}</td>
+      <td>{{ b.chenh_lech }}</td>
+      <td>{% include 'attendance/_chip_cc.html' %}</td>
+      <td>
+        {% if co_nut and b.giai_trinh_duoc %}<a class="btn btn-ghost btn-sm" href="{% url 'attendance:explain' b.pk %}">Gửi giải trình</a>
+        {% elif b.explanation_status != 'NONE' %}{% include 'attendance/_chip_gt.html' %}{% if co_nut %} <a class="small" href="{% url 'attendance:review_detail' b.pk %}">Chi tiết</a>{% endif %}
+        {% else %}<span class="text-muted">—</span>{% endif %}
+      </td>
+    </tr>
+  {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">{{ khong_co_du_lieu }}</td></tr>{% endfor %}
+  </tbody>
+</table></div>

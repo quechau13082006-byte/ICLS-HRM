@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block page_title %}ATTENDANCE{% endblock %}
+{% block page_title_ko %}근태{% endblock %}
+{% block content %}
+{# UC 4.4 – bước 3–5: xem giải trình, chấp thuận hoặc từ chối (theo Figma "Explanation review drawer") #}
+{% include 'attendance/_tab.html' %}
+<div class="card-head"><h2 class="title">Giải trình chấm công {% include 'attendance/_chip_gt.html' with b=ban_ghi %}</h2>
+  <a href="{% if la_chu %}{% url 'attendance:my_attendance' %}{% else %}{% url 'attendance:review' %}{% endif %}" class="btn btn-ghost">Quay lại</a></div>
+<div class="banner"><i class="ri-user-line"></i><div><div class="t">{{ ban_ghi.employee.full_name }} · {{ ban_ghi.employee.code }}</div>
+  <div class="d">{{ ban_ghi.work_date|date:"d/m/Y" }} · {{ ban_ghi.employee.get_position_display }}{% if ban_ghi.shift_assignment %} · {{ ban_ghi.shift_assignment.shift_role }}{% endif %}</div></div></div>
+<div class="info-grid mb-4">
+  <div><div class="k">Giờ dự kiến</div><div class="v">{{ ban_ghi.planned_start|time:"H:i" }} – {{ ban_ghi.planned_end|time:"H:i" }}</div></div>
+  <div><div class="k">Giờ thực tế (vào / ra)</div><div class="v">{{ ban_ghi.check_in|time:"H:i"|default:"—" }} – {{ ban_ghi.check_out|time:"H:i"|default:"—" }}</div></div>
+  <div><div class="k">Trạng thái chấm công</div><div class="v">{% include 'attendance/_chip_cc.html' with b=ban_ghi %}</div></div>
+  <div><div class="k">Chênh lệch</div><div class="v">{{ ban_ghi.chenh_lech }}</div></div>
+</div>
+<h4 class="font-itim">Lý do giải trình</h4>
+<div class="readonly-box" style="white-space:pre-line">{{ ban_ghi.explanation_reason|default:"—" }}</div>
+<h4 class="font-itim">Minh chứng</h4>
+<div class="readonly-box">{% if ban_ghi.explanation_evidence %}<a href="{% url 'core:tai_file' ban_ghi.explanation_evidence.name %}" target="_blank" rel="noopener"><i class="ri-attachment-2"></i> Xem file minh chứng</a>{% else %}<span class="text-muted">Không có minh chứng.</span>{% endif %}</div>
+{% if ban_ghi.explanation_reviewed_by %}
+<div class="text-muted small mb-3">Xử lý bởi {{ ban_ghi.explanation_reviewed_by.full_name|default:ban_ghi.explanation_reviewed_by.email }} lúc {{ ban_ghi.explanation_reviewed_at|date:"d/m/Y H:i" }}{% if ban_ghi.explanation_review_note %} · Lý do từ chối: {{ ban_ghi.explanation_review_note }}{% endif %}</div>
+{% endif %}
+{% if duoc_duyet %}
+<div class="action-block">
+  <h5>Xử lý giải trình</h5>
+  <p class="small text-muted">Giữ nguyên lỗi cho đến khi chấp thuận. Chấp thuận sẽ xóa số phút trễ/sớm và tính đủ công theo giờ dự kiến của ca này.</p>
+  <form method="post" action="{% url 'attendance:review_decide' ban_ghi.pk %}">{% csrf_token %}
+    <div class="mb-3"><label class="form-label" for="ly_do">Lý do từ chối (bắt buộc khi từ chối)</label><textarea class="form-control" name="ly_do" id="ly_do" rows="2"></textarea></div>
+    <div class="d-flex gap-2 justify-content-end">
+      <button name="hanh_dong" value="tu_choi" class="btn btn-danger-soft">Từ chối</button>
+      <button name="hanh_dong" value="chap_thuan" class="btn btn-icls">Chấp thuận</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

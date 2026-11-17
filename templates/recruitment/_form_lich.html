@@ -1,0 +1,8 @@
+{# Form ngày giờ + địa điểm + người phỏng vấn. Truyền: form, url, nut (chữ nút), ghi_chu #}
+<form method="post" action="{{ url }}" novalidate>{% csrf_token %}
+  {% for loi in form.non_field_errors %}<div class="alert alert-danger py-2">{{ loi }}</div>{% endfor %}
+  {% include 'core/_truong_form.html' with truong=form.scheduled_at %}
+  {% include 'core/_truong_form.html' with truong=form.location %}
+  {% include 'core/_truong_form.html' with truong=form.interviewer %}
+  <button class="btn btn-icls">{{ nut }}</button>
+</form>

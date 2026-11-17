@@ -1,0 +1,4 @@
+{% if b.explanation_status == 'PENDING' %}<span class="chip plain expiring">Chờ duyệt</span>
+{% elif b.explanation_status == 'APPROVED' %}<span class="chip plain approved">Đã chấp thuận</span>
+{% elif b.explanation_status == 'REJECTED' %}<span class="chip plain rejected">Từ chối</span>
+{% else %}<span class="text-muted">—</span>{% endif %}

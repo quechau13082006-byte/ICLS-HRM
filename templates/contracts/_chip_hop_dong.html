@@ -1,0 +1,2 @@
+{# Chip trạng thái hợp đồng; sap_het_han = True thì thêm chip "Sắp hết hạn" #}
+<span class="chip {% if hd.status == 'ACTIVE' %}valid{% elif hd.status == 'EXPIRED' %}pending{% else %}terminated{% endif %}">{{ hd.get_status_display }}</span>

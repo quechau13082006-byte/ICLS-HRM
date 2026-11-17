@@ -1,0 +1,13 @@
+{# Đổi Loại hình thì đổi số hợp đồng gợi ý theo loại (chỉ khi ô số vẫn là một số gợi ý, chưa bị sửa tay) #}
+{{ goi_y_so|json_script:"goi-y-so-hd" }}
+<script>
+  (function () {
+    var goiY = JSON.parse(document.getElementById('goi-y-so-hd').textContent);
+    var o = document.querySelector('[name="contract_number"]'), loai = document.querySelector('[name="employment_type"]');
+    if (!o || !loai) return;
+    var cacGoiY = Object.keys(goiY).map(function (k) { return goiY[k]; });
+    loai.addEventListener('change', function () {
+      if ((o.value === '' || cacGoiY.indexOf(o.value) !== -1) && goiY[loai.value]) o.value = goiY[loai.value];
+    });
+  })();
+</script>

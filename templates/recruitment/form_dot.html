@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block page_title %}Recruitment{% endblock %}
+{% block page_title_ko %}채용{% endblock %}
+{% block content %}
+<div style="max-width: 520px;">
+  <h3>Tạo đợt tuyển dụng</h3>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include 'core/_truong_form.html' with truong=form.campaign_name %}
+    <div class="row">
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
+      <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
+    </div>
+    <button class="btn btn-icls">Tạo đợt</button>
+    <a href="{% url 'recruitment:board' %}" class="btn btn-ghost">Hủy</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block page_title %}SCHEDULE{% endblock %}
+{% block page_title_ko %}일정{% endblock %}
+{% block content %}
+{# UC 6.2 – hai tab: Lịch làm việc (cá nhân / toàn trung tâm) và Lịch lớp học (toàn trung tâm) #}
+{% include 'schedule/_thanh_cong_cu.html' with tab=tab %}
+
+<div class="sch-heading">
+  {% if tab == 'lam_viec' %}
+  <h3>Lịch làm việc</h3>
+  <p class="sub">{% if la_quan_ly %}Ai làm ca nào trong tuần: Part-time, trợ giảng, Full-time{% else %}Ca làm việc và buổi dạy / trợ giảng của bạn{% endif %}</p>
+  {% else %}
+  <h3>Lịch học</h3>
+  <p class="sub">Theo dõi lớp học, giáo viên và phòng học dùng chung</p>
+  {% endif %}
+</div>
+
+{% if la_quan_ly and tab == 'lam_viec' and tom_tat %}
+{# Lịch làm việc của Quản lý / Giám đốc: 4 số tóm tắt + nút lọc nhanh theo nhóm #}
+<div class="rs-tom-tat">
+  <div class="rs-so"><span>Đang làm hôm nay</span><b>{{ tom_tat.dang_lam_hom_nay|default_if_none:"—" }}</b></div>
+  <div class="rs-so {% if tom_tat.nghi_tuan %}do{% endif %}"><span>Nghỉ phép tuần này</span><b>{{ tom_tat.nghi_tuan }}</b></div>
+  <a class="rs-so {% if tom_tat.cho_trong %}cam{% endif %}" href="{% url 'schedule:shift_review' %}?ngay={{ tu_ngay|date:'Y-m-d' }}"><span>Chỗ ca còn trống</span><b>{{ tom_tat.cho_trong }}</b></a>
+  <a class="rs-so" href="{% url 'schedule:substitute_list' %}"><span>Buổi cần người thay</span><b>{{ tom_tat.can_thay }}</b></a>
+</div>
+<div class="rs-loc">{% for n in cac_nut_loc %}<a href="{{ n.url }}" class="{% if n.dang_chon %}on{% endif %}">{{ n.ten }}</a>{% endfor %}</div>
+{% elif la_quan_ly %}
+<form method="get" class="sch-filters">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  {% if tab == 'lop_hoc' %}
+  {# Bảng đã xếp mỗi phòng một hàng nên chỉ cần lọc theo giáo viên; chọn là lọc ngay, không cần nút "Lọc" #}
+  <input type="hidden" name="ngay" value="{{ tu_ngay|date:'Y-m-d' }}">
+  <select name="gv" class="form-select" aria-label="Giáo viên" onchange="this.form.submit()">
+    <option value="">Giáo viên: Tất cả</option>
+    {% for nv in tuy_chon.giao_vien %}<option value="{{ nv.pk }}" {% if loc.gv == nv.pk|stringformat:'s' %}selected{% endif %}>{{ nv.full_name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+</form>
+{% endif %}
+
+<div class="sch-nav">
+  {% include 'schedule/_dieu_huong_tuan.html' %}
+</div>
+
+{% if not co_lich %}<div class="alert alert-info"><i class="ri-calendar-line"></i> {{ khong_co_lich }}</div>{% endif %}
+
+{# Bản đơn giản: chỉ xem theo tuần #}
+{% if kieu == 'bang_phong' %}{% include 'schedule/_bang_phong.html' %}
+{% elif co_lich %}{% include 'schedule/_bang_nhan_su.html' %}{% endif %}
+{% endblock %}

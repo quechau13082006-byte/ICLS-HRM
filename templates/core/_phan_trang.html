@@ -1,0 +1,15 @@
+{% load icls_filters %}{% comment %}
+  Phân trang dùng chung cho mọi danh sách. Cách dùng (trang = đối tượng Page của Paginator):
+    include 'core/_phan_trang.html' with trang=trang don_vi='hợp đồng'
+  Link sang trang khác giữ nguyên bộ lọc đang có trên URL (thẻ link_trang).
+{% endcomment %}
+<div class="pager">
+  <span>Hiển thị {{ trang.start_index }}–{{ trang.end_index }} trong {{ trang.paginator.count }} {{ don_vi }}</span>
+  {% if trang.has_other_pages %}
+  <div class="pages">
+    {% if trang.has_previous %}<a href="{% link_trang trang.previous_page_number %}">‹</a>{% else %}<span class="off">‹</span>{% endif %}
+    {% for so in trang.paginator.page_range %}{% if so == trang.number %}<span class="cur">{{ so }}</span>{% else %}<a href="{% link_trang so %}">{{ so }}</a>{% endif %}{% endfor %}
+    {% if trang.has_next %}<a href="{% link_trang trang.next_page_number %}">›</a>{% else %}<span class="off">›</span>{% endif %}
+  </div>
+  {% endif %}
+</div>

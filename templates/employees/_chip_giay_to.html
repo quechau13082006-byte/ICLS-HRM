@@ -1,0 +1,6 @@
+{# Chip trạng thái giấy tờ: trạng thái duyệt + mức hạn dùng (muc = VALID / EXPIRING / EXPIRED) #}
+{% if g.status == 'PENDING' %}<span class="chip pending">Chờ duyệt</span>
+{% elif g.status == 'REJECTED' %}<span class="chip rejected">Bị từ chối</span>
+{% elif muc == 'EXPIRED' %}<span class="chip expired">Đã hết hạn</span>
+{% elif muc == 'EXPIRING' %}<span class="chip expiring">Sắp hết hạn</span>
+{% else %}<span class="chip valid">Còn hạn</span>{% endif %}

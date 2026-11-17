@@ -1,0 +1,2 @@
+{# Chip trạng thái ứng viên #}
+<span class="chip {% if ung_vien.status == 'NEW' %}onboarding{% elif ung_vien.status == 'REJECTED' %}terminated{% elif ung_vien.status == 'PASSED' or ung_vien.status == 'HIRED' %}active{% else %}valid{% endif %}">{{ ung_vien.get_status_display }}</span>
