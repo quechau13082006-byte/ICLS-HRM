@@ -24,7 +24,6 @@
   2. **Đặng Gia Huy:** Phân hệ chính **UC4** (Chấm công); phụ trách thêm **UC9** (Dashboard, tác vụ hằng ngày) và **UC5** (Nghỉ phép).
   3. **Võ Ngọc Ngân Giao:** Phân hệ chính **UC3** (Hợp đồng); phụ trách thêm **UC1** (Tài khoản, phân quyền).
   4. **Trần Hoàng Yến Trang:** Phân hệ chính **UC7** (Lương); phụ trách thêm **UC8** (Tuyển dụng).
-* **Nguyên tắc phân công:** mỗi phân hệ (UC1 đến UC9) chỉ do **một** thành viên phụ trách trọn vẹn từ giao diện đến Python và test, không chia nhỏ một phân hệ cho nhiều người nên không làm đè lên nhau.
 
 ---
 
@@ -367,17 +366,7 @@ python manage.py test                 # 550 test (dùng DB tạm riêng, không 
 python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
 
-**Dữ liệu demo dùng chung:** `db.sqlite3` và thư mục `media/` (ảnh đại diện, file giấy tờ mẫu) nằm sẵn trong repo, nên ai clone về cũng có cùng một bộ dữ liệu: 43 nhân sự (40 đang làm việc, 2 đang Onboarding, 1 đã nghỉ), 20 lớp, giấy tờ, đơn nghỉ, giải trình, dạy thay, tuyển dụng và 3 tháng lương đã phát hành.
 
-- **Khôi phục dữ liệu gốc** sau khi demo thử: `git checkout -- db.sqlite3 media` (bỏ mọi thay đổi trên máy).
-- **Không commit `db.sqlite3` sau khi bấm thử** trên máy mình, để tránh xung đột với bạn khác (DB là file nhị phân, git không gộp được). Chỉ một người cập nhật DB chung khi cần.
-- **Làm mới ngày tháng** (giấy tờ sắp hết hạn, đơn nghỉ tuần sau… tính theo ngày tạo dữ liệu): xóa `db.sqlite3` và `media/`, chạy `python manage.py migrate` rồi `python manage.py tao_du_lieu_mau`.
-
-Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `chauhuynhceo@icls.vn` (Giám đốc), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
-
-**Gửi email thật cho ứng viên (lịch phỏng vấn, kết quả tuyển dụng):** sao chép `.env.example` thành `.env` (cùng thư mục với `manage.py`), điền Gmail gửi thư và **mật khẩu ứng dụng** Gmail (tạo tại myaccount.google.com/apppasswords, cần bật xác minh 2 bước). Không có `.env` thì email in ra terminal. File `.env` không đưa lên git.
-
-**Tài liệu:** [`ROADMAP.md`](ROADMAP.md) (đặc tả đầy đủ 38 use case, 20 bảng, tham số nghiệp vụ, ma trận kiểm thử).
 
 Dự án được xây dựng phục vụ mục đích học tập và nghiên cứu. Dữ liệu trong hệ thống là dữ liệu mẫu; `SECRET_KEY` và `DEBUG` đang ở cấu hình phát triển.  
 © 2026 ICLS HRM Project.
