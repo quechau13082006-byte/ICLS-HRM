@@ -34,8 +34,7 @@
 1. **Backend và xử lý nghiệp vụ:** Python 3.12+ với **Django 5.2 LTS**. View dạng hàm, mỗi bước nghiệp vụ là một hàm trong `services.py` có ghi mã use case; mỗi app chỉ ghi vào bảng của mình.
 2. **Cơ sở dữ liệu:** **SQLite** (`db.sqlite3`), 20 bảng chia theo app, có `UniqueConstraint` và `CheckConstraint` ở mức CSDL.
 3. **Giao diện (Template):** Django Template kế thừa `base.html` (menu trái theo vai trò, thanh tiêu đề, thẻ nội dung); **Bootstrap 5.3.3** và **Remix Icon 4.3.0** qua CDN; tùy biến màu thương hiệu trong `static/css/icls.css`.
-4. **Tương tác phía trình duyệt:** JavaScript tối thiểu (`confirm()` cho thao tác xóa và khóa, `window.print()` cho phiếu lương). Không dùng framework JavaScript.
-5. **Không dùng thư viện ngoài Django:** biểu đồ Dashboard vẽ bằng CSS (`conic-gradient`, thẻ `div`), lịch là bảng HTML, ảnh đại diện dùng `FileField` (không cần Pillow), email in ra terminal khi demo.
+
 
 ```mermaid
 flowchart TB
