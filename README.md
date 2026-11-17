@@ -362,12 +362,16 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python manage.py migrate
-python manage.py tao_du_lieu_mau      # 40 nhân sự, 20 lớp; chạy lại không nhân đôi
-python manage.py runserver            # http://127.0.0.1:8000
-python manage.py test                 # 550 test
+python manage.py runserver            # http://127.0.0.1:8000 – dữ liệu demo có sẵn, không cần tạo
+python manage.py test                 # 550 test (dùng DB tạm riêng, không đụng dữ liệu demo)
 python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
+
+**Dữ liệu demo dùng chung:** `db.sqlite3` và thư mục `media/` (ảnh đại diện, file giấy tờ mẫu) nằm sẵn trong repo, nên ai clone về cũng có cùng một bộ dữ liệu: 43 nhân sự (40 đang làm việc, 2 đang Onboarding, 1 đã nghỉ), 20 lớp, giấy tờ, đơn nghỉ, giải trình, dạy thay, tuyển dụng và 3 tháng lương đã phát hành.
+
+- **Khôi phục dữ liệu gốc** sau khi demo thử: `git checkout -- db.sqlite3 media` (bỏ mọi thay đổi trên máy).
+- **Không commit `db.sqlite3` sau khi bấm thử** trên máy mình, để tránh xung đột với bạn khác (DB là file nhị phân, git không gộp được). Chỉ một người cập nhật DB chung khi cần.
+- **Làm mới ngày tháng** (giấy tờ sắp hết hạn, đơn nghỉ tuần sau… tính theo ngày tạo dữ liệu): xóa `db.sqlite3` và `media/`, chạy `python manage.py migrate` rồi `python manage.py tao_du_lieu_mau`.
 
 Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `chauhuynhceo@icls.vn` (Giám đốc), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
 

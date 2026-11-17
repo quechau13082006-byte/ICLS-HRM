@@ -3,10 +3,9 @@
 __pycache__/
 *.pyc
 
-# Dữ liệu chỉ để trên máy (DB, file tải lên, bản sao lưu DB khi chạy lại dữ liệu mẫu)
-db.sqlite3
+# db.sqlite3 và media/ ĐƯỢC đưa lên git: đó là bộ dữ liệu demo chung của nhóm (clone về là chạy được).
+# Chỉ chặn các bản sao lưu DB tạo ra khi chạy lại dữ liệu mẫu.
 db.sqlite3.bak*
-media/
 
 # Bí mật: mật khẩu ứng dụng Gmail (mẫu xem .env.example)
 .env
