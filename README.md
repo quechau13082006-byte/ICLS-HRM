@@ -365,11 +365,11 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py tao_du_lieu_mau      # 40 nhân sự, 20 lớp; chạy lại không nhân đôi
 python manage.py runserver            # http://127.0.0.1:8000
-python manage.py test                 # 549 test
+python manage.py test                 # 550 test
 python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
 
-Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `quechau13082006@gmail.com` (Giám đốc), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
+Tài khoản mẫu (mật khẩu demo nằm ở hằng `MAT_KHAU_DEMO` trong `core/management/commands/tao_du_lieu_mau.py`): `sa@icls.vn` (Super Admin), `chauhuynhceo@icls.vn` (Giám đốc), `ql1@icls.vn` (Quản lý), `kt@icls.vn` (Kế toán), `gv01@icls.vn` (Nhân viên).
 
 **Gửi email thật cho ứng viên (lịch phỏng vấn, kết quả tuyển dụng):** sao chép `.env.example` thành `.env` (cùng thư mục với `manage.py`), điền Gmail gửi thư và **mật khẩu ứng dụng** Gmail (tạo tại myaccount.google.com/apppasswords, cần bật xác minh 2 bước). Không có `.env` thì email in ra terminal. File `.env` không đưa lên git.
 

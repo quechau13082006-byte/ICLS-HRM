@@ -215,7 +215,7 @@ MAT_KHAU_TOI_THIEU = 8
 TRUNG_TAM = {
     'ten': 'TRUNG TÂM TIẾNG HÀN ICLS',
     'dia_chi': '169 Tố Hữu, phường Cẩm Lệ, thành phố Đà Nẵng',
-    'dien_thoai': '0941072209',
+    'dien_thoai': '0905123456',
     'email': 'chauhuynhceo@icls.vn',
     'dai_dien': 'Huỳnh Ngọc Quế Châu',
     'chuc_vu': 'Giám đốc',

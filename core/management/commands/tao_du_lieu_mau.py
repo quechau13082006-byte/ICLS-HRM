@@ -3,6 +3,10 @@
 Tạo: 1 SA (kỹ thuật), 1 Giám đốc, 2 QL, 1 KT; 40 nhân sự (QL, KT, GV Full-time Ca 1 / Ca 2 (gồm 11 GV người Hàn), trợ giảng PT, Staff PT)
 mỗi người có hợp đồng ACTIVE, cấu hình lương, quỹ phép (Full-time); một đợt tuyển dụng với vài ứng viên;
 20 lớp kèm buổi dạy; vài khung ca; chấm công cả tháng trước.
+Bổ sung cho demo (tao_du_lieu_demo_bo_sung): giấy tờ ở đủ trạng thái và mức cảnh báo, 2 nhân sự đang Onboarding
+(1 từ ứng viên đợt tuyển dụng đã đóng, 1 vị trí Kế toán chờ Super Admin cấp quyền), 1 nhân sự đã nghỉ (hợp đồng thanh lý,
+tài khoản bị khóa), 1 hợp đồng đã gia hạn, giải trình của Quản lý chờ Giám đốc, 1 đơn nghỉ đã duyệt kèm yêu cầu dạy thay,
+lịch sử cấu hình lương, vài lần đăng nhập thất bại.
 Mật khẩu demo đặt bằng set_password (chỉ khi tạo mới tài khoản).
 """
 import calendar
@@ -29,7 +33,7 @@ from schedule.models import (AssignmentRole, ClassAssignment, ClassStatus, Shift
                              StudyClass, TeachingSession)
 
 MAT_KHAU_DEMO = 'Icls@2026'
-EMAIL_GIAM_DOC = 'quechau13082006@gmail.com'   # tài khoản Giám đốc   # mật khẩu demo cho mọi tài khoản mẫu
+EMAIL_GIAM_DOC = 'chauhuynhceo@icls.vn'   # tài khoản Giám đốc   # mật khẩu demo cho mọi tài khoản mẫu
 
 HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Ngô']
 TEN_LOT = ['Văn', 'Thị', 'Minh', 'Ngọc', 'Quốc', 'Thu', 'Hải', 'Thanh']
@@ -90,10 +94,12 @@ class Command(BaseCommand):
             self.tao_cham_cong_loi_thang_nay(hom_nay)
             self.tao_cham_cong_thang_truoc(hom_nay)
             self.tao_lich_su_luong(hom_nay)
+            self.tao_du_lieu_demo_bo_sung(hom_nay)
             self.gan_anh_dai_dien()
         self.stdout.write(self.style.SUCCESS(
             f'Xong. Tài khoản: sa@icls.vn, {EMAIL_GIAM_DOC} (Giám đốc), ql1@icls.vn, ql2@icls.vn, kt@icls.vn, gv01..gv16@icls.vn, '
-            f'tg01..tg12@icls.vn, st01..st09@icls.vn. Mật khẩu demo: xem MAT_KHAU_DEMO trong lệnh này.'))
+            f'tg01..tg12@icls.vn, st01..st10@icls.vn (st10 đã nghỉ, bị khóa), gv17@icls.vn và kt02@icls.vn (đang Onboarding). '
+            f'Mật khẩu demo: xem MAT_KHAU_DEMO trong lệnh này.'))
         self.stdout.write(f'Nhân sự: {Employee.objects.count()} · Lớp: {StudyClass.objects.count()} · '
                           f'Buổi dạy: {TeachingSession.objects.count()} · Chấm công: {Attendance.objects.count()}')
 
@@ -163,7 +169,7 @@ class Command(BaseCommand):
     def tao_tai_khoan_va_nhan_su(self, hom_nay):
         self._tao_user('sa@icls.vn', UserRole.SUPER_ADMIN, 'Super Admin', '0900000000')  # SA không có hồ sơ (Q1)
         # Giám đốc (quản lý cấp cao): duyệt yêu cầu của Quản lý; không có hồ sơ nhân sự như SA.
-        self._tao_user(EMAIL_GIAM_DOC, UserRole.DIRECTOR, 'Huỳnh Ngọc Quế Châu', '0941072209')
+        self._tao_user(EMAIL_GIAM_DOC, UserRole.DIRECTOR, 'Huỳnh Ngọc Quế Châu', '0905123456')
         ft, pt = EmploymentType.FULL_TIME, EmploymentType.PART_TIME
         so_tt = 1
         # 2 Quản lý, 1 Kế toán (Full-time Ca 1)
@@ -339,8 +345,8 @@ class Command(BaseCommand):
         from schedule.services import tim_nhan_su_trung_lich
         ql1 = User.objects.get(email='ql1@icls.vn')
         thu_hai = hom_nay - timedelta(days=hom_nay.weekday())
-        nhan_vien = list(Employee.objects.filter(position=Position.STAFF).order_by('id'))
-        tro_giang = list(Employee.objects.filter(position=Position.TEACHING_ASSISTANT).order_by('id'))
+        nhan_vien = list(Employee.objects.filter(position=Position.STAFF, status=EmployeeStatus.ACTIVE).order_by('id'))
+        tro_giang = list(Employee.objects.filter(position=Position.TEACHING_ASSISTANT, status=EmployeeStatus.ACTIVE).order_by('id'))
 
         def tao_ca(nv, ngay, khung):
             vai_tro, bd, kt = KHUNG_PART_TIME[khung]
@@ -394,6 +400,9 @@ class Command(BaseCommand):
         ghi('gv09@icls.vn', ngay_lam[1], 'EARLY_LEAVE', early_leave_minutes=20)
         ghi('gv02@icls.vn', ngay_lam[1], 'MISSING_CHECKOUT')
         ghi('gv10@icls.vn', ngay_lam[2], 'LATE', tre=12)
+        # ql2 (Quản lý): đi trễ, ĐÃ giải trình → chỉ Giám đốc duyệt được (Quản lý không tự duyệt cho nhau)
+        ghi('ql2@icls.vn', ngay_lam[2], 'LATE', tre=25, explanation_status='PENDING',
+            explanation_reason='Đi gặp đối tác trường Đại học Ngoại ngữ về chương trình liên kết, đã báo Giám đốc từ hôm trước.')
 
     # ------------------------------------------------------------------ chấm công tháng trước
     def tao_cham_cong_thang_truoc(self, hom_nay):
@@ -429,17 +438,17 @@ class Command(BaseCommand):
         cac_ngay = [date(nam, thang, d) for d in range(1, calendar.monthrange(nam, thang)[1] + 1)
                     if date(nam, thang, d).weekday() in settings.NGAY_LAM_VIEC]
         # Full-time: một bản ghi mỗi ngày làm việc, không theo ca
-        for nv in Employee.objects.filter(employment_type=EmploymentType.FULL_TIME):
+        for nv in Employee.objects.filter(employment_type=EmploymentType.FULL_TIME, status=EmployeeStatus.ACTIVE):
             bd, kt = settings.CA_FULLTIME[nv.work_shift]
             for ngay in cac_ngay:
                 self._cham_cong(nv, ngay, _gio(bd), _gio(kt), None)
         # Trợ giảng Part-time: 6 ngày đầu, theo buổi dạy (không theo ca)
-        for nv in Employee.objects.filter(position=Position.TEACHING_ASSISTANT):
+        for nv in Employee.objects.filter(position=Position.TEACHING_ASSISTANT, status=EmployeeStatus.ACTIVE):
             for ngay in cac_ngay[:6]:
                 self._cham_cong(nv, ngay, _gio('18:00'), _gio('20:00'), None)
         # Staff Part-time: 6 ngày, mỗi ngày một ca có chỗ SCHEDULED (theo ca)
         ql1 = User.objects.get(email='ql1@icls.vn')
-        for nv in Employee.objects.filter(position=Position.STAFF):
+        for nv in Employee.objects.filter(position=Position.STAFF, status=EmployeeStatus.ACTIVE):
             for ngay in cac_ngay[:6]:
                 ca, _ = ShiftAssignment.objects.get_or_create(
                     slot_group=f'mau-{nv.id}-{ngay:%Y%m%d}', employee=nv,
@@ -461,3 +470,154 @@ class Command(BaseCommand):
             'work_date': ngay, 'planned_start': bd, 'planned_end': kt, 'check_in': gio_vao,
             'check_out': datetime.combine(ngay, kt), 'late_minutes': 10 if tre else 0,
             'attendance_status': AttendanceStatus.LATE if tre else AttendanceStatus.ON_TIME})
+
+
+    # ================================================================== bổ sung dữ liệu cho đủ kịch bản demo
+    def tao_du_lieu_demo_bo_sung(self, hom_nay):
+        """Mỗi phần tự kiểm tra đã có dữ liệu chưa, nên chạy lại không nhân đôi."""
+        self.tao_giay_to(hom_nay)
+        self.tao_onboarding(hom_nay)
+        self.tao_nhan_su_da_nghi(hom_nay)
+        self.tao_gia_han_hop_dong(hom_nay)
+        self.tao_yeu_cau_day_thay(hom_nay)
+        self.tao_lich_su_cau_hinh_luong(hom_nay)
+        self.tao_dang_nhap_that_bai()
+
+    @staticmethod
+    def _file_pdf(ten):
+        """File PDF một trang trắng làm bản scan giả cho giấy tờ mẫu."""
+        from django.core.files.base import ContentFile
+        noi_dung = (b'%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n'
+                    b'3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n')
+        return ContentFile(noi_dung, name=ten)
+
+    # ------------------------------------------------------------------ giấy tờ, chứng chỉ (UC 2.2, 2.4, 2.6, 9.2)
+    def tao_giay_to(self, hom_nay):
+        """Đủ trạng thái và mức cảnh báo:
+        - APPROVED còn hạn dài (CCCD, TOPIK) · APPROVED sắp hết hạn (còn 10 ngày, 25 ngày) · EXPIRED (quá hạn 5 ngày)
+        - PENDING của Nhân viên (Quản lý duyệt) và của Quản lý (Giám đốc duyệt) · REJECTED kèm lý do (nhân viên tải lại)."""
+        from employees.models import DocumentType, EmployeeDocument
+        from employees.services import duyet_giay_to, het_han_giay_to, luu_ho_so_ca_nhan, tu_choi_giay_to
+        if EmployeeDocument.objects.exists():
+            return
+        ql1 = User.objects.get(email='ql1@icls.vn')
+        nv = lambda email: Employee.objects.get(user__email=email)
+        nam_truoc = hom_nay - timedelta(days=365)
+
+        def nop(email, loai, ten, ngay_cap, ngay_het_han):
+            e = nv(email)
+            return luu_ho_so_ca_nhan(e, e.phone, e.address, e.bank_account, giay_to={
+                'document_type': loai, 'document_name': ten, 'issue_date': ngay_cap, 'expiry_date': ngay_het_han,
+                'file_url': self._file_pdf(f'{email.split("@")[0]}_{loai.lower()}.pdf')})
+
+        for email in ('gv01@icls.vn', 'gv02@icls.vn', 'gv03@icls.vn', 'tg01@icls.vn'):
+            duyet_giay_to(ql1, nop(email, DocumentType.PERSONAL_ID, 'Căn cước công dân', date(hom_nay.year - 3, 5, 10),
+                                   date(hom_nay.year + 12, 5, 10)))
+        duyet_giay_to(ql1, nop('gv07@icls.vn', DocumentType.CERTIFICATION, 'TOPIK cấp 6', nam_truoc, nam_truoc + timedelta(days=730)))
+        duyet_giay_to(ql1, nop('gv04@icls.vn', DocumentType.CERTIFICATION, 'Chứng chỉ giảng dạy tiếng Hàn (KLTC)',
+                               hom_nay - timedelta(days=720), hom_nay + timedelta(days=10)))          # sắp hết hạn: < 30 ngày
+        duyet_giay_to(ql1, nop('gv05@icls.vn', DocumentType.CERTIFICATION, 'TOPIK cấp 5',
+                               hom_nay - timedelta(days=705), hom_nay + timedelta(days=25)))          # sắp hết hạn: < 30 ngày
+        duyet_giay_to(ql1, nop('gv06@icls.vn', DocumentType.CERTIFICATION, 'Chứng chỉ nghiệp vụ sư phạm',
+                               hom_nay - timedelta(days=735), hom_nay - timedelta(days=5)))           # đã quá hạn
+        het_han_giay_to(hom_nay)                                                                      # như tác vụ hằng ngày
+        # Chờ duyệt: của Nhân viên → Quản lý duyệt; của Quản lý → Giám đốc duyệt
+        nop('gv11@icls.vn', DocumentType.CERTIFICATION, 'TOPIK cấp 6', hom_nay - timedelta(days=20), hom_nay + timedelta(days=710))
+        nop('tg03@icls.vn', DocumentType.PERSONAL_ID, 'Căn cước công dân', date(hom_nay.year - 2, 8, 1), date(hom_nay.year + 15, 8, 1))
+        nop('ql2@icls.vn', DocumentType.OTHER, 'Bằng Thạc sĩ Quản trị nhân lực', date(hom_nay.year - 2, 6, 30), None)
+        # Bị từ chối: nhân viên thấy lý do và bấm "Tải bản mới"
+        tu_choi_giay_to(ql1, nop('gv12@icls.vn', DocumentType.CERTIFICATION, 'Chứng chỉ nghiệp vụ sư phạm',
+                                 hom_nay - timedelta(days=100), None),
+                        'Ảnh chụp bị mờ, không đọc được số hiệu chứng chỉ. Vui lòng tải bản scan rõ hơn.')
+
+    # ------------------------------------------------------------------ nhân sự đang Onboarding (UC 2.5, 3.1, 1.5)
+    def tao_onboarding(self, hom_nay):
+        """gv17: tiếp nhận từ ứng viên PASSED của đợt tuyển dụng ĐÃ ĐÓNG (ứng viên → HIRED), chờ Quản lý tạo hợp đồng.
+        kt02: vị trí Kế toán nhưng tài khoản tạo ra là Nhân viên → Super Admin nhận thông báo "Yêu cầu cấp quyền"."""
+        from employees.services import tao_ho_so_nhan_su
+        from recruitment.models import CampaignStatus
+        if User.objects.filter(email__in=['gv17@icls.vn', 'kt02@icls.vn']).exists():
+            return
+        ql1 = User.objects.get(email='ql1@icls.vn')
+        dot_cu, _ = RecruitmentCampaign.objects.get_or_create(
+            campaign_name='Tuyển dụng Q3-2026', defaults={
+                'start_date': date(hom_nay.year, 7, 1), 'end_date': date(hom_nay.year, 9, 30),
+                'status': CampaignStatus.CLOSED, 'created_by': ql1})
+        Candidate.objects.get_or_create(campaign=dot_cu, email='ungvien10@example.com', defaults={
+            'full_name': 'Phan Gia Bảo', 'phone': '0980000010', 'position': Position.TEACHER,
+            'employment_type': EmploymentType.FULL_TIME, 'status': CandidateStatus.REJECTED,
+            'screening_note': 'Chưa đạt yêu cầu phát âm ở vòng phỏng vấn'})
+        uv, _ = Candidate.objects.get_or_create(campaign=dot_cu, email='gv17@icls.vn', defaults={
+            'full_name': 'Nguyễn Hoài An', 'phone': '0980000009', 'position': Position.TEACHER,
+            'employment_type': EmploymentType.FULL_TIME, 'status': CandidateStatus.PASSED,
+            'screening_note': 'TOPIK cấp 6, 2 năm kinh nghiệm dạy tiếng Hàn'})
+        chung = {'mat_khau': MAT_KHAU_DEMO, 'nationality': 'Việt Nam', 'join_date': hom_nay, 'address': 'Đà Nẵng'}
+        tao_ho_so_nhan_su(ql1, {**chung, 'email': 'gv17@icls.vn', 'full_name': 'Nguyễn Hoài An', 'phone': '0980000009',
+                                'gender': Gender.FEMALE, 'date_of_birth': date(1998, 3, 12), 'id_card_number': '079098001234',
+                                'department': Department.ACADEMIC, 'position': Position.TEACHER,
+                                'employment_type': EmploymentType.FULL_TIME, 'work_shift': WorkShift.SHIFT_2,
+                                'bank_account': 'Vietcombank – 0123000171'}, ung_vien=uv, hom_nay=hom_nay)
+        tao_ho_so_nhan_su(ql1, {**chung, 'email': 'kt02@icls.vn', 'full_name': 'Trịnh Thu Trang', 'phone': '0980000011',
+                                'gender': Gender.FEMALE, 'date_of_birth': date(1996, 11, 2), 'id_card_number': '079096005678',
+                                'department': Department.ACCOUNTING, 'position': Position.ACCOUNTANT,
+                                'employment_type': EmploymentType.FULL_TIME, 'work_shift': WorkShift.SHIFT_1,
+                                'bank_account': 'Techcombank – 1903000112'}, hom_nay=hom_nay)
+
+    # ------------------------------------------------------------------ nhân sự đã nghỉ (UC 3.4, 1.1, 1.5, 2.1)
+    def tao_nhan_su_da_nghi(self, hom_nay):
+        """st10: thanh lý hợp đồng 10 ngày trước bằng đúng hàm UC 3.4 → nhân sự RESIGNED, hợp đồng TERMINATED,
+        tài khoản bị khóa (đăng nhập sẽ báo "Tài khoản của bạn đã bị khóa…"), cấu hình lương được đóng."""
+        from contracts.services import thanh_ly_hop_dong
+        if User.objects.filter(email='st10@icls.vn').exists():
+            return
+        e = self._tao_nhan_su(50, 'st10@icls.vn', UserRole.EMPLOYEE, Position.STAFF, Department.HR_ADMIN,
+                              EmploymentType.PART_TIME, '', hom_nay, ho_ten='Lý Minh Thư')
+        thanh_ly_hop_dong(User.objects.get(email='ql1@icls.vn'), e.contracts.get(status='ACTIVE'),
+                          hom_nay - timedelta(days=10), 'Nhân viên xin nghỉ để đi du học', EmployeeStatus.RESIGNED, hom_nay)
+
+    # ------------------------------------------------------------------ hợp đồng đã gia hạn (UC 3.2, 3.3)
+    def tao_gia_han_hop_dong(self, hom_nay):
+        """tg03: hợp đồng đầu EXPIRED, hợp đồng gia hạn ACTIVE trỏ previous_contract về hợp đồng cũ (xem lịch sử gia hạn)."""
+        e = Employee.objects.get(user__email='tg03@icls.vn')
+        if Contract.objects.filter(employee=e).count() > 1:
+            return
+        cu = Contract.objects.get(employee=e, status='ACTIVE')
+        moc = hom_nay - timedelta(days=45)
+        cu.end_date, cu.status = moc, 'EXPIRED'
+        cu.save(update_fields=['end_date', 'status'])
+        Contract.objects.create(
+            employee=e, contract_number=so_hop_dong_ke_tiep(EmploymentType.PART_TIME, moc.year),
+            employment_type=EmploymentType.PART_TIME, start_date=moc + timedelta(days=1),
+            end_date=date(hom_nay.year + 1, 8, 31), previous_contract=cu, status='ACTIVE')
+
+    # ------------------------------------------------------------------ đơn nghỉ đã duyệt có buổi cần dạy thay (UC 5.2, 6.4)
+    def tao_yeu_cau_day_thay(self, hom_nay):
+        """gv05 (giáo viên Hàn, lớp Thứ 2-4-6 10:00–12:00 có trợ giảng) nghỉ ốm Thứ 2 cách 2 tuần; gửi và duyệt bằng đúng hàm
+        UC 5.1 / 5.2 → hệ thống tự tạo yêu cầu dạy thay SEARCHING, bỏ trợ giảng buổi đó, báo Quản lý."""
+        from leave.services import duyet_don_nghi, gui_don_nghi
+        from schedule.models import SubstituteRequest
+        if SubstituteRequest.objects.exists():
+            return
+        gv = Employee.objects.get(user__email='gv05@icls.vn')
+        thu_2 = hom_nay + timedelta(days=14 - hom_nay.weekday())
+        don = gui_don_nghi(gv, 'SICK', 'FULL_DAY', thu_2, thu_2, 'Tiểu phẫu, bác sĩ yêu cầu nghỉ một ngày')
+        duyet_don_nghi(User.objects.get(email='ql1@icls.vn'), don)
+
+    # ------------------------------------------------------------------ lịch sử cấu hình lương (UC 7.1)
+    def tao_lich_su_cau_hinh_luong(self, hom_nay):
+        """gv01 được tăng lương từ đầu tháng này: cấu hình cũ tự đóng (effective_to), cấu hình mới đang áp dụng."""
+        from payroll.services import luu_cau_hinh_luong
+        gv = Employee.objects.get(user__email='gv01@icls.vn')
+        if SalaryConfig.objects.filter(employee=gv).count() > 1:
+            return
+        luu_cau_hinh_luong(User.objects.get(email='kt@icls.vn'), gv, Decimal(10_800_000), Decimal(0),
+                           Decimal(350_000), Decimal(0), hom_nay.replace(day=1))
+
+    # ------------------------------------------------------------------ đăng nhập thất bại (Dashboard Super Admin)
+    def tao_dang_nhap_that_bai(self):
+        from core.models import ActivityLog
+        from core.services import ghi_nhat_ky
+        if ActivityLog.objects.filter(action='LOGIN_FAILED').exists():
+            return
+        for email in ('gv02@icls.vn', 'khong-ton-tai@icls.vn', 'st10@icls.vn'):
+            ghi_nhat_ky(None, 'LOGIN_FAILED', 'User', None, f'Đăng nhập thất bại: {email}')

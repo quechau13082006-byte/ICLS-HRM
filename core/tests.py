@@ -1,6 +1,9 @@
+import shutil
+import tempfile
+from pathlib import Path
 from io import StringIO
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import User, UserRole
@@ -71,7 +74,16 @@ class PhanQuyenTest(TestCase):
         self.assertEqual(self.client.get(reverse('core:notifications')).status_code, 200)
 
 
+_MEDIA_TAM = Path(tempfile.mkdtemp())
+
+
+@override_settings(MEDIA_ROOT=_MEDIA_TAM)          # file giấy tờ, ảnh đại diện mẫu ghi vào thư mục tạm, không vào media/ thật
 class DuLieuMauTest(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(_MEDIA_TAM, ignore_errors=True)
+
     def test_tao_du_lieu_mau_chay_lai_khong_nhan_doi(self):
         from django.core.management import call_command
         from employees.models import Employee
@@ -79,8 +91,10 @@ class DuLieuMauTest(TestCase):
         call_command('tao_du_lieu_mau', stdout=StringIO())
         so_nhan_su, so_lop = Employee.objects.count(), StudyClass.objects.count()
         call_command('tao_du_lieu_mau', stdout=StringIO())
-        self.assertEqual((so_nhan_su, so_lop), (40, 20))
-        self.assertEqual((Employee.objects.count(), StudyClass.objects.count()), (40, 20))
+        # 40 đang làm việc + 2 đang Onboarding (gv17, kt02) + 1 đã nghỉ (st10)
+        self.assertEqual((so_nhan_su, so_lop), (43, 20))
+        self.assertEqual((Employee.objects.count(), StudyClass.objects.count()), (43, 20))
+        self.assertEqual(Employee.objects.filter(status='ACTIVE').count(), 40)
         self.assertFalse(User.objects.get(email='sa@icls.vn').is_active is False)
         self.assertFalse(hasattr(User.objects.get(email='sa@icls.vn'), 'employee'))  # SA không có hồ sơ (Q1)
 
@@ -92,7 +106,26 @@ class DuLieuMauTest(TestCase):
         self.assertEqual(han.count(), 11)                     # 11/16 giáo viên ≈ 70%
         self.assertEqual({nv.position for nv in han}, {'TEACHER'})
         self.assertEqual({nv.work_shift for nv in han}, {'SHIFT_1', 'SHIFT_2'})
-        self.assertEqual(Employee.objects.count(), 40)
+        self.assertEqual(Employee.objects.filter(status='ACTIVE').count(), 40)
+
+    def test_du_lieu_demo_bo_sung_du_kich_ban_va_khong_nhan_doi(self):
+        from django.core.management import call_command
+        from contracts.models import Contract
+        from employees.models import EmployeeDocument
+        from schedule.models import SubstituteRequest
+        call_command('tao_du_lieu_mau', stdout=StringIO())
+        dem = lambda: (EmployeeDocument.objects.count(), SubstituteRequest.objects.count(), Contract.objects.count())
+        truoc = dem()
+        call_command('tao_du_lieu_mau', stdout=StringIO())
+        self.assertEqual(dem(), truoc)
+        trang_thai = set(EmployeeDocument.objects.values_list('status', flat=True))
+        self.assertEqual(trang_thai, {'APPROVED', 'PENDING', 'REJECTED', 'EXPIRED'})
+        self.assertTrue(EmployeeDocument.objects.filter(status='PENDING', employee__user__role=UserRole.MANAGER).exists())
+        self.assertFalse(User.objects.get(email='st10@icls.vn').is_active)                    # đã nghỉ → bị khóa
+        from core.management.commands.tao_du_lieu_mau import MAT_KHAU_DEMO
+        self.assertTrue(User.objects.get(email='kt02@icls.vn').check_password(MAT_KHAU_DEMO))   # tạo qua Onboarding
+        self.assertEqual(SubstituteRequest.objects.filter(status='SEARCHING').count(), 1)
+        self.assertTrue(Contract.objects.filter(previous_contract__isnull=False).exists())
 
 
 class MenuTrai(TestCase):
