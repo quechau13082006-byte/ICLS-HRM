@@ -9,7 +9,7 @@
 ---
 
 > **Tài liệu đặc tả kỹ thuật, từ điển dữ liệu và lộ trình phát triển theo từng giai đoạn (Phase-by-Phase Roadmap) của hệ thống ICLS HRM.**  
-> *Căn cứ theo đặc tả 38 use case, 20 bảng cơ sở dữ liệu trong [`ROADMAP.md`](ROADMAP.md) và thiết kế giao diện Figma.*
+> *Căn cứ theo đặc tả 37 use case, 20 bảng cơ sở dữ liệu trong [`ROADMAP.md`](ROADMAP.md) và thiết kế giao diện Figma.*
 
 ---
 
@@ -18,7 +18,7 @@
 * **Tên đề tài:** Hệ thống Quản lý Nhân sự Trung tâm tiếng Hàn (**ICLS HRM**)
 * **Doanh nghiệp nghiên cứu:** Trung tâm tiếng Hàn **ICLS**, quy mô khoảng 40 nhân sự, 10 phòng học, 20 lớp
 * **Bài toán:** thay thế việc quản lý nhân sự bằng giấy tờ, Excel và tin nhắn rời rạc; bao phủ toàn bộ vòng đời nhân sự từ tuyển dụng, onboarding, hợp đồng, phân công lớp và xếp ca, chấm công, nghỉ phép, dạy thay, tính lương đến thanh lý hợp đồng
-* **Quy mô:** 10 app Django, 9 phân hệ, 38 use case, 5 vai trò, 20 bảng dữ liệu
+* **Quy mô:** 10 app Django, 9 phân hệ, 37 use case, 5 vai trò, 20 bảng dữ liệu
 * **Đội ngũ sinh viên thực hiện (Nhóm 4 thành viên):**
   1. **Huỳnh Ngọc Quế Châu (Trưởng nhóm):** Phân hệ chính **UC2** (Nhân sự, Onboarding); phụ trách thêm **UC6** (Lịch, lớp, ca, dạy thay).
   2. **Đặng Gia Huy:** Phân hệ chính **UC4** (Chấm công); phụ trách thêm **UC9** (Dashboard, tác vụ hằng ngày) và **UC5** (Nghỉ phép).
@@ -63,7 +63,7 @@ flowchart TB
 
 ---
 
-## 👥 III. CƠ CHẾ PHÂN QUYỀN NGƯỜI DÙNG (4 VAI TRÒ)
+## 👥 III. CƠ CHẾ PHÂN QUYỀN NGƯỜI DÙNG (5 VAI TRÒ)
 
 Hệ thống dùng Custom User Model kế thừa `AbstractUser` (đăng nhập bằng email), cột `role` quyết định vai trò. Decorator `@role_required` chặn sai vai trò và trả trang 403; dữ liệu "của mình" được lọc ngay trong truy vấn nên sửa ID trên URL cũng không lấy được dữ liệu người khác.
 
@@ -83,11 +83,11 @@ Quy tắc duyệt phân cấp: không ai tự duyệt yêu cầu của mình; y�
 
 | Mã | Tên phân hệ | Số UC | Phụ trách | Tác nhân chính | Tóm tắt nghiệp vụ cốt lõi | Bảng CSDL trọng tâm |
 | :---: | :--- | :---: | :---: | :--- | :--- | :--- |
-| **UC1** | **Xác thực và quản lý tài khoản (`accounts`)** | 5 | **Ngân Giao** | Mọi vai trò, Super Admin | Đăng nhập, đổi mật khẩu (người tạo tài khoản nhập mật khẩu ban đầu; không có Quên mật khẩu hay đặt mật khẩu qua link), tài khoản cá nhân, Super Admin quản lý tài khoản (thêm, đổi vai trò, khóa và mở khóa, không xóa cứng), đăng xuất. | `users`, `activity_logs` |
-| **UC2** | **Quản lý nhân sự (`employees`)** | 6 | **Quế Châu** | Quản lý, Kế toán, Nhân viên | Danh sách và hồ sơ nhân sự, Onboarding từ ứng viên (tạo tài khoản, quỹ phép), tải và duyệt giấy tờ chứng chỉ, cảnh báo hết hạn. | `employees`, `employee_documents` |
+| **UC1** | **Xác thực và quản lý tài khoản (`accounts`)** | 5 | **Ngân Giao** | Mọi vai trò, Super Admin | Đăng nhập, đổi mật khẩu, tài khoản cá nhân, Super Admin quản lý tài khoản (thêm tài khoản kèm mật khẩu ban đầu, đổi vai trò, khóa và mở khóa, không xóa cứng), đăng xuất. | `users`, `activity_logs` |
+| **UC2** | **Quản lý nhân sự (`employees`)** | 6 | **Quế Châu** | Quản lý, Kế toán, Nhân viên | Danh sách và hồ sơ nhân sự, Onboarding từ ứng viên (tạo tài khoản kèm mật khẩu ban đầu, quỹ phép), tải và duyệt giấy tờ chứng chỉ, cảnh báo hết hạn. | `employees`, `employee_documents` |
 | **UC3** | **Quản lý hợp đồng (`contracts`)** | 5 | **Ngân Giao** | Quản lý, Kế toán, Nhân viên | Tạo, tra cứu, gia hạn, thanh lý hợp đồng. Thanh lý chạy trong một giao dịch: khóa tài khoản, kết thúc phân công lớp, tạo yêu cầu dạy thay, trả ca Part-time, đóng cấu hình lương. | `contracts` |
 | **UC4** | **Quản lý chấm công (`attendance`)** | 5 | **Gia Huy** | Quản lý, Kế toán, Nhân viên | Check-in, Check-out theo ca (trễ quá 5 phút, về sớm tự ghi), giải trình, duyệt giải trình, lịch sử và bảng tổng hợp công (ngày công Full-time, giờ công Part-time). | `attendance` |
-| **UC5** | **Quản lý nghỉ phép (`leave`)** | 4 | **Gia Huy** | Quản lý, Kế toán, Nhân viên | Gửi đơn (tự tính số ngày, kiểm tra quỹ phép), nghỉ cả ngày hoặc buổi sáng / buổi chiều (chia ở 12:00; Ca 2 chỉ nghỉ cả ngày), duyệt đơn (trừ quỹ phép, tạo yêu cầu dạy thay, tự bỏ trợ giảng và trả chỗ ca Part-time), quỹ phép cá nhân, tổng hợp nghỉ phép. | `leave_requests`, `leave_balances` |
+| **UC5** | **Quản lý nghỉ phép (`leave`)** | 4 | **Gia Huy** | Quản lý, Kế toán, Nhân viên | Gửi đơn (tự tính số ngày, kiểm tra quỹ phép), nghỉ cả ngày hoặc nửa ngày (chia đôi ca: Ca 1 ở 12:00, Ca 2 ở 17:00), duyệt đơn (trừ quỹ phép, tạo yêu cầu dạy thay, tự bỏ trợ giảng và trả chỗ ca Part-time), quỹ phép cá nhân, tổng hợp nghỉ phép. | `leave_requests`, `leave_balances` |
 | **UC6** | **Lịch làm việc và phân công (`schedule`)** | 4 | **Quế Châu** | Quản lý, Nhân viên | Tạo lớp và sinh buổi dạy (gợi ý giáo viên rảnh và có ca bao trọn giờ học), xem lịch, khung ca Part-time (đăng ký là có ca ngay, an toàn khi nhiều người bấm cùng lúc; Quản lý gán hoặc gỡ người), xử lý dạy thay (chọn người thay hoặc hủy buổi). | `classes`, `class_assignments`, `teaching_sessions`, `shift_assignments`, `substitute_requests` |
 | **UC7** | **Quản lý lương (`payroll`)** | 3 | **Yến Trang** | Kế toán, Quản lý, Nhân viên | Cấu hình lương theo thời gian, lập bảng lương (dòng tự động, thuế TNCN tự tính, thưởng và điều chỉnh), chốt & phát hành trong một bước, phiếu lương cá nhân In hoặc Lưu PDF. | `salary_configs`, `payrolls`, `payroll_details` |
 | **UC8** | **Tuyển dụng (`recruitment`)** | 3 | **Yến Trang** | Quản lý | Đợt tuyển dụng, hồ sơ ứng viên, xếp lịch phỏng vấn và dạy thử (kiểm tra trùng lịch; đổi lịch thì hủy rồi xếp lại), đánh giá Đạt / Không đạt kèm nhận xét, chuyển Onboarding khi đạt. | `recruitment_campaigns`, `candidates`, `recruitment_rounds` |
@@ -133,75 +133,6 @@ flowchart TD
     U9 --> E2E
 ```
 
-### GIAI ĐOẠN 1 (P0 - P1): NỀN TẢNG DỰ ÁN & CƠ SỞ DỮ LIỆU
-
-> **Mục tiêu:** Dựng khung dự án, phân quyền dùng chung và toàn bộ 20 bảng để mọi app sau này tham chiếu được nhau mà không phải sửa migration.
-
-* **Phụ trách:** Ngân Giao (khung dự án, phân quyền), cả nhóm viết models của app mình phụ trách
-* **Nội dung:** Khởi tạo 10 app và `settings.py` (tham số nghiệp vụ), `base.html` theo Figma với menu theo vai trò, `role_required`, `co_quyen_duyet`, thông báo, nhật ký, 20 models và migration, lệnh `tao_du_lieu_mau` (40 nhân sự, 20 lớp)
-
-**Tiêu chuẩn nghiệm thu:**
-* `python manage.py check` đạt 0 lỗi; `makemigrations --check` không có thay đổi.
-* Chạy `tao_du_lieu_mau` nhiều lần không nhân đôi dữ liệu.
-
-### GIAI ĐOẠN 2 (P2 - P5): NHÂN SỰ CỐT LÕI
-
-> **Mục tiêu:** Hoàn thiện xác thực, tuyển dụng, hồ sơ nhân sự và hợp đồng: từ ứng viên thành nhân sự đang làm việc.
-
-* **Phụ trách:** UC1 (Ngân Giao), UC8 (Yến Trang), UC2 (Quế Châu), UC3 (Ngân Giao)
-* **Nội dung:** Đăng nhập và quản lý tài khoản; đợt tuyển dụng, phỏng vấn, dạy thử, đánh giá; Onboarding, giấy tờ và cảnh báo hết hạn; tạo, gia hạn, thanh lý hợp đồng
-
-**Tiêu chuẩn nghiệm thu:**
-* Đăng nhập được với cả 5 vai trò; tài khoản bị khóa không đăng nhập được.
-* Luồng tuyển dụng đến hợp đồng: ứng viên đạt, tạo hồ sơ (HIRED), tạo hợp đồng đầu tiên thì nhân sự chuyển ACTIVE.
-* Thanh lý hợp đồng khóa tài khoản và giải phóng lịch tương lai.
-
-### GIAI ĐOẠN 3 (P6 - P8): VẬN HÀNH HẰNG NGÀY
-
-> **Mục tiêu:** Vận hành lịch dạy, ca làm, nghỉ phép và chấm công, các phân hệ liên thông nhau.
-
-* **Phụ trách:** UC6 (Quế Châu), UC4 và UC5 (Gia Huy)
-* **Nội dung:** Tạo lớp và sinh buổi dạy, lịch làm việc và lịch lớp, khung ca Part-time; gửi và duyệt đơn nghỉ, quỹ phép, dạy thay; check-in và check-out, giải trình, tổng hợp công
-
-**Tiêu chuẩn nghiệm thu:**
-* Tạo lớp chỉ gợi ý giáo viên có ca bao trọn giờ học; hai người cùng đăng ký chỗ cuối cùng thì chỉ một người được.
-* Duyệt đơn nghỉ tự trừ quỹ phép và tạo yêu cầu dạy thay.
-* Giải trình được chấp thuận thì bản ghi chuyển ON_TIME và được tính công.
-
-### GIAI ĐOẠN 4 (P9 - P10): LƯƠNG & TỔNG HỢP
-
-> **Mục tiêu:** Khép kín dòng tiền lương và cung cấp bức tranh tổng quan theo từng vai trò.
-
-* **Phụ trách:** UC7 (Yến Trang), UC9 (Gia Huy)
-* **Nội dung:** Cấu hình lương, lập, tính lại, chốt & phát hành bảng lương, thuế TNCN tự tính, phiếu lương In hoặc Lưu PDF; Dashboard theo vai trò, tác vụ hằng ngày (nút và lệnh)
-
-**Tiêu chuẩn nghiệm thu:**
-* Số công, giờ công, lương khớp với số tính tay trong test; chốt lương khóa dữ liệu chấm công và nghỉ phép của tháng.
-* Tác vụ hằng ngày chạy lại không tạo dữ liệu trùng; một bước lỗi các bước còn lại vẫn chạy.
-
-### GIAI ĐOẠN 5 (P11): HOÀN THIỆN & KIỂM THỬ TỔNG
-
-> **Mục tiêu:** Kiểm thử khép kín toàn hệ thống và chuẩn bị bảo vệ.
-
-* **Phụ trách:** Cả nhóm; Quế Châu (Trưởng nhóm) tích hợp, Gia Huy kiểm thử tổng và kịch bản demo
-* **Nội dung:** Chạy toàn bộ test, đối chiếu ma trận truy vết 38 use case, chạy kịch bản demo (tuyển dụng, Onboarding, phân công, vận hành, lương, thanh lý), rà tài liệu `GIAI_THICH.md`
-
-**Tiêu chuẩn nghiệm thu:**
-* 542 test đều qua; mỗi luồng của 38 use case có test đặt tên theo mã luồng.
-* Kịch bản demo chạy trọn vẹn 43 bước; không app nào ghi chéo bảng của app khác.
-
-### BẢNG TIÊU CHÍ NGHIỆM THU TỪNG PHASE (GATE CRITERIA)
-
-| Giai đoạn | Đầu ra bắt buộc (Deliverables) | Tiêu chí vượt qua Gate |
-| :---: | :--- | :--- |
-| **Giai đoạn 1** | Khung dự án, phân quyền, 20 models, dữ liệu mẫu | `check` 0 lỗi, migration sạch, dữ liệu mẫu chạy lại không nhân đôi |
-| **Giai đoạn 2** | UC1, UC8, UC2, UC3 | Đăng nhập theo vai trò; ứng viên thành nhân sự ACTIVE; thanh lý hợp đồng liên thông sang lịch |
-| **Giai đoạn 3** | UC6, UC5, UC4 | Đăng ký ca an toàn; nghỉ phép tạo dạy thay; chấm công và giải trình đúng công thức |
-| **Giai đoạn 4** | UC7, UC9 | Lương khớp số tính tay; Dashboard theo vai trò; tác vụ hằng ngày không trùng |
-| **Giai đoạn 5** | Bộ test, kịch bản demo, tài liệu | 542 test qua; demo 43/43 bước; mọi UC có tài liệu giải thích |
-
----
-
 ## ⚙️ VI. VÒNG ĐỜI TRẠNG THÁI (STATE MACHINE)
 
 Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiện và kiểm tra trạng thái hiện tại trước khi chuyển:
@@ -209,7 +140,7 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 | Bảng CSDL | Cột trạng thái | Tập giá trị | Điều kiện chuyển trạng thái | UC |
 | :--- | :--- | :--- | :--- | :---: |
 | `employees` | `status` | `ONBOARDING`, `ACTIVE`, `RESIGNED`, `TERMINATED` | Tạo hợp đồng đầu tiên: ONBOARDING sang ACTIVE; thanh lý hợp đồng: ACTIVE sang RESIGNED hoặc TERMINATED | 3.1, 3.4 |
-| `users` | `is_active` | `True`, `False` | Super Admin khóa hoặc mở khóa; thanh lý hợp đồng tự khóa. **Không xóa cứng tài khoản** | 1.5, 3.4 |
+| `users` | `is_active` | `True`, `False` | Super Admin khóa hoặc mở khóa; thanh lý hợp đồng tự khóa. **Không xóa cứng tài khoản** | 1.4, 3.4 |
 | `contracts` | `status` | `ACTIVE`, `EXPIRED`, `TERMINATED` | Gia hạn: hợp đồng cũ sang EXPIRED; thanh lý: sang TERMINATED. Mỗi nhân sự chỉ một hợp đồng ACTIVE | 3.3, 3.4 |
 | `employee_documents` | `status` | `PENDING`, `APPROVED`, `REJECTED`, `EXPIRED` | Tải giấy tờ: PENDING; duyệt hoặc từ chối; quá ngày hết hạn: APPROVED sang EXPIRED (tác vụ hằng ngày) | 2.2, 2.6, 9.2 |
 | `candidates` | `status` | `NEW`, `SCREENING`, `INTERVIEWING`, `TEACHING_TRIAL`, `PASSED`, `REJECTED`, `HIRED` | Sơ tuyển; xếp lịch phỏng vấn; giáo viên Full-time đạt phỏng vấn thì sang TEACHING_TRIAL, vị trí khác sang PASSED; tạo hồ sơ nhân sự: HIRED | 8.1 - 8.3, 2.5 |
@@ -225,55 +156,54 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 
 ---
 
-## 📊 VII. MA TRẬN PHÂN CHIA NHIỆM VỤ 38 USE CASES (4 THÀNH VIÊN)
+## 📊 VII. MA TRẬN PHÂN CHIA NHIỆM VỤ 37 USE CASES (4 THÀNH VIÊN)
 
 <details>
-<summary><b>Nhấn vào đây để xem toàn bộ danh sách 38 Use Cases phân chia cho 4 thành viên</b></summary>
+<summary><b>Nhấn vào đây để xem toàn bộ danh sách 37 Use Cases phân chia cho 4 thành viên</b></summary>
 
 | STT | Phân hệ | Mã UC | Tên Use Case | Phụ trách | Màn hình giao diện | Hàm service chính | Bảng CSDL liên quan | Test |
 | :---: | :---: | :---: | :--- | :---: | :--- | :--- | :--- | :---: |
 | 1 | UC1 | UC-1.1 | Đăng nhập | **Ngân Giao** | Form đăng nhập | `dang_nhap` | users, activity_logs | 9 |
-| 2 | UC1 | UC-1.2 | ~~Quên mật khẩu~~ (đã bỏ; quên mật khẩu thì liên hệ Super Admin) | **Ngân Giao** | Không có (đã bỏ cả đặt mật khẩu qua link) | – | – | 0 |
-| 3 | UC1 | UC-1.3 | Đổi mật khẩu | **Ngân Giao** | Form đổi mật khẩu | `doi_mat_khau` | users | 6 |
-| 4 | UC1 | UC-1.4 | Xem & cập nhật tài khoản cá nhân | **Ngân Giao** | Trang tài khoản cá nhân (ảnh đại diện) | `cap_nhat_tai_khoan`, `dong_bo_tu_ho_so` | users, employees | 8 |
-| 5 | UC1 | UC-1.5 | Quản lý tài khoản người dùng | **Ngân Giao** | Bảng quản lý tài khoản, form thêm tài khoản | `danh_sach_tai_khoan`, `tao_tai_khoan`, `doi_vai_tro`, `khoa_tai_khoan`, `mo_khoa_tai_khoan` | users, activity_logs | 10 |
-| 6 | UC1 | UC-1.6 | Đăng xuất | **Ngân Giao** | Nút Đăng xuất trong menu tài khoản | `dang_xuat` | users, activity_logs | 3 |
-| 7 | UC2 | UC-2.1 | Xem danh sách nhân sự | **Quế Châu** | Bảng danh sách nhân sự có tìm kiếm và lọc | `danh_sach_nhan_su`, `dem_nhan_su_theo_trang_thai` | employees | 10 |
-| 8 | UC2 | UC-2.2 | Cập nhật hồ sơ cá nhân | **Quế Châu** | Form cập nhật hồ sơ và tải giấy tờ | `luu_ho_so_ca_nhan`, `tai_ban_moi_giay_to` | employees, employee_documents | 11 |
-| 9 | UC2 | UC-2.3 | Xem hồ sơ cá nhân | **Quế Châu** | Hồ sơ của tôi, hồ sơ chi tiết nhân sự | `du_lieu_ho_so` | employees, employee_documents, contracts, leave_balances | 5 |
-| 10 | UC2 | UC-2.4 | Theo dõi cảnh báo giấy tờ sắp hết hạn | **Quế Châu** | Trang cảnh báo giấy tờ sắp hết hạn (Giám đốc chỉ xem) | `danh_sach_canh_bao`, `muc_canh_bao`, `nhac_nho_cap_nhat` | employee_documents, notifications | 6 |
-| 11 | UC2 | UC-2.5 | Tiếp nhận & quản lý hồ sơ nhân sự (Onboarding) | **Quế Châu** | Form tạo hồ sơ nhân sự (Onboarding) | `tao_ho_so_nhan_su`, `sua_ho_so_nhan_su` | employees, users, candidates, leave_balances | 14 |
-| 12 | UC2 | UC-2.6 | Duyệt giấy tờ, chứng chỉ | **Quế Châu** | Danh sách giấy tờ chờ duyệt, trang duyệt hoặc từ chối | `giay_to_cho_duyet`, `duyet_giay_to`, `tu_choi_giay_to` | employee_documents, notifications | 9 |
-| 13 | UC3 | UC-3.1 | Quản lý danh sách hợp đồng | **Ngân Giao** | Danh sách hợp đồng, form thêm hợp đồng | `danh_sach_hop_dong`, `them_hop_dong` | contracts, employees | 11 |
-| 14 | UC3 | UC-3.2 | Tra cứu chi tiết hợp đồng | **Ngân Giao** | Trang chi tiết hợp đồng | `co_quyen_xem_hop_dong`, `lich_su_gia_han` | contracts | 7 |
-| 15 | UC3 | UC-3.3 | Cập nhật & gia hạn hợp đồng | **Ngân Giao** | Form gia hạn, cập nhật file scan | `gia_han_hop_dong`, `cap_nhat_file_scan` | contracts | 8 |
-| 16 | UC3 | UC-3.4 | Thanh lý hợp đồng | **Ngân Giao** | Form thanh lý hợp đồng | `thanh_ly_hop_dong` | contracts, employees, users, class_assignments, teaching_sessions, substitute_requests, shift_assignments, salary_configs | 14 |
-| 17 | UC3 | UC-3.5 | Theo dõi hợp đồng sắp hết hạn | **Ngân Giao** | Trang hợp đồng sắp hết hạn (3 nhóm; Giám đốc chỉ xem) | `hop_dong_sap_het_han` | contracts, notifications | 7 |
-| 18 | UC4 | UC-4.1 | Chấm công Check-in / Check-out | **Gia Huy** | Màn hình chấm công, nút Check-in và Check-out | `man_hinh_cham_cong`, `check_in`, `check_out`, `lich_du_kien` | attendance, shift_assignments | 11 |
-| 19 | UC4 | UC-4.2 | Gửi giải trình chấm công | **Gia Huy** | Form gửi giải trình | `gui_giai_trinh`, `kiem_tra_co_the_giai_trinh` | attendance | 5 |
-| 20 | UC4 | UC-4.3 | Xem lịch sử chấm công cá nhân | **Gia Huy** | Lịch sử chấm công theo tháng | `lich_su_cham_cong`, `tong_thoi_gian_lam` | attendance | 4 |
-| 21 | UC4 | UC-4.4 | Duyệt giải trình chấm công | **Gia Huy** | Danh sách và chi tiết giải trình chờ duyệt | `chap_thuan_giai_trinh`, `tu_choi_giai_trinh`, `danh_sach_giai_trinh` | attendance, notifications | 5 |
-| 22 | UC4 | UC-4.5 | Quản lý bảng tổng hợp công | **Gia Huy** | Bảng tổng hợp công, chi tiết từng nhân sự | `tong_hop_cong`, `tinh_ngay_cong`, `tinh_gio_cong` | attendance, leave_requests | 5 |
-| 23 | UC5 | UC-5.1 | Gửi đơn xin nghỉ phép | **Gia Huy** | Form gửi đơn nghỉ | `gui_don_nghi`, `tinh_so_ngay_nghi`, `huy_don_nghi` | leave_requests, leave_balances | 14 |
-| 24 | UC5 | UC-5.2 | Duyệt đơn xin nghỉ phép | **Gia Huy** | Danh sách đơn chờ duyệt, trang quyết định | `duyet_don_nghi`, `tu_choi_don_nghi`, `tom_tat_anh_huong` | leave_requests, leave_balances, substitute_requests | 12 |
-| 25 | UC5 | UC-5.3 | Tra cứu quỹ phép cá nhân | **Gia Huy** | Trang Nghỉ phép của tôi (quỹ phép) | `thong_tin_quy_phep`, `don_cua_nhan_su` | leave_balances, leave_requests | 4 |
-| 26 | UC5 | UC-5.4 | Tổng hợp lịch sử nghỉ phép | **Gia Huy** | Bảng tổng hợp nghỉ phép | `tong_hop_nghi_phep` | leave_requests, leave_balances | 6 |
-| 27 | UC6 | UC-6.1 | Tạo và phân công lớp học | **Quế Châu** | Form tạo lớp hai bước, trang chi tiết lớp | `goi_y_giao_vien`, `tao_lop_va_phan_cong`, `huy_lop` | classes, class_assignments, teaching_sessions | 14 |
-| 28 | UC6 | UC-6.2 | Xem lịch làm việc & lịch lớp học | **Quế Châu** | Lịch làm việc, lịch lớp học, lịch cá nhân (xem theo tuần) | `lich_lam_viec`, `lich_lop_hoc`, `lich_ca_full_time` | classes, teaching_sessions, shift_assignments, leave_requests | 9 |
-| 29 | UC6 | UC-6.3 | Đăng ký & phân công ca làm việc Part-time | **Quế Châu** | Tạo khung ca, đăng ký ca (có ca ngay), tổng hợp, gán / gỡ người | `tao_khung_ca`, `dang_ky_ca`, `gan_nhan_vien_vao_cho`, `go_nguoi_khoi_cho` | shift_assignments | 17 |
-| 30 | UC6 | UC-6.4 | Xử lý dạy thay | **Quế Châu** | Danh sách dạy thay, chọn người thay hoặc hủy buổi | `chot_day_thay`, `huy_buoi_hoc` | substitute_requests, teaching_sessions | 11 |
-| 31 | UC7 | UC-7.1 | Quản lý cấu hình lương | **Yến Trang** | Danh sách và chi tiết cấu hình lương | `luu_cau_hinh_luong`, `cau_hinh_hieu_luc` | salary_configs | 7 |
-| 32 | UC7 | UC-7.2 | Lập và chốt bảng lương | **Yến Trang** | Danh sách bảng lương, bảng lương tháng, chi tiết từng người | `khoi_tao_bang_luong`, `tinh_lai_bang_luong`, `chot_va_phat_hanh`, `tinh_thue_tncn` | payrolls, payroll_details | 22 |
-| 33 | UC7 | UC-7.3 | Tra cứu phiếu lương cá nhân | **Yến Trang** | Phiếu lương của tôi (In / Lưu PDF) | `phieu_luong_da_phat_hanh`, `chi_tiet_phieu` | payrolls, payroll_details | 4 |
-| 34 | UC8 | UC-8.1 | Quản lý đợt tuyển dụng & hồ sơ ứng viên | **Yến Trang** | Bảng ứng viên theo trạng thái, form đợt tuyển dụng | `tao_dot_tuyen_dung`, `them_ung_vien`, `danh_gia_so_tuyen`, `bang_ung_vien` | recruitment_campaigns, candidates | 12 |
-| 35 | UC8 | UC-8.2 | Quản lý lịch phỏng vấn & dạy thử | **Yến Trang** | Ngăn hồ sơ ứng viên, xếp lịch phỏng vấn và dạy thử | `xep_lich_vong`, `huy_vong` | recruitment_rounds, candidates | 12 |
-| 36 | UC8 | UC-8.3 | Đánh giá kết quả & chuyển Onboarding | **Yến Trang** | Danh sách vòng cần đánh giá, form Đạt / Không đạt | `vong_can_danh_gia`, `danh_gia_vong`, `danh_dau_da_tuyen` | recruitment_rounds, candidates | 12 |
-| 37 | UC9 | UC-9.1 | Xem Dashboard theo vai trò | **Gia Huy** | Dashboard theo vai trò | `du_lieu_dashboard`, `du_lieu_quan_ly`, `du_lieu_ke_toan`, `du_lieu_ca_nhan` | Đọc dữ liệu các bảng khác | 13 |
-| 38 | UC9 | UC-9.2 | Chạy tác vụ tự động hằng ngày | **Gia Huy** | Nút "Chạy tác vụ hằng ngày" (Super Admin), lệnh dòng lệnh | `chay_tac_vu_ngay` | employee_documents, attendance, classes, teaching_sessions, substitute_requests, leave_balances, activity_logs | 10 |
+| 2 | UC1 | UC-1.2 | Đổi mật khẩu | **Ngân Giao** | Form đổi mật khẩu | `doi_mat_khau` | users | 6 |
+| 3 | UC1 | UC-1.3 | Xem & cập nhật tài khoản cá nhân | **Ngân Giao** | Trang tài khoản cá nhân (ảnh đại diện) | `cap_nhat_tai_khoan`, `dong_bo_tu_ho_so` | users, employees | 8 |
+| 4 | UC1 | UC-1.4 | Quản lý tài khoản người dùng | **Ngân Giao** | Bảng quản lý tài khoản, form thêm tài khoản (nhập mật khẩu ban đầu) | `danh_sach_tai_khoan`, `tao_tai_khoan`, `doi_vai_tro`, `khoa_tai_khoan`, `mo_khoa_tai_khoan` | users, activity_logs | 10 |
+| 5 | UC1 | UC-1.5 | Đăng xuất | **Ngân Giao** | Nút Đăng xuất trong menu tài khoản | `dang_xuat` | users, activity_logs | 3 |
+| 6 | UC2 | UC-2.1 | Xem danh sách nhân sự | **Quế Châu** | Bảng danh sách nhân sự có tìm kiếm và lọc | `danh_sach_nhan_su`, `dem_nhan_su_theo_trang_thai` | employees | 10 |
+| 7 | UC2 | UC-2.2 | Cập nhật hồ sơ cá nhân | **Quế Châu** | Form cập nhật hồ sơ và tải giấy tờ | `luu_ho_so_ca_nhan`, `tai_ban_moi_giay_to` | employees, employee_documents | 11 |
+| 8 | UC2 | UC-2.3 | Xem hồ sơ cá nhân | **Quế Châu** | Hồ sơ của tôi, hồ sơ chi tiết nhân sự | `du_lieu_ho_so` | employees, employee_documents, contracts, leave_balances | 5 |
+| 9 | UC2 | UC-2.4 | Theo dõi cảnh báo giấy tờ sắp hết hạn | **Quế Châu** | Trang cảnh báo giấy tờ sắp hết hạn (Giám đốc chỉ xem) | `danh_sach_canh_bao`, `muc_canh_bao`, `nhac_nho_cap_nhat` | employee_documents, notifications | 6 |
+| 10 | UC2 | UC-2.5 | Tiếp nhận & quản lý hồ sơ nhân sự (Onboarding) | **Quế Châu** | Form tạo hồ sơ nhân sự (Onboarding) | `tao_ho_so_nhan_su`, `sua_ho_so_nhan_su` | employees, users, candidates, leave_balances | 14 |
+| 11 | UC2 | UC-2.6 | Duyệt giấy tờ, chứng chỉ | **Quế Châu** | Danh sách giấy tờ chờ duyệt, trang duyệt hoặc từ chối | `giay_to_cho_duyet`, `duyet_giay_to`, `tu_choi_giay_to` | employee_documents, notifications | 9 |
+| 12 | UC3 | UC-3.1 | Quản lý danh sách hợp đồng | **Ngân Giao** | Danh sách hợp đồng, form thêm hợp đồng | `danh_sach_hop_dong`, `them_hop_dong` | contracts, employees | 11 |
+| 13 | UC3 | UC-3.2 | Tra cứu chi tiết hợp đồng | **Ngân Giao** | Trang chi tiết hợp đồng | `co_quyen_xem_hop_dong`, `lich_su_gia_han` | contracts | 7 |
+| 14 | UC3 | UC-3.3 | Cập nhật & gia hạn hợp đồng | **Ngân Giao** | Form gia hạn, cập nhật file scan | `gia_han_hop_dong`, `cap_nhat_file_scan` | contracts | 8 |
+| 15 | UC3 | UC-3.4 | Thanh lý hợp đồng | **Ngân Giao** | Form thanh lý hợp đồng | `thanh_ly_hop_dong` | contracts, employees, users, class_assignments, teaching_sessions, substitute_requests, shift_assignments, salary_configs | 14 |
+| 16 | UC3 | UC-3.5 | Theo dõi hợp đồng sắp hết hạn | **Ngân Giao** | Trang hợp đồng sắp hết hạn (3 nhóm; Giám đốc chỉ xem) | `hop_dong_sap_het_han` | contracts, notifications | 7 |
+| 17 | UC4 | UC-4.1 | Chấm công Check-in / Check-out | **Gia Huy** | Màn hình chấm công, nút Check-in và Check-out | `man_hinh_cham_cong`, `check_in`, `check_out`, `lich_du_kien` | attendance, shift_assignments | 11 |
+| 18 | UC4 | UC-4.2 | Gửi giải trình chấm công | **Gia Huy** | Form gửi giải trình | `gui_giai_trinh`, `kiem_tra_co_the_giai_trinh` | attendance | 5 |
+| 19 | UC4 | UC-4.3 | Xem lịch sử chấm công cá nhân | **Gia Huy** | Lịch sử chấm công theo tháng | `lich_su_cham_cong`, `tong_thoi_gian_lam` | attendance | 4 |
+| 20 | UC4 | UC-4.4 | Duyệt giải trình chấm công | **Gia Huy** | Danh sách và chi tiết giải trình chờ duyệt | `chap_thuan_giai_trinh`, `tu_choi_giai_trinh`, `danh_sach_giai_trinh` | attendance, notifications | 5 |
+| 21 | UC4 | UC-4.5 | Quản lý bảng tổng hợp công | **Gia Huy** | Bảng tổng hợp công, chi tiết từng nhân sự | `tong_hop_cong`, `tinh_ngay_cong`, `tinh_gio_cong` | attendance, leave_requests | 5 |
+| 22 | UC5 | UC-5.1 | Gửi đơn xin nghỉ phép | **Gia Huy** | Form gửi đơn nghỉ | `gui_don_nghi`, `tinh_so_ngay_nghi`, `huy_don_nghi` | leave_requests, leave_balances | 14 |
+| 23 | UC5 | UC-5.2 | Duyệt đơn xin nghỉ phép | **Gia Huy** | Danh sách đơn chờ duyệt, trang quyết định | `duyet_don_nghi`, `tu_choi_don_nghi`, `tom_tat_anh_huong` | leave_requests, leave_balances, substitute_requests | 12 |
+| 24 | UC5 | UC-5.3 | Tra cứu quỹ phép cá nhân | **Gia Huy** | Trang Nghỉ phép của tôi (quỹ phép) | `thong_tin_quy_phep`, `don_cua_nhan_su` | leave_balances, leave_requests | 4 |
+| 25 | UC5 | UC-5.4 | Tổng hợp lịch sử nghỉ phép | **Gia Huy** | Bảng tổng hợp nghỉ phép | `tong_hop_nghi_phep` | leave_requests, leave_balances | 6 |
+| 26 | UC6 | UC-6.1 | Tạo và phân công lớp học | **Quế Châu** | Form tạo lớp hai bước, trang chi tiết lớp | `goi_y_giao_vien`, `tao_lop_va_phan_cong`, `huy_lop` | classes, class_assignments, teaching_sessions | 14 |
+| 27 | UC6 | UC-6.2 | Xem lịch làm việc & lịch lớp học | **Quế Châu** | Lịch làm việc, lịch lớp học, lịch cá nhân (xem theo tuần) | `lich_lam_viec`, `lich_lop_hoc`, `lich_ca_full_time` | classes, teaching_sessions, shift_assignments, leave_requests | 9 |
+| 28 | UC6 | UC-6.3 | Đăng ký & phân công ca làm việc Part-time | **Quế Châu** | Tạo khung ca, đăng ký ca (có ca ngay), tổng hợp, gán / gỡ người | `tao_khung_ca`, `dang_ky_ca`, `gan_nhan_vien_vao_cho`, `go_nguoi_khoi_cho` | shift_assignments | 17 |
+| 29 | UC6 | UC-6.4 | Xử lý dạy thay | **Quế Châu** | Danh sách dạy thay, chọn người thay hoặc hủy buổi | `chot_day_thay`, `huy_buoi_hoc` | substitute_requests, teaching_sessions | 11 |
+| 30 | UC7 | UC-7.1 | Quản lý cấu hình lương | **Yến Trang** | Danh sách và chi tiết cấu hình lương | `luu_cau_hinh_luong`, `cau_hinh_hieu_luc` | salary_configs | 7 |
+| 31 | UC7 | UC-7.2 | Lập và chốt bảng lương | **Yến Trang** | Danh sách bảng lương, bảng lương tháng, chi tiết từng người | `khoi_tao_bang_luong`, `tinh_lai_bang_luong`, `chot_va_phat_hanh`, `tinh_thue_tncn` | payrolls, payroll_details | 22 |
+| 32 | UC7 | UC-7.3 | Tra cứu phiếu lương cá nhân | **Yến Trang** | Phiếu lương của tôi (In / Lưu PDF) | `phieu_luong_da_phat_hanh`, `chi_tiet_phieu` | payrolls, payroll_details | 4 |
+| 33 | UC8 | UC-8.1 | Quản lý đợt tuyển dụng & hồ sơ ứng viên | **Yến Trang** | Bảng ứng viên theo trạng thái, form đợt tuyển dụng | `tao_dot_tuyen_dung`, `them_ung_vien`, `danh_gia_so_tuyen`, `bang_ung_vien` | recruitment_campaigns, candidates | 12 |
+| 34 | UC8 | UC-8.2 | Quản lý lịch phỏng vấn & dạy thử | **Yến Trang** | Ngăn hồ sơ ứng viên, xếp lịch phỏng vấn và dạy thử | `xep_lich_vong`, `huy_vong` | recruitment_rounds, candidates | 12 |
+| 35 | UC8 | UC-8.3 | Đánh giá kết quả & chuyển Onboarding | **Yến Trang** | Danh sách vòng cần đánh giá, form Đạt / Không đạt | `vong_can_danh_gia`, `danh_gia_vong`, `danh_dau_da_tuyen` | recruitment_rounds, candidates | 12 |
+| 36 | UC9 | UC-9.1 | Xem Dashboard theo vai trò | **Gia Huy** | Dashboard theo vai trò | `du_lieu_dashboard`, `du_lieu_quan_ly`, `du_lieu_ke_toan`, `du_lieu_ca_nhan` | Đọc dữ liệu các bảng khác | 13 |
+| 37 | UC9 | UC-9.2 | Chạy tác vụ tự động hằng ngày | **Gia Huy** | Nút "Chạy tác vụ hằng ngày" (Super Admin), lệnh dòng lệnh | `chay_tac_vu_ngay` | employee_documents, attendance, classes, teaching_sessions, substitute_requests, leave_balances, activity_logs | 10 |
 
 </details>
 
-Tổng: Quế Châu 10 UC (UC2, UC6), Gia Huy 11 UC (UC4, UC5, UC9), Ngân Giao 11 UC (UC1, UC3), Yến Trang 6 UC (UC7, UC8). Mỗi phân hệ do đúng một người phụ trách, không chia chéo.
+Tổng: Quế Châu 10 UC (UC2, UC6), Gia Huy 11 UC (UC4, UC5, UC9), Ngân Giao 10 UC (UC1, UC3), Yến Trang 6 UC (UC7, UC8). Mỗi phân hệ do đúng một người phụ trách, không chia chéo.
 
 ---
 
@@ -287,8 +217,8 @@ Hệ thống render HTML phía server (Django Template), không có REST API ri�
 | STT | Mã UC | Method | URL | Quyền truy cập |
 | :---: | :---: | :---: | :--- | :--- |
 | 1 | UC-1.1 | **POST** | `/tai-khoan/dang-nhap/` | Công khai |
-| 2 | UC-1.5 | **POST** | `/tai-khoan/quan-ly/{id}/khoa-mo-khoa/` | Super Admin |
-| 3 | UC-2.1 | **GET** | `/nhan-su/` | Mọi vai trò (Nhân viên chỉ xem thông tin cơ bản) |
+| 2 | UC-1.4 | **POST** | `/tai-khoan/quan-ly/{id}/khoa-mo-khoa/` | Super Admin |
+| 3 | UC-2.1 | **GET** | `/nhan-su/` | Giám đốc, Quản lý (đầy đủ); Kế toán, Nhân viên (thông tin liên hệ) |
 | 4 | UC-2.5 | **POST** | `/nhan-su/moi/` | Quản lý |
 | 5 | UC-2.6 | **POST** | `/nhan-su/giay-to/{id}/` | Quản lý; Giám đốc (giấy tờ của Quản lý) |
 | 6 | UC-3.1 | **POST** | `/hop-dong/moi/` | Quản lý |
@@ -298,7 +228,7 @@ Hệ thống render HTML phía server (Django Template), không có REST API ri�
 | 10 | UC-5.1 | **POST** | `/nghi-phep/don/moi/` | Quản lý, Kế toán, Nhân viên |
 | 11 | UC-5.2 | **POST** | `/nghi-phep/don/{id}/xu-ly/` | Quản lý; Giám đốc (đơn của Quản lý) |
 | 12 | UC-6.1 | **POST** | `/lich/lop/moi/` | Quản lý |
-| 13 | UC-6.3 | **POST** | `/lich/ca/khung/{ma}/giu-cho/` | Nhân viên Part-time |
+| 13 | UC-6.3 | **POST** | `/lich/ca/khung/{ma}/dang-ky/` | Nhân sự Part-time |
 | 14 | UC-6.4 | **POST** | `/lich/day-thay/{id}/` | Quản lý |
 | 15 | UC-7.2 | **POST** | `/luong/bang-luong/tao/` | Kế toán |
 | 16 | UC-7.2 | **POST** | `/luong/bang-luong/{nam}/{thang}/chot/` | Kế toán |
