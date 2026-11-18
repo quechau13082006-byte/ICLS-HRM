@@ -14,11 +14,27 @@ DINH_DANG_GIO = '%Y-%m-%dT%H:%M'          # định dạng của ô <input type=
 
 
 class DotTuyenDungForm(BootstrapForm):
-    """UC 8.1 – bước 1."""
+    """UC 8.1 – bước 1: tên, thời gian và chỉ tiêu (số lượng cần tuyển cho từng vị trí, để trống = không tuyển vị trí đó).
+
+    Mỗi vị trí một ô số `sl_<VỊ TRÍ>`; luật "ít nhất một vị trí" kiểm tra ở services.tao_dot_tuyen_dung."""
     campaign_name = forms.CharField(label='Tên đợt tuyển dụng', max_length=255,
                                     widget=forms.TextInput(attrs={'placeholder': 'Ví dụ: Tuyển dụng Q4-2026'}))
     start_date = forms.DateField(label='Ngày bắt đầu', widget=forms.DateInput(attrs={'type': 'date'}))
     end_date = forms.DateField(label='Ngày kết thúc', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for ma, ten in Position.choices:
+            self.fields[f'sl_{ma}'] = forms.IntegerField(
+                label=ten, required=False, min_value=0, max_value=999,
+                widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': '0'}))
+
+    def o_chi_tieu(self):
+        """Các ô số lượng theo thứ tự vị trí (template vẽ thành bảng Vị trí | Số lượng cần tuyển)."""
+        return [self[f'sl_{ma}'] for ma in Position.values]
+
+    def chi_tieu(self):
+        return {ma: self.cleaned_data.get(f'sl_{ma}') or 0 for ma in Position.values}
 
     def clean(self):
         du_lieu = super().clean()

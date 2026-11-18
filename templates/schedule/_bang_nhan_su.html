@@ -27,7 +27,7 @@
       <td class="{% if forloop.counter0 == bang.chi_so_hom_nay %}today{% endif %}">
         {% for m in o %}
           {% if m.loai == 'nghi' %}<span class="rs-chip rs-nghi">Nghỉ phép</span>
-          {% elif m.loai == 'ca_ft' %}{% if m.dong_3 %}<span class="rs-chip rs-nghi" title="Nghỉ nửa ngày">½ nghỉ</span>{% else %}{% if la_quan_ly %}<span class="rs-cham" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">·</span>{% else %}<span class="rs-chip rs-ft">{{ m.tieu_de }} {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</span>{% endif %}{% endif %}
+          {% elif m.loai == 'ca_ft' %}{% if la_quan_ly %}<span class="rs-cham" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">·</span>{% else %}<span class="rs-chip rs-ft">{{ m.tieu_de }} {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</span>{% endif %}
           {% elif m.loai == 'buoi' %}<a class="rs-chip rs-tg" href="{{ m.url }}" title="Dạy {{ m.ten_lop|default:m.tieu_de }} · {{ m.dong_2 }}"><b>{{ m.tieu_de }}</b> {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>
           {% elif m.loai == 'tro_giang' %}<a class="rs-chip rs-tg" href="{{ m.url }}" title="Trợ giảng {{ m.ten_lop|default:m.tieu_de }} · {{ m.dong_2 }}"><b>{{ m.tieu_de }}</b> {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>
           {% else %}<a class="rs-chip rs-pt" href="{{ m.url }}" title="{{ m.tieu_de }} {{ m.bd|time:'H:i' }}–{{ m.kt|time:'H:i' }}">{{ m.tieu_de }} {{ m.bd|gio_gon }}–{{ m.kt|gio_gon }}</a>{% endif %}

@@ -22,13 +22,21 @@ class DangNhapForm(BootstrapForm):
         attrs={'placeholder': 'Mật khẩu', 'autocomplete': 'current-password'}))
 
 
+class QuenMatKhauForm(BootstrapForm):
+    """UC 1.2 – bước 3: nhập Email đã đăng ký."""
+    email = forms.EmailField(label='Email', max_length=255,
+                             widget=forms.EmailInput(attrs={'placeholder': 'Email', 'autocomplete': 'username', 'autofocus': True}))
+
+
 class MatKhauMoiForm(BootstrapForm):
-    """Hai ô Mật khẩu mới + Xác nhận của UC 1.3 (đổi mật khẩu).
+    """Hai ô Mật khẩu mới + Xác nhận của UC 1.2 (đặt lại mật khẩu) và UC 1.3 (đổi mật khẩu).
 
     Thứ tự báo lỗi theo §10: không khớp trước, rồi tới chưa đủ mạnh.
     """
-    mat_khau_moi = forms.CharField(label='Mật khẩu mới', widget=forms.PasswordInput)
-    xac_nhan = forms.CharField(label='Xác nhận mật khẩu mới', widget=forms.PasswordInput)
+    mat_khau_moi = forms.CharField(label='Mật khẩu mới', widget=forms.PasswordInput(
+        attrs={'autocomplete': 'new-password', 'placeholder': 'Mật khẩu mới'}))
+    xac_nhan = forms.CharField(label='Xác nhận mật khẩu mới', widget=forms.PasswordInput(
+        attrs={'autocomplete': 'new-password', 'placeholder': 'Xác nhận mật khẩu mới'}))
 
     def clean(self):
         du_lieu = super().clean()

@@ -58,6 +58,28 @@ class RecruitmentCampaign(models.Model):
         return self.campaign_name
 
 
+class RecruitmentTarget(models.Model):
+    """Bảng recruitment_targets – chỉ tiêu của một đợt: vị trí cần tuyển và số lượng cần tuyển.
+
+    Một đợt có thể tuyển nhiều vị trí, mỗi vị trí một dòng. "Đã tuyển được" không lưu mà đếm từ ứng viên
+    của đợt có cùng vị trí và status = HIRED (đã tiếp nhận làm nhân sự ở UC 2.5).
+    """
+    campaign = models.ForeignKey(RecruitmentCampaign, on_delete=models.CASCADE, related_name='targets')
+    position = models.CharField(max_length=30, choices=Position.choices)
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        db_table = 'recruitment_targets'
+        ordering = ['pk']
+        constraints = [
+            models.UniqueConstraint(fields=['campaign', 'position'], name='target_unique_position_per_campaign'),
+            models.CheckConstraint(condition=Q(quantity__gte=1), name='target_quantity_positive'),
+        ]
+
+    def __str__(self):
+        return f'{self.campaign} – {self.get_position_display()}: {self.quantity}'
+
+
 class Candidate(models.Model):
     """Bảng candidates – ứng viên (§7.3.6). Kết quả sơ tuyển ghi ở screening_note."""
     campaign = models.ForeignKey(RecruitmentCampaign, on_delete=models.PROTECT, related_name='candidates')

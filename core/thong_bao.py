@@ -10,7 +10,20 @@ KHONG_CO_QUYEN = 'Bạn không có quyền truy cập chức năng này.'       
 DANG_NHAP_SAI_THONG_TIN = 'Email/Mật khẩu không đúng'                        # 3.2.1
 TAI_KHOAN_BI_KHOA = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.'  # 3.3.1
 
-# ===== Mật khẩu (UC 1.3 Đổi mật khẩu; mật khẩu ban đầu khi tạo tài khoản ở UC 1.5, 2.5) =====
+# ===== UC 1.2 Quên mật khẩu =====
+DA_GUI_LINK_DAT_LAI_MK = ('Nếu email này có tài khoản trên hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi vào email. '
+                          'Vui lòng kiểm tra hộp thư (kể cả mục Spam).')                         # bước 5
+LINK_DAT_LAI_MK_HET_HAN = 'Đường dẫn đã hết hạn hoặc không hợp lệ. Vui lòng gửi lại yêu cầu.'  # 6.1.1
+DAT_LAI_MK_THANH_CONG = 'Đặt lại mật khẩu thành công.'                                 # bước 7
+EMAIL_DAT_LAI_MK_TIEU_DE = '[ICLS HRM] Đặt lại mật khẩu'
+EMAIL_DAT_LAI_MK_NOI_DUNG = ('Xin chào {ten},\n\n'
+                             'Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản ICLS HRM của bạn.\n'
+                             'Mở đường dẫn sau để đặt mật khẩu mới (hiệu lực 3 ngày, chỉ dùng được một lần):\n\n'
+                             '{duong_dan}\n\n'
+                             'Nếu bạn không yêu cầu, hãy bỏ qua email này; mật khẩu hiện tại vẫn giữ nguyên.\n\n'
+                             'ICLS – Quản lý nhân sự')
+
+# ===== Mật khẩu (UC 1.2 Quên mật khẩu, UC 1.3 Đổi mật khẩu; mật khẩu ban đầu khi tạo tài khoản ở UC 1.5, 2.5) =====
 MAT_KHAU_XAC_NHAN_KHONG_KHOP = 'Mật khẩu xác nhận không khớp.'                       # 6.2.1 và UC 1.3 – 3.2.1
 MAT_KHAU_CHUA_DU_MANH = 'Mật khẩu chưa đủ mạnh (tối thiểu 8 ký tự, không được toàn số).'  # 6.2.1 và UC 1.3 – 3.3.1
 
@@ -55,7 +68,8 @@ VONG_CHUA_DIEN_RA = 'Vòng tuyển dụng chưa diễn ra.'                     
 HOP_DONG_DANG_HIEU_LUC = 'Nhân sự này đang có hợp đồng có hiệu lực. Vui lòng kiểm tra lại hoặc sử dụng tính năng Gia hạn.'   # 3.1 – 5.1.1
 SO_HOP_DONG_DA_TON_TAI = 'Số hợp đồng đã tồn tại.'                                  # 3.1 – 5.2.1 và 3.3 – 3.2.1
 NGAY_KET_THUC_HD_SAI = 'Ngày kết thúc phải sau ngày bắt đầu.'                       # 3.1 – 5.3.1
-THIEU_FILE_SCAN = 'Vui lòng tải file scan hợp đồng.'                               # 3.1 – 5.3.1
+THIEU_FILE_SCAN = 'Vui lòng chọn file scan hợp đồng.'                              # 3.3 – 1.1 (cập nhật file scan)
+NHAC_BO_SUNG_FILE_SCAN = 'Hợp đồng chưa có file scan. Bạn có thể tải bản đã ký lên sau bằng nút "Tải file scan lên".'
 THEM_HOP_DONG_THANH_CONG = 'Thêm hợp đồng thành công.'                              # 3.1 – bước 7
 KHONG_XEM_HOP_DONG = 'Bạn không có quyền xem hợp đồng này.'                         # 3.2 – 1.1.1 (trang 403)
 NGAY_HOP_DONG_MOI_SAI = 'Ngày bắt đầu/kết thúc của hợp đồng mới không hợp lệ.'      # 3.3 – 3.1.1
@@ -115,6 +129,7 @@ TB_CAP_QUYEN_NOI_DUNG = '{nhan_su} được tiếp nhận với vị trí {vi_tr
 
 # --- Câu BỔ SUNG cho UC 8 (§10 chưa ghi nguyên văn) ---
 TAO_DOT_THANH_CONG = 'Đã tạo đợt tuyển dụng.'
+THIEU_CHI_TIEU_TUYEN = 'Vui lòng nhập số lượng cần tuyển cho ít nhất một vị trí.'
 DONG_DOT_THANH_CONG = 'Đã đóng đợt tuyển dụng.'
 DOT_DA_DONG_TRUOC_DO = 'Đợt tuyển dụng này đã đóng từ trước.'
 THEM_UNG_VIEN_THANH_CONG = 'Đã thêm ứng viên.'
@@ -141,7 +156,6 @@ EMAIL_KET_QUA_DAT = 'Xin chào {ung_vien},\n\nChúc mừng bạn đã đạt {lo
 EMAIL_KET_QUA_KHONG_DAT = 'Xin chào {ung_vien},\n\nCảm ơn bạn đã tham gia {loai}. Rất tiếc lần này bạn chưa phù hợp với vị trí ứng tuyển.\n\nTrân trọng.'
 
 # --- Câu BỔ SUNG cho UC 3 (§10 chưa ghi nguyên văn) ---
-HOP_DONG_KHONG_CON_HIEU_LUC = 'Hợp đồng này không còn ở trạng thái đang hiệu lực.'
 CAP_NHAT_FILE_THANH_CONG = 'Đã cập nhật file scan hợp đồng.'
 NHAN_SU_KHONG_DUOC_KY = 'Chỉ ký hợp đồng cho nhân sự đang Onboarding hoặc đang làm việc.'
 CAN_CHON_CA_SAU_DOI_LOAI_HINH = 'Nhân sự đã chuyển sang Full-time: hãy vào hồ sơ để chọn Ca làm việc.'
@@ -203,7 +217,6 @@ KHONG_CO_DU_LIEU_NGHI = 'Không có dữ liệu nghỉ phép trong khoảng th�
 # (UC 5.2 dùng lại VUI_LONG_NHAP_LY_DO_TU_CHOI và YEU_CAU_DA_XU_LY đã khai báo ở UC 2.6)
 
 # --- Câu BỔ SUNG cho UC 5 và UC 6.4 (§10 chưa ghi nguyên văn) ---
-NUA_NGAY_CUNG_NGAY = 'Nghỉ nửa ngày thì ngày bắt đầu phải bằng ngày kết thúc.'
 THANG_DA_CHOT_LUONG = 'Tháng {thang}/{nam} đã chốt lương, không thể gửi đơn nghỉ trong tháng này.'
 CHI_NHAN_SU_HOAT_DONG_NGHI = 'Chỉ nhân sự đang làm việc mới gửi được đơn nghỉ.'
 KHONG_HUY_DON_DUOC = 'Chỉ hủy được đơn đang chờ duyệt.'
@@ -241,6 +254,7 @@ DA_CHECK_IN = 'Bạn đã thực hiện Check-in hôm nay.'                     
 CHUA_CHECK_IN = 'Vui lòng thực hiện Check-in trước.'                                       # 4.1 – 6.2.1
 GUI_GIAI_TRINH_THANH_CONG = 'Gửi giải trình thành công.'                                   # 4.2 – bước 5
 NHAP_LY_DO_GIAI_TRINH = 'Vui lòng nhập lý do giải trình.'                                  # 4.2 – 3.1.1
+THIEU_MINH_CHUNG_GIAI_TRINH = 'Vui lòng đính kèm file minh chứng (ảnh hoặc PDF).'             # 4.2 – 3.3.1
 DA_GIAI_TRINH = 'Ca làm việc này đã được giải trình.'                                      # 4.2 – 1.1.1
 BANG_LUONG_DA_CHOT = 'Bảng lương tháng này đã chốt, không thể thay đổi chấm công.'        # 4.2 – 1.2.1 và 4.4 – 5.3.1
 KHONG_CO_DU_LIEU_CHAM_CONG = 'Không có dữ liệu chấm công trong khoảng thời gian đã chọn.'  # 4.3 – 4.1.1 và 4.5 – 3.1.1

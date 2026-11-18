@@ -79,9 +79,9 @@ class Uc91DashboardTest(NenTangDashboard):
 
     def test_uc9_1_giam_doc_xem_tong_quan_va_dem_viec_cua_quan_ly_cho_duyet(self):
         gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
-        LeaveRequest.objects.create(employee=self.ql, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=HOM_NAY,
+        LeaveRequest.objects.create(employee=self.ql, leave_type='ANNUAL', start_date=HOM_NAY,
                                     end_date=HOM_NAY, total_days=1, reason='Việc riêng')          # đơn của Quản lý → Giám đốc duyệt
-        LeaveRequest.objects.create(employee=self.gv, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=HOM_NAY,
+        LeaveRequest.objects.create(employee=self.gv, leave_type='ANNUAL', start_date=HOM_NAY,
                                     end_date=HOM_NAY, total_days=1, reason='Của nhân viên')       # không thuộc phạm vi Giám đốc
         EmployeeDocument.objects.create(employee=self.ql, document_type='CERTIFICATION', document_name='CC',
                                         file_url='x.pdf')
@@ -89,7 +89,7 @@ class Uc91DashboardTest(NenTangDashboard):
                                   attendance_status=AttendanceStatus.ABSENT, explanation_status='PENDING')
         r, the = self.cac_the(gd)
         self.assertEqual(r.context['loai'], 'ql')
-        self.assertEqual([ma for ma, _ in r.context['tabs']], ['tong_quan'])
+        self.assertEqual([ma for ma, _ in r.context['tabs']], ['tong_quan', 'ke_toan'])
         cho = {t['nhan']: t for t in r.context['cho_xu_ly']}
         self.assertEqual(cho['Đơn nghỉ chờ duyệt']['so'], 1)
         self.assertEqual(cho['Giải trình chờ duyệt']['so'], 1)
@@ -113,7 +113,7 @@ class Uc91DashboardTest(NenTangDashboard):
                                         file_url='x.pdf', status=DocumentStatus.APPROVED)
         Contract.objects.create(employee=self.gv, contract_number='HD1', employment_type='FULL_TIME',
                                 start_date=date(2026, 1, 1), end_date=date.today() + timedelta(days=20), file_url='x.pdf')
-        LeaveRequest.objects.create(employee=self.gv, leave_type='SICK', duration_type='FULL_DAY', start_date=HOM_NAY,
+        LeaveRequest.objects.create(employee=self.gv, leave_type='SICK', start_date=HOM_NAY,
                                     end_date=HOM_NAY, total_days=1, reason='Ốm')
         lop = tao_lop('Lớp A')
         lop.status = 'ACTIVE'
@@ -158,6 +158,30 @@ class Uc91DashboardTest(NenTangDashboard):
         self.assertContains(r, 'Đã chốt &amp; phát hành')
         self.assertContains(r, 'Theo dõi quỹ lương trong kỳ')
 
+    def test_uc9_1_giam_doc_xem_tab_ke_toan_chi_xem(self):
+        gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
+        Payroll.objects.create(employee=self.gv, period_month=9, period_year=2026, gross_pay=Decimal('10500000'),
+                               total_tax=Decimal('500000'), net_pay=Decimal('10000000'), status='SENT')
+        self.client.force_login(gd)
+        r = self.client.get(reverse('dashboard:dashboard'), {'tab': 'ke_toan'})
+        self.assertEqual((r.context['loai'], r.context['tab']), ('kt', 'ke_toan'))
+        self.assertTrue(r.context['chi_xem'])
+        self.assertEqual(r.context['luong']['thuc_nhan'], Decimal('10000000'))
+        self.assertContains(r, 'Theo dõi quỹ lương trong kỳ')
+        self.assertContains(r, 'Chỉ xem')
+        self.assertNotContains(r, reverse('payroll:period_list'))                              # không có nút sang trang của Kế toán
+        self.assertNotContains(r, reverse('payroll:period', args=[2026, 9]))
+        self.assertEqual(self.client.get(reverse('payroll:period_list')).status_code, 403)     # quyền lương vẫn chỉ Kế toán
+        r = self.client.get(reverse('dashboard:dashboard'))                                     # mặc định vẫn là Tổng quan
+        self.assertEqual(r.context['loai'], 'ql')
+
+    def test_uc9_1_giam_doc_tab_ke_toan_chua_co_bang_luong(self):
+        gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
+        self.client.force_login(gd)
+        r = self.client.get(reverse('dashboard:dashboard'), {'tab': 'ke_toan'})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, 'Lập bảng lương')
+
     def test_uc9_1_basic_nhan_vien_thay_lich_cham_cong_quy_phep_va_thong_bao(self):
         LeaveBalance.objects.create(employee=self.gv, year=HOM_NAY.year, total_days=12, used_days=3)
         Notification.objects.create(recipient=self.gv.user, title='Tin 1', message='Nội dung', notification_type='SYSTEM')
@@ -187,7 +211,7 @@ class Uc91DashboardTest(NenTangDashboard):
 
     def test_uc9_1_tab_cua_vai_tro_va_tab_sai_quay_ve_mac_dinh(self):
         for nguoi, cac_tab in ((self.ql, ['tong_quan', 'ca_nhan']), (self.kt, ['ke_toan', 'ca_nhan']),
-                               (self.gv, ['ca_nhan']), (self.sa, ['tong_quan'])):
+                               (self.gv, ['ca_nhan']), (self.sa, ['tong_quan'])):   # Giám đốc: xem test riêng
             du_lieu = services.du_lieu_dashboard(nguoi.user if hasattr(nguoi, 'user') else nguoi, HOM_NAY, tab='sai')
             self.assertEqual([m for m, _ in du_lieu['tabs']], cac_tab)
             self.assertEqual(du_lieu['tab'], cac_tab[0])                                       # tab sai → tab đầu tiên

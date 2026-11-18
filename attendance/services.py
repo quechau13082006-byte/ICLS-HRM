@@ -20,7 +20,7 @@ from core.models import NotificationType
 from core.permissions import co_quyen_duyet
 from core.services import KhongCoQuyen, LoiNghiepVu, LoiTruongNhap, ghi_nhat_ky, tao_thong_bao
 from employees.models import Employee, EmployeeStatus, EmploymentType
-from leave.models import DurationType, LeaveRequest, LeaveStatus, LeaveType, moc_nua_ngay
+from leave.models import LeaveRequest, LeaveStatus, LeaveType
 from schedule.models import ShiftAssignment, ShiftStatus, TeachingSession, TeachingSessionStatus
 from .models import Attendance, AttendanceStatus, ExplanationStatus
 
@@ -46,16 +46,10 @@ def _so_phut(tu, den):
 
 
 # ============================================================ 1. LỊCH DỰ KIẾN (§9.2)
-def _don_nghi_duyet_trong_ngay(nhan_su, ngay):
-    return list(LeaveRequest.objects.filter(employee=nhan_su, status=LeaveStatus.APPROVED,
-                                            start_date__lte=ngay, end_date__gte=ngay))
-
-
 def nghi_ca_ngay(nhan_su, ngay):
-    """UC 4.1 – luồng 1.1: có đơn nghỉ CẢ NGÀY đã duyệt (hoặc đủ hai đơn buổi sáng + buổi chiều) chứa `ngay`."""
-    cac_don = _don_nghi_duyet_trong_ngay(nhan_su, ngay)
-    kieu = {d.duration_type for d in cac_don}
-    return DurationType.FULL_DAY in kieu or {DurationType.HALF_DAY_AM, DurationType.HALF_DAY_PM} <= kieu
+    """UC 4.1 – luồng 1.1: có đơn nghỉ đã duyệt chứa `ngay` (nghỉ phép luôn theo cả ngày)."""
+    return LeaveRequest.objects.filter(employee=nhan_su, status=LeaveStatus.APPROVED,
+                                       start_date__lte=ngay, end_date__gte=ngay).exists()
 
 
 def lich_du_kien(nhan_su, ngay):
@@ -66,8 +60,6 @@ def lich_du_kien(nhan_su, ngay):
     - Full-time: một khung theo `work_shift`.
     - Part-time: mỗi chỗ ca SCHEDULED của ngày là một khung (gắn ca); nếu là trợ giảng thực tế của các buổi dạy
       không CANCELLED trong ngày → thêm MỘT khung từ đầu buổi sớm nhất đến cuối buổi muộn nhất (không gắn ca).
-    - Nghỉ nửa ngày đã duyệt: nửa đầu → bỏ phần trước mốc giữa ca; nửa sau → bỏ phần từ mốc đó
-      (Ca 1: 12:00, Ca 2: 17:00, Part-time: 12:00 – leave.models.moc_nua_ngay).
     """
     if ngay.weekday() not in settings.NGAY_LAM_VIEC or nghi_ca_ngay(nhan_su, ngay):
         return []
@@ -86,20 +78,7 @@ def lich_du_kien(nhan_su, ngay):
         if gio_buoi:
             khung.append({'bd': min(g[0] for g in gio_buoi), 'kt': max(g[1] for g in gio_buoi), 'ca': None,
                           'ten': 'Trợ giảng'})
-    moc = _gio(moc_nua_ngay(nhan_su))
-    ket_qua = []
-    don_nua = {d.duration_type for d in _don_nghi_duyet_trong_ngay(nhan_su, ngay)}
-    for k in khung:
-        if DurationType.HALF_DAY_AM in don_nua:
-            if k['kt'] <= moc:
-                continue
-            k['bd'] = max(k['bd'], moc)
-        if DurationType.HALF_DAY_PM in don_nua:
-            if k['bd'] >= moc:
-                continue
-            k['kt'] = min(k['kt'], moc)
-        ket_qua.append(k)
-    return ket_qua
+    return khung
 
 
 def _ban_ghi_cua_khung(nhan_su, ngay, khung):
@@ -215,8 +194,8 @@ def tinh_ngay_cong(nhan_su, thang, nam):
     """§9.1, §9.2 – ngày công trong tháng của nhân sự Full-time (Decimal, tối đa NGAY_CONG_CHUAN).
 
     - Mỗi bản ghi KHÔNG theo ca có trạng thái ON_TIME / LATE / EARLY_LEAVE → 1 ngày (bản ghi được chấp thuận giải trình
-      đã thành ON_TIME nên cũng tính); ngày đó có đơn nghỉ nửa ca đã duyệt → 0,5.
-    - Cộng ngày nghỉ ANNUAL đã duyệt rơi vào tháng (mỗi ngày làm việc 1, nửa ngày 0,5; đơn vắt qua hai tháng chỉ đếm
+      đã thành ON_TIME nên cũng tính).
+    - Cộng ngày nghỉ ANNUAL đã duyệt rơi vào tháng (mỗi ngày làm việc 1; đơn vắt qua hai tháng chỉ đếm
       phần trong tháng).
     - Không tính ABSENT, MISSING_CHECKOUT chưa được chấp thuận, nghỉ SICK / UNPAID / OTHER.
     """
@@ -225,10 +204,8 @@ def tinh_ngay_cong(nhan_su, thang, nam):
     tong = Decimal('0')
     cac_don = list(LeaveRequest.objects.filter(employee=nhan_su, status=LeaveStatus.APPROVED,
                                                start_date__lte=cuoi, end_date__gte=dau))
-    ngay_nghi_nua = {d.start_date for d in cac_don if d.duration_type != DurationType.FULL_DAY}
-    for b in Attendance.objects.filter(employee=nhan_su, work_date__range=(dau, cuoi), shift_assignment__isnull=True,
-                                       attendance_status__in=TRANG_THAI_DI_LAM):
-        tong += Decimal('0.5') if b.work_date in ngay_nghi_nua else Decimal('1')
+    tong += Attendance.objects.filter(employee=nhan_su, work_date__range=(dau, cuoi), shift_assignment__isnull=True,
+                                      attendance_status__in=TRANG_THAI_DI_LAM).count()
     for d in cac_don:
         if d.leave_type == LeaveType.ANNUAL:
             tong += so_ngay_trong_thang(d, thang, nam)
@@ -298,18 +275,19 @@ def kiem_tra_co_the_giai_trinh(nhan_su, ban_ghi):
     _kiem_tra_chua_chot_luong(ban_ghi)
 
 
-def gui_giai_trinh(nhan_su, ban_ghi, ly_do, tep=None):
+def gui_giai_trinh(nhan_su, ban_ghi, ly_do, tep):
     """UC 4.2 – bước 4–5: lưu lý do + minh chứng, explanation_status = PENDING, báo người duyệt (một giao dịch).
 
     Kiểm tra điều kiện (`kiem_tra_co_the_giai_trinh`) rồi mới kiểm tra lý do không trống
-    (luồng 3.1: "Vui lòng nhập lý do giải trình.")."""
+    (luồng 3.1: "Vui lòng nhập lý do giải trình.") và BẮT BUỘC có file minh chứng đính kèm."""
     kiem_tra_co_the_giai_trinh(nhan_su, ban_ghi)
     if not ly_do.strip():
         raise LoiTruongNhap(thong_bao.NHAP_LY_DO_GIAI_TRINH, 'ly_do')
+    if not tep:
+        raise LoiTruongNhap(thong_bao.THIEU_MINH_CHUNG_GIAI_TRINH, 'minh_chung')
     with transaction.atomic():
         ban_ghi.explanation_reason = ly_do.strip()
-        if tep:
-            ban_ghi.explanation_evidence = tep
+        ban_ghi.explanation_evidence = tep
         ban_ghi.explanation_status = ExplanationStatus.PENDING
         ban_ghi.save(update_fields=['explanation_reason', 'explanation_evidence', 'explanation_status'])
         noi_dung = thong_bao.TB_GIAI_TRINH_MOI_NOI_DUNG.format(

@@ -176,18 +176,14 @@ class TrungLichTest(NenTang):
         self.assertTrue(services.kiem_tra_trung_lich(self.ql, self.NGAY, time(9, 30), time(11)))
         self.assertFalse(services.kiem_tra_trung_lich(self.ql, self.NGAY, time(10), time(11)))
 
-    def test_don_nghi_ca_ngay_va_nua_ca(self):
-        # Ca 1 (08:00–17:00, mốc giữa 12:00): nghỉ nửa đầu → bận 08:00–12:00, nửa sau vẫn rảnh
-        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='ANNUAL', duration_type='HALF_DAY_AM',
-                                    start_date=self.NGAY, end_date=self.NGAY, total_days=0.5, reason='x', status='APPROVED')
-        self.assertTrue(services.kiem_tra_trung_lich(self.gv_ca1, self.NGAY, time(9), time(11)))
-        self.assertFalse(services.kiem_tra_trung_lich(self.gv_ca1, self.NGAY, time(14), time(16)))
-        LeaveRequest.objects.create(employee=self.gv_ca2, leave_type='SICK', duration_type='FULL_DAY',
+    def test_don_nghi_ca_ngay_trung_moi_khung_gio(self):
+        LeaveRequest.objects.create(employee=self.gv_ca2, leave_type='SICK',
                                     start_date=self.NGAY, end_date=self.NGAY, total_days=1, reason='x', status='APPROVED')
         self.assertTrue(services.kiem_tra_trung_lich(self.gv_ca2, self.NGAY, time(18), time(20)))
+        self.assertTrue(services.kiem_tra_trung_lich(self.gv_ca2, self.NGAY, time(13), time(14)))
 
     def test_don_nghi_chua_duyet_khong_tinh(self):
-        LeaveRequest.objects.create(employee=self.gv_ca2, leave_type='SICK', duration_type='FULL_DAY',
+        LeaveRequest.objects.create(employee=self.gv_ca2, leave_type='SICK',
                                     start_date=self.NGAY, end_date=self.NGAY, total_days=1, reason='x', status='PENDING')
         self.assertFalse(services.kiem_tra_trung_lich(self.gv_ca2, self.NGAY, time(18), time(20)))
 
@@ -797,7 +793,7 @@ class Uc64Test(NenTang):
         services.tao_lop_va_phan_cong(self.ql.user, du_lieu_lop(class_name='Lớp bận', room_name='P9', start_date=date(2026, 10, 7),
                                                                  end_date=date(2026, 10, 7), weekdays='2'), gv_ban)
         gv_nghi = gv_ft('gvnghi@icls.vn', WorkShift.SHIFT_2)            # nghỉ phép đã duyệt hôm đó
-        LeaveRequest.objects.create(employee=gv_nghi, leave_type='SICK', duration_type='FULL_DAY', start_date=date(2026, 10, 7),
+        LeaveRequest.objects.create(employee=gv_nghi, leave_type='SICK', start_date=date(2026, 10, 7),
                                     end_date=date(2026, 10, 7), total_days=1, reason='x', status='APPROVED')
         gv_pt = nv_hoat_dong('gvpt@icls.vn', chuc_danh=Position.TEACHER, loai_hinh=EmploymentType.PART_TIME)   # Part-time: không giới hạn ca
         goi_y = {nv.full_name for nv in services.goi_y_giao_vien_day_thay(self.yc)}
@@ -933,15 +929,13 @@ class LichBangTest(NenTang):
         self.assertEqual({m['ten'] for m in self.ft()}, {'gv2@icls.vn'})
 
     def test_ca_co_dinh_ngay_nghi_phep_hien_la_nghi_phep(self):
-        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=date(2026, 10, 6),
+        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='ANNUAL', start_date=date(2026, 10, 6),
                                     end_date=date(2026, 10, 7), total_days=2, reason='x', status='APPROVED')
-        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='SICK', duration_type='HALF_DAY_AM', start_date=date(2026, 10, 8),
-                                    end_date=date(2026, 10, 8), total_days=0.5, reason='x', status='APPROVED')
-        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='SICK', duration_type='FULL_DAY', start_date=date(2026, 10, 9),
+        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='SICK', start_date=date(2026, 10, 9),
                                     end_date=date(2026, 10, 9), total_days=1, reason='x', status='PENDING')       # chưa duyệt: vẫn làm
         theo_ngay = {m['ngay'].day: m for m in self.ft(self.gv_ca1)}
         self.assertEqual((theo_ngay[6]['loai'], theo_ngay[7]['loai']), ('nghi', 'nghi'))
-        self.assertEqual((theo_ngay[8]['loai'], theo_ngay[8]['dong_3']), ('ca_ft', 'nghỉ nửa ngày'))
+        self.assertEqual(theo_ngay[8]['loai'], 'ca_ft')
         self.assertEqual(theo_ngay[9]['loai'], 'ca_ft')
 
     def test_quan_ly_thay_ca_toan_trung_tam_gom_full_time_va_part_time(self):
@@ -965,7 +959,7 @@ class LichBangTest(NenTang):
     def test_bang_nhan_su_part_time_truoc_full_time_sau_va_dem_so_nguoi_moi_ngay(self):
         ShiftAssignment.objects.create(slot_group='g', employee=self.pt1, shift_role='Lễ tân', work_date=date(2026, 10, 10), planned_start=time(8),
                                        planned_end=time(12), registration_deadline=datetime(2026, 10, 1), status='SCHEDULED')
-        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=date(2026, 10, 6),
+        LeaveRequest.objects.create(employee=self.gv_ca1, leave_type='ANNUAL', start_date=date(2026, 10, 6),
                                     end_date=date(2026, 10, 6), total_days=1, reason='x', status='APPROVED')
         cac_muc = services.lich_lam_viec(self.ql.user, self.TUAN, self.CUOI_TUAN)
         bang = services.dung_bang_nhan_su(cac_muc, self.TUAN, self.TUAN)

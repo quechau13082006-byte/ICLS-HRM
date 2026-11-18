@@ -35,6 +35,34 @@
   </form>
   {% endif %}
 
+  {# ===== Chỉ tiêu của đợt: cần tuyển so với thực tế đã tuyển (ứng viên đã tiếp nhận làm nhân sự) ===== #}
+  {% if tien_do %}
+  <div class="chi-tieu-dot mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+      <h4 class="mb-0"><i class="ri-focus-3-line"></i> Chỉ tiêu tuyển dụng</h4>
+      {% if tien_do.can_tuyen %}<span class="text-muted small">Đã tuyển <b>{{ tien_do.da_tuyen }}</b> / {{ tien_do.can_tuyen }} người cần tuyển · {{ tien_do.phan_tram }}%</span>{% endif %}
+    </div>
+    {% if tien_do.dong %}
+    <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Vị trí</th><th class="text-center">Cần tuyển</th><th class="text-center">Đã tuyển</th>
+        <th class="text-center">Đạt, chờ tiếp nhận</th><th class="text-center">Còn thiếu</th><th style="min-width:160px">Tiến độ</th></tr></thead>
+      <tbody>
+      {% for d in tien_do.dong %}
+        <tr><td>{{ d.vi_tri }}</td>
+          <td class="text-center">{% if d.can_tuyen %}{{ d.can_tuyen }}{% else %}<span class="text-muted" title="Không đặt chỉ tiêu cho vị trí này">–</span>{% endif %}</td>
+          <td class="text-center fw-bold">{{ d.da_tuyen }}</td>
+          <td class="text-center">{{ d.cho_tiep_nhan }}</td>
+          <td class="text-center">{% if d.con_thieu %}<span class="chip expiring">{{ d.con_thieu }}</span>{% elif d.can_tuyen %}<span class="chip valid">Đủ</span>{% else %}–{% endif %}</td>
+          <td><div class="progress" role="progressbar" aria-label="Tiến độ {{ d.vi_tri }}" aria-valuenow="{{ d.phan_tram }}" aria-valuemin="0" aria-valuemax="100" style="height: 8px">
+                <div class="progress-bar" style="width: {{ d.phan_tram }}%; background: var(--icls-primary)"></div></div>
+              <small class="text-muted">{{ d.phan_tram }}%</small></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="text-muted small mb-0">Đợt này chưa đặt chỉ tiêu vị trí và số lượng cần tuyển.</p>{% endif %}
+  </div>
+  {% endif %}
+
   {# ===== Các cột kanban ===== #}
   <div class="board">
     {% for c in cot %}

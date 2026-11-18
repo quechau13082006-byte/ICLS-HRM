@@ -145,12 +145,13 @@ def _kiem_tra_so_hop_dong(so_hop_dong):
 
 
 def _kiem_tra_file(tep):
+    """Chỉ dùng khi cập nhật file scan (UC 3.3 – luồng 1.1). Thêm/gia hạn hợp đồng cho phép chưa có file."""
     if not tep:
         raise LoiNghiepVu(thong_bao.THIEU_FILE_SCAN)
 
 
 # ============================================================ UC 3.1 – Thêm hợp đồng
-def them_hop_dong(nguoi_thuc_hien, nhan_su, so_hop_dong, loai_hinh, ngay_bat_dau, ngay_ket_thuc, tep_scan):
+def them_hop_dong(nguoi_thuc_hien, nhan_su, so_hop_dong, loai_hinh, ngay_bat_dau, ngay_ket_thuc, tep_scan=None):
     """UC 3.1 – bước 6–7: kiểm tra, rồi trong MỘT giao dịch: tạo hợp đồng ACTIVE, đồng bộ loại hình nhân sự,
     nếu nhân sự đang ONBOARDING thì chuyển ACTIVE và báo cho nhân sự (Q5).
     """
@@ -162,11 +163,10 @@ def them_hop_dong(nguoi_thuc_hien, nhan_su, so_hop_dong, loai_hinh, ngay_bat_dau
     _kiem_tra_so_hop_dong(so_hop_dong)                                           # luồng 5.2
     if ngay_ket_thuc and ngay_ket_thuc <= ngay_bat_dau:
         raise LoiNghiepVu(thong_bao.NGAY_KET_THUC_HD_SAI)                         # luồng 5.3
-    _kiem_tra_file(tep_scan)
     with transaction.atomic():
         hop_dong = Contract.objects.create(
             employee=nhan_su, contract_number=so_hop_dong, employment_type=loai_hinh, start_date=ngay_bat_dau,
-            end_date=ngay_ket_thuc, file_url=tep_scan, status=ContractStatus.ACTIVE)
+            end_date=ngay_ket_thuc, file_url=tep_scan or '', status=ContractStatus.ACTIVE)
         dong_bo_loai_hinh(nhan_su, loai_hinh)
         if nhan_su.status == EmployeeStatus.ONBOARDING:
             kich_hoat_nhan_su(nhan_su)
@@ -177,27 +177,24 @@ def them_hop_dong(nguoi_thuc_hien, nhan_su, so_hop_dong, loai_hinh, ngay_bat_dau
 
 
 # ============================================================ UC 3.3 – Gia hạn, cập nhật file
-def gia_han_hop_dong(nguoi_thuc_hien, hop_dong_cu, so_hop_dong, loai_hinh, ngay_bat_dau, ngay_ket_thuc, tep_scan):
-    """UC 3.3 – bước 4–5: hợp đồng cũ ACTIVE → EXPIRED; tạo hợp đồng mới ACTIVE trỏ previous_contract về hợp đồng cũ;
+def gia_han_hop_dong(nguoi_thuc_hien, hop_dong_cu, so_hop_dong, loai_hinh, ngay_bat_dau, ngay_ket_thuc, tep_scan=None):
+    """UC 3.3 – bước 4–5 (view chỉ mở cho hợp đồng ACTIVE): hợp đồng cũ ACTIVE → EXPIRED; tạo hợp đồng mới ACTIVE trỏ previous_contract về hợp đồng cũ;
     đồng bộ loại hình; báo nhân sự. Tất cả trong một giao dịch.
 
     Thứ tự quan trọng: phải chuyển hợp đồng cũ sang EXPIRED TRƯỚC khi tạo hợp đồng mới, vì CSDL chỉ cho mỗi nhân sự
     một hợp đồng ACTIVE (UniqueConstraint có điều kiện).
     """
     from employees.services import dong_bo_loai_hinh
-    if hop_dong_cu.status != ContractStatus.ACTIVE:
-        raise LoiNghiepVu(thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
     _kiem_tra_so_hop_dong(so_hop_dong)                                           # luồng 3.2
     if ngay_bat_dau <= hop_dong_cu.start_date or (ngay_ket_thuc and ngay_ket_thuc <= ngay_bat_dau):
         raise LoiNghiepVu(thong_bao.NGAY_HOP_DONG_MOI_SAI)                        # luồng 3.1
-    _kiem_tra_file(tep_scan)
     nhan_su = hop_dong_cu.employee
     with transaction.atomic():
         hop_dong_cu.status = ContractStatus.EXPIRED
         hop_dong_cu.save(update_fields=['status'])
         hop_dong_moi = Contract.objects.create(
             employee=nhan_su, contract_number=so_hop_dong, employment_type=loai_hinh, start_date=ngay_bat_dau,
-            end_date=ngay_ket_thuc, previous_contract=hop_dong_cu, file_url=tep_scan, status=ContractStatus.ACTIVE)
+            end_date=ngay_ket_thuc, previous_contract=hop_dong_cu, file_url=tep_scan or '', status=ContractStatus.ACTIVE)
         dong_bo_loai_hinh(nhan_su, loai_hinh)
         ghi_nhat_ky(nguoi_thuc_hien, 'CREATE', 'Contract', hop_dong_moi.pk,
                     f'Gia hạn {hop_dong_cu.contract_number} → {so_hop_dong}')
@@ -208,8 +205,6 @@ def gia_han_hop_dong(nguoi_thuc_hien, hop_dong_cu, so_hop_dong, loai_hinh, ngay_
 
 def cap_nhat_file_scan(nguoi_thuc_hien, hop_dong, tep_scan):
     """UC 3.3 – luồng 1.1.1: thay file scan của hợp đồng ACTIVE. Không sửa thông tin khác (đổi điều khoản = gia hạn)."""
-    if hop_dong.status != ContractStatus.ACTIVE:
-        raise LoiNghiepVu(thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
     _kiem_tra_file(tep_scan)
     hop_dong.file_url = tep_scan
     hop_dong.save(update_fields=['file_url'])
@@ -233,8 +228,6 @@ def thanh_ly_hop_dong(nguoi_thuc_hien, hop_dong, ngay_thanh_ly, ly_do, hinh_thuc
     from payroll.services import dong_cau_hinh_luong
     from schedule.services import giai_phong_lich_tuong_lai
     hom_nay = hom_nay or date.today()
-    if hop_dong.status != ContractStatus.ACTIVE:
-        raise LoiNghiepVu(thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
     ly_do = (ly_do or '').strip()
     if not ly_do:
         raise LoiNghiepVu(thong_bao.NHAP_LY_DO_THANH_LY)                          # luồng 3.2

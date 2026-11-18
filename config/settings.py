@@ -173,6 +173,12 @@ if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_USE_TLS = True
     EMAIL_TIMEOUT = 15                     # giây; mạng lỗi thì báo lỗi thay vì treo trang
     DEFAULT_FROM_EMAIL = f'ICLS HRM <{EMAIL_HOST_USER}>'
+    # Python cài từ python.org trên macOS không kèm bộ chứng chỉ gốc → lỗi CERTIFICATE_VERIFY_FAILED khi nối Gmail.
+    # Khi đó dùng bộ chứng chỉ có sẵn của macOS (/etc/ssl/cert.pem).
+    import ssl
+    if not os.environ.get('SSL_CERT_FILE') and not os.path.exists(ssl.get_default_verify_paths().openssl_cafile) \
+            and os.path.exists('/etc/ssl/cert.pem'):
+        os.environ['SSL_CERT_FILE'] = '/etc/ssl/cert.pem'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -187,11 +193,6 @@ MA_DON_VI_HOP_DONG = "ICLS"
 KY_HIEU_LOAI_HOP_DONG = {
     "FULL_TIME": "HĐLĐ",                  # Hợp đồng lao động
     "PART_TIME": "HĐBTG",                 # Hợp đồng lao động bán thời gian
-}
-MOC_NUA_NGAY = "12:00"                    # nghỉ nửa ngày của nhân sự Part-time: nửa đầu trước mốc này, nửa sau từ mốc này
-MOC_NUA_CA = {                            # nghỉ nửa ngày của Full-time: chia đôi ca của người đó
-    "SHIFT_1": "12:00",                   # Ca 1 08:00–17:00 → nửa đầu 08–12, nửa sau 12–17
-    "SHIFT_2": "17:00",                   # Ca 2 13:00–21:00 → nửa đầu 13–17, nửa sau 17–21
 }
 PHUT_CHO_PHEP_TRE = 5
 NGAY_CONG_CHUAN = 26

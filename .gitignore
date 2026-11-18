@@ -15,3 +15,6 @@ db.sqlite3.bak*
 .idea/
 skills/
 ~$*
+
+# Tài liệu hướng dẫn nội bộ của nhóm: giữ trên máy, không đưa lên git
+docs/

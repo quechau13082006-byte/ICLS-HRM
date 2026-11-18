@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{# UC 1.2 – bước 6: mở đường dẫn trong email, nhập Mật khẩu mới + Xác nhận. #}
+{% block auth_wrap_class %}auth-login{% endblock %}
+{% block auth_logo %}<img src="{% static 'img/login/mascot.png' %}" alt="ICLS" class="login-mascot">{% endblock %}
+{% block auth_content %}
+  <h3 class="login-title">Đặt mật khẩu mới</h3>
+  <p class="login-hint">Tài khoản: <strong>{{ tai_khoan.email }}</strong></p>
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="login-field">
+      <span class="login-input"><img src="{% static 'img/login/icon-khoa.png' %}" alt="" class="icon-khoa">{{ form.mat_khau_moi }}</span>
+      {% for loi in form.mat_khau_moi.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+    </div>
+    <div class="login-field">
+      <span class="login-input"><img src="{% static 'img/login/icon-khoa.png' %}" alt="" class="icon-khoa">{{ form.xac_nhan }}</span>
+      {% for loi in form.xac_nhan.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+    </div>
+    <p class="login-hint mb-0">Tối thiểu 8 ký tự, không được toàn số.</p>
+    <button class="login-submit">Lưu</button>
+  </form>
+  <div class="login-forgot text-center mt-3"><a href="{% url 'accounts:login' %}"><i class="ri-arrow-left-line"></i> Quay lại đăng nhập</a></div>
+{% endblock %}

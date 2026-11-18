@@ -43,7 +43,7 @@
   <tbody>
   {% for don in trang %}
     <tr>
-      <td><b>{% include 'leave/_khoang.html' %}</b><div class="sub">{{ don.get_duration_type_display }}</div></td>
+      <td><b>{% include 'leave/_khoang.html' %}</b></td>
       <td>{{ don.get_leave_type_display }}</td>
       <td>{% include 'leave/_so_ngay.html' with so=don.total_days %}</td>
       <td>{{ don.reason|truncatechars:40 }}</td>

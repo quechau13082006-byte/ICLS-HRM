@@ -56,18 +56,6 @@ def dau_tuan(ngay):
 
 
 # ============================================================ 1. HÀM DÙNG CHUNG (§9.1, §9.2)
-def _khung_gio_nghi(don_nghi, nhan_su):
-    """Khoảng giờ người đó nghỉ trong ngày theo đơn nghỉ: cả ngày; nửa đầu = trước mốc giữa ca; nửa sau = từ mốc đó
-    (Ca 1: 12:00, Ca 2: 17:00, Part-time: 12:00 – xem leave.models.moc_nua_ngay)."""
-    from leave.models import moc_nua_ngay
-    giua = _gio(moc_nua_ngay(nhan_su))
-    if don_nghi.duration_type == 'HALF_DAY_AM':
-        return time.min, giua
-    if don_nghi.duration_type == 'HALF_DAY_PM':
-        return giua, time.max
-    return time.min, time.max
-
-
 def tim_nhan_su_trung_lich(cac_ngay, bat_dau, ket_thuc):
     """§9.2 – tập id nhân sự bị TRÙNG giờ [bat_dau, ket_thuc) ở ÍT NHẤT MỘT trong `cac_ngay`.
 
@@ -111,14 +99,12 @@ def tim_nhan_su_trung_lich(cac_ngay, bat_dau, ket_thuc):
     if user_trung:
         bi_trung.update(Employee.objects.filter(user_id__in=user_trung).values_list('id', flat=True))
 
-    # (4) Đơn nghỉ đã duyệt (cả ca hoặc nửa ca)
+    # (4) Đơn nghỉ đã duyệt (nghỉ luôn cả ngày nên trùng mọi khung giờ của ngày đó)
     cac_don = LeaveRequest.objects.filter(status='APPROVED', start_date__lte=max(cac_ngay),
                                           end_date__gte=min(cac_ngay)).select_related('employee')
     for don in cac_don:
         if any(don.start_date <= ngay <= don.end_date for ngay in cac_ngay):
-            tu, den = _khung_gio_nghi(don, don.employee)
-            if bat_dau < den and ket_thuc > tu:
-                bi_trung.add(don.employee_id)
+            bi_trung.add(don.employee_id)
     return bi_trung
 
 
@@ -348,8 +334,8 @@ def _muc_ca(cho):
 def lich_ca_full_time(tu_ngay, den_ngay, nhan_su=None):
     """UC 6.2: ca làm việc CỐ ĐỊNH của nhân sự Full-time (Ca 1 / Ca 2 ghi trong hồ sơ, Thứ 2 – Thứ 7, §6 và Q16) trong khoảng ngày.
 
-    Mỗi (nhân sự, ngày làm việc) một ô. Ngày có đơn nghỉ CẢ NGÀY đã duyệt (hoặc đủ hai đơn nửa đầu + nửa sau) thì ô là
-    "Nghỉ phép"; nghỉ nửa ngày thì vẫn là ô ca kèm ghi chú. Nếu truyền `nhan_su` thì chỉ lấy của người đó.
+    Mỗi (nhân sự, ngày làm việc) một ô. Ngày có đơn nghỉ đã duyệt (luôn nghỉ cả ngày) thì ô là "Nghỉ phép".
+    Nếu truyền `nhan_su` thì chỉ lấy của người đó.
     Chỉ ĐỌC employees và leave (§3.2); làm một lượt cho cả khoảng ngày để khỏi hỏi CSDL từng người từng ngày."""
     from leave.models import LeaveRequest   # chỉ đọc (§3.2)
     ds = Employee.objects.filter(employment_type=EmploymentType.FULL_TIME, status=EmployeeStatus.ACTIVE,
@@ -366,12 +352,11 @@ def lich_ca_full_time(tu_ngay, den_ngay, nhan_su=None):
         ngay = tu_ngay
         while ngay <= den_ngay:
             if ngay.weekday() in settings.NGAY_LAM_VIEC and ngay >= nv.join_date:
-                kieu = {d.duration_type for d in cac_don.get(nv.pk, []) if d.start_date <= ngay <= d.end_date}
-                nghi = 'FULL_DAY' in kieu or {'HALF_DAY_AM', 'HALF_DAY_PM'} <= kieu
+                nghi = any(d.start_date <= ngay <= d.end_date for d in cac_don.get(nv.pk, []))
                 cac_muc.append({
                     'loai': 'nghi' if nghi else 'ca_ft', 'id': nv.pk, 'ngay': ngay, 'bd': gio_vao, 'kt': gio_ra,
                     'tieu_de': 'Nghỉ phép' if nghi else ten_ca, 'huy': False, 'url': '', 'phong': '',
-                    'dong_2': nv.full_name, 'dong_3': 'nghỉ nửa ngày' if (kieu and not nghi) else '',
+                    'dong_2': nv.full_name, 'dong_3': '',
                     'mau': 'nghi' if nghi else ('ft1' if nv.work_shift == 'SHIFT_1' else 'ft2'),
                     'nhan_su_id': nv.pk, 'ten': nv.full_name, 'nhom': 'Full-time', 'nen': not nghi})
             ngay += timedelta(days=1)
@@ -452,7 +437,7 @@ def dung_bang_nhan_su(cac_muc, thu_hai, hom_nay=None, loc_nhom=''):
         hang['cac_o'][chi_so].append(m)
         if m['loai'] == 'ca_ft':
             hang['ca'] = m['tieu_de']
-        if m['loai'] == 'nghi' or m.get('dong_3') == 'nghỉ nửa ngày':
+        if m['loai'] == 'nghi':
             hang['co_nghi'] = True
     for hang in cac_hang.values():
         for o in hang['cac_o']:
@@ -763,33 +748,20 @@ def giai_phong_lich_tuong_lai(nhan_su, ngay):
 
 
 # ============================================================ 6. UC 5.2 gọi sang: lịch bị ảnh hưởng bởi đơn nghỉ
-def lich_bi_anh_huong(nhan_su, tu_ngay, den_ngay, hinh_thuc):
-    """UC 5.2 – bước 4 và 7: lịch của `nhan_su` bị ảnh hưởng khi nghỉ từ `tu_ngay` đến `den_ngay`.
+def lich_bi_anh_huong(nhan_su, tu_ngay, den_ngay):
+    """UC 5.2 – bước 4 và 7: lịch của `nhan_su` bị ảnh hưởng khi nghỉ (cả ngày) từ `tu_ngay` đến `den_ngay`.
 
-    Nghỉ nửa đầu: chỉ buổi BẮT ĐẦU trước mốc giữa ca; nửa sau: buổi bắt đầu từ mốc đó; cả ngày: tất cả.
-    Mốc giữa ca theo người nghỉ: Ca 1 12:00, Ca 2 17:00, Part-time 12:00.
     Trả về dict: buoi_chinh (là giáo viên thực tế → cần dạy thay), buoi_tro_giang, ca_lam_viec (ca đã đăng ký).
     Hàm chỉ ĐỌC (§3.2), không sửa bảng nào.
     """
-    from leave.models import moc_nua_ngay
-    moc = _gio(moc_nua_ngay(nhan_su))
-
-    def trong_khung(gio_bat_dau):
-        if hinh_thuc == 'HALF_DAY_AM':
-            return gio_bat_dau < moc
-        if hinh_thuc == 'HALF_DAY_PM':
-            return gio_bat_dau >= moc
-        return True
-
     buoi = TeachingSession.objects.filter(
         session_date__range=(tu_ngay, den_ngay), status=TeachingSessionStatus.SCHEDULED
     ).select_related('study_class').order_by('session_date', 'planned_start')
-    buoi_chinh = [b for b in buoi.filter(Q(actual_teacher=nhan_su) | Q(actual_teacher__isnull=True, planned_teacher=nhan_su))
-                  if trong_khung(b.planned_start)]
-    buoi_tro_giang = [b for b in buoi.filter(actual_assistant=nhan_su) if trong_khung(b.planned_start)]
-    ca = [c for c in ShiftAssignment.objects.filter(
+    buoi_chinh = list(buoi.filter(Q(actual_teacher=nhan_su) | Q(actual_teacher__isnull=True, planned_teacher=nhan_su)))
+    buoi_tro_giang = list(buoi.filter(actual_assistant=nhan_su))
+    ca = list(ShiftAssignment.objects.filter(
         employee=nhan_su, status=ShiftStatus.SCHEDULED, work_date__range=(tu_ngay, den_ngay)
-    ).order_by('work_date', 'planned_start') if trong_khung(c.planned_start)]
+    ).order_by('work_date', 'planned_start'))
     return {'buoi_chinh': buoi_chinh, 'buoi_tro_giang': buoi_tro_giang, 'ca_lam_viec': ca}
 
 

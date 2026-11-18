@@ -13,10 +13,16 @@ from .models import Contract, ContractStatus
 LOAI_HINH = [('', '— Chọn —')] + list(EmploymentType.choices)
 
 
-def kiem_tra_file_scan(tep):
-    """File scan hợp đồng: PDF/JPG/PNG, tối đa FILE_TOI_DA_MB; bắt buộc phải có file (UC 3.1 – luồng 5.3)."""
+def kiem_tra_file_scan(tep, bat_buoc=False):
+    """File scan hợp đồng: PDF/JPG/PNG, tối đa FILE_TOI_DA_MB.
+
+    Khi thêm/gia hạn hợp đồng file scan KHÔNG bắt buộc (bản ký có thể tải lên sau ở "Tải file scan lên");
+    chỉ màn hình cập nhật file scan (bat_buoc=True) mới đòi phải chọn file.
+    """
     if not tep:
-        raise forms.ValidationError(thong_bao.THIEU_FILE_SCAN)
+        if bat_buoc:
+            raise forms.ValidationError(thong_bao.THIEU_FILE_SCAN)
+        return tep
     if not tep.name.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png')) or tep.size > settings.FILE_TOI_DA_MB * 1024 * 1024:
         raise forms.ValidationError(thong_bao.FILE_KHONG_HOP_LE)
     return tep
@@ -41,7 +47,8 @@ class _HopDongCoBan(BootstrapForm):
     start_date = forms.DateField(label='Ngày bắt đầu', widget=forms.DateInput(attrs={'type': 'date'}))
     end_date = forms.DateField(label='Ngày kết thúc', required=False, widget=forms.DateInput(attrs={'type': 'date'}),
                                help_text='Để trống nếu không xác định thời hạn')
-    file_url = forms.FileField(label='File scan hợp đồng (PDF, JPG, PNG, tối đa 5 MB)', required=False)
+    file_url = forms.FileField(label='File scan hợp đồng (PDF, JPG, PNG, tối đa 5 MB)', required=False,
+                               help_text='Không bắt buộc: có thể tải bản đã ký lên sau ở trang chi tiết hợp đồng')
 
     def clean_contract_number(self):
         so = self.cleaned_data['contract_number'].strip()
@@ -97,7 +104,7 @@ class FileScanForm(BootstrapForm):
     file_url = forms.FileField(label='File scan mới (PDF, JPG, PNG, tối đa 5 MB)', required=False)
 
     def clean_file_url(self):
-        return kiem_tra_file_scan(self.cleaned_data.get('file_url'))
+        return kiem_tra_file_scan(self.cleaned_data.get('file_url'), bat_buoc=True)
 
 
 class ThanhLyForm(BootstrapForm):

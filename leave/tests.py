@@ -64,7 +64,7 @@ class NenTangNghi(TestCase):
         self.ql2 = hoat_dong('ql2@icls.vn', UserRole.MANAGER, Position.MANAGER, FT)
         self.kt = hoat_dong('kt@icls.vn', UserRole.ACCOUNTANT, Position.ACCOUNTANT, FT)
         self.gv = hoat_dong('gv@icls.vn', UserRole.EMPLOYEE, Position.TEACHER, FT, WorkShift.SHIFT_2)
-        self.gv1 = hoat_dong('gv1@icls.vn', UserRole.EMPLOYEE, Position.TEACHER, FT, WorkShift.SHIFT_1)   # Ca 1: được nghỉ nửa ngày
+        self.gv1 = hoat_dong('gv1@icls.vn', UserRole.EMPLOYEE, Position.TEACHER, FT, WorkShift.SHIFT_1)
         self.pt = hoat_dong('pt@icls.vn', UserRole.EMPLOYEE, Position.STAFF, PT)
         for nv in (self.ql, self.ql2, self.kt, self.gv, self.gv1):
             services.tao_quy_phep(nv, 2026)
@@ -72,8 +72,8 @@ class NenTangNghi(TestCase):
     def dang_nhap(self, nguoi):
         self.client.force_login(nguoi.user if hasattr(nguoi, 'user') else nguoi)
 
-    def gui(self, nv, loai='ANNUAL', hinh_thuc='FULL_DAY', tu=T2, den=T3, ly_do='Việc gia đình'):
-        return services.gui_don_nghi(nv, loai, hinh_thuc, tu, den, ly_do)
+    def gui(self, nv, loai='ANNUAL', tu=T2, den=T3, ly_do='Việc gia đình'):
+        return services.gui_don_nghi(nv, loai, tu, den, ly_do)
 
     def quy(self, nv):
         return LeaveBalance.objects.get(employee=nv, year=2026)
@@ -95,10 +95,7 @@ class TinhToanNghiTest(NenTangNghi):
         self.assertEqual(services.tinh_so_ngay_nghi(date(2026, 10, 5), date(2026, 10, 11)), d(6))     # Chủ nhật không tính
         self.assertEqual(services.tinh_so_ngay_nghi(date(2026, 10, 5), date(2026, 10, 19)), d(13))      # 6 + 6 + Thứ 2 19/10
         self.assertEqual(services.tinh_so_ngay_nghi(date(2026, 10, 11), date(2026, 10, 11)), d(0))    # chỉ Chủ nhật
-        self.assertEqual(services.tinh_so_ngay_nghi(T2, T2, 'HALF_DAY_AM'), d('0.5'))
-        self.assertEqual(services.tinh_so_ngay_nghi(T2, T2, 'HALF_DAY_PM'), d('0.5'))
-        self.assertEqual(services.tinh_so_ngay_nghi(date(2026, 10, 11), date(2026, 10, 11), 'HALF_DAY_AM'), d(0))
-        self.assertEqual(services.tinh_so_ngay_nghi(T2, T3, 'HALF_DAY_AM'), d(0))                      # nửa ngày phải cùng ngày
+        self.assertEqual(services.tinh_so_ngay_nghi(T2, T2), d(1))                                     # nghỉ 1 ngày = 1 (không có 0,5)
 
     def test_dinh_dang_so_ngay(self):
         self.assertEqual(services.dinh_dang_so_ngay(Decimal('8.5')), '8,5')
@@ -109,7 +106,7 @@ class TinhToanNghiTest(NenTangNghi):
 class Uc51Test(NenTangNghi):
     def test_uc5_1_basic_gui_don_phep_nam(self):
         don = self.gui(self.gv)
-        self.assertEqual((don.status, don.total_days, don.leave_type, don.duration_type), ('PENDING', Decimal('2'), 'ANNUAL', 'FULL_DAY'))
+        self.assertEqual((don.status, don.total_days, don.leave_type), ('PENDING', Decimal('2'), 'ANNUAL'))
         self.assertEqual((don.start_date, don.end_date, don.reason), (T2, T3, 'Việc gia đình'))
         self.assertFalse(don.needs_substitute)
         self.assertEqual(self.quy(self.gv).used_days, 0)                    # gửi đơn chưa trừ phép, chỉ trừ khi duyệt
@@ -122,13 +119,20 @@ class Uc51Test(NenTangNghi):
         nguoi_nhan = set(Notification.objects.filter(title=thong_bao.TB_DON_MOI_TIEU_DE).values_list('recipient_id', flat=True))
         self.assertEqual(nguoi_nhan, {self.gd.pk})
 
-    def test_uc5_1_basic_nua_ngay_la_0_5(self):
-        don = self.gui(self.gv1, 'SICK', 'HALF_DAY_AM', T2, T2)
-        self.assertEqual(don.total_days, Decimal('0.5'))
+    def test_uc5_1_basic_nghi_mot_ngay_tinh_ca_ngay(self):
+        don = self.gui(self.gv1, 'SICK', T2, T2)
+        self.assertEqual(don.total_days, Decimal('1'))
+
+    def test_uc5_1_form_khong_con_chon_nua_ngay(self):
+        self.dang_nhap(self.gv)
+        r = self.client.get(reverse('leave:leave_create'))
+        self.assertNotContains(r, 'duration_type')
+        self.assertNotContains(r, 'Buổi sáng')
+        self.assertContains(r, 'tính theo cả ngày')
 
     def test_uc5_1_basic_part_time_nghi_om_va_khong_luong(self):
         for loai in ('SICK', 'UNPAID', 'OTHER'):
-            self.gui(self.pt, loai, 'FULL_DAY', date(2026, 11, 2) + timedelta(days=['SICK', 'UNPAID', 'OTHER'].index(loai)),
+            self.gui(self.pt, loai, date(2026, 11, 2) + timedelta(days=['SICK', 'UNPAID', 'OTHER'].index(loai)),
                      date(2026, 11, 2) + timedelta(days=['SICK', 'UNPAID', 'OTHER'].index(loai)))
         self.assertEqual(LeaveRequest.objects.filter(employee=self.pt).count(), 3)
 
@@ -137,7 +141,7 @@ class Uc51Test(NenTangNghi):
         r = self.client.get(reverse('leave:leave_create'))
         self.assertContains(r, 'Bạn còn 12')
         r = self.client.post(reverse('leave:leave_create'), {
-            'leave_type': 'ANNUAL', 'duration_type': 'FULL_DAY', 'start_date': '2026-10-12', 'end_date': '2026-10-13',
+            'leave_type': 'ANNUAL', 'start_date': '2026-10-12', 'end_date': '2026-10-13',
             'reason': 'Việc gia đình'}, follow=True)
         self.assertContains(r, 'Gửi đơn nghỉ phép thành công.')
         self.assertEqual(LeaveRequest.objects.get().employee, self.gv)
@@ -154,7 +158,11 @@ class Uc51Test(NenTangNghi):
         with self.assertRaisesMessage(LoiNghiepVu, 'còn lại: 0,5 ngày'):
             self.gui(self.gv1)
         self.assertEqual(LeaveRequest.objects.count(), 0)
-        self.gui(self.gv1, 'ANNUAL', 'HALF_DAY_PM', T2, T2)                  # đúng bằng số còn lại thì được
+        with self.assertRaisesMessage(LoiNghiepVu, 'còn lại: 0,5 ngày'):
+            self.gui(self.gv1, 'ANNUAL', T2, T2)                              # 1 ngày > 0,5 còn lại (không còn nghỉ nửa ngày)
+        quy.used_days = Decimal('11')
+        quy.save()
+        self.gui(self.gv1, 'ANNUAL', T2, T2)                                  # đúng bằng số còn lại thì được
         self.assertEqual(LeaveRequest.objects.count(), 1)
 
     def test_uc5_1_exc_3_1_hien_canh_bao_do_tren_man_hinh(self):
@@ -163,7 +171,7 @@ class Uc51Test(NenTangNghi):
         quy.save()
         self.dang_nhap(self.gv)
         r = self.client.post(reverse('leave:leave_create'), {
-            'leave_type': 'ANNUAL', 'duration_type': 'FULL_DAY', 'start_date': '2026-10-12', 'end_date': '2026-10-13', 'reason': 'x'})
+            'leave_type': 'ANNUAL', 'start_date': '2026-10-12', 'end_date': '2026-10-13', 'reason': 'x'})
         self.assertContains(r, 'Quỹ phép năm của bạn không đủ (còn lại: 1 ngày). Vui lòng chọn loại Nghỉ không lương.')
         self.assertContains(r, 'alert-danger')
 
@@ -172,7 +180,7 @@ class Uc51Test(NenTangNghi):
             self.gui(self.gv, tu=T3, den=T2)
         self.dang_nhap(self.gv)
         r = self.client.post(reverse('leave:leave_create'), {
-            'leave_type': 'SICK', 'duration_type': 'FULL_DAY', 'start_date': '2026-10-13', 'end_date': '2026-10-12', 'reason': 'x'})
+            'leave_type': 'SICK', 'start_date': '2026-10-13', 'end_date': '2026-10-12', 'reason': 'x'})
         self.assertContains(r, 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.')
         self.assertEqual(LeaveRequest.objects.count(), 0)
 
@@ -193,32 +201,23 @@ class Uc51Test(NenTangNghi):
         self.gui(self.gv)                                                   # ngày đó giờ trống
         self.assertEqual(LeaveRequest.objects.filter(status='PENDING').count(), 1)
 
-    def test_nghi_sang_va_nghi_chieu_cung_ngay_khong_trung_nhung_nua_ngay_va_ca_ngay_thi_trung(self):
-        self.gui(self.gv1, 'SICK', 'HALF_DAY_AM', T2, T2)
-        self.gui(self.gv1, 'SICK', 'HALF_DAY_PM', T2, T2)                    # nửa còn lại: hợp lệ
+    def test_hai_don_cung_mot_ngay_thi_trung(self):
+        self.gui(self.gv1, 'SICK', T2, T2)
         with self.assertRaisesMessage(LoiNghiepVu, thong_bao.TRUNG_DON_NGHI):
-            self.gui(self.gv1, 'SICK', 'HALF_DAY_AM', T2, T2)                # cùng nửa: trùng
-        with self.assertRaisesMessage(LoiNghiepVu, thong_bao.TRUNG_DON_NGHI):
-            self.gui(self.gv1, 'SICK', 'FULL_DAY', T2, T2)                   # cả ngày chồng lên nửa ngày: trùng
+            self.gui(self.gv1, 'OTHER', T2, T2)
 
     def test_uc5_1_exc_3_4_part_time_chon_phep_nam(self):
         with self.assertRaisesMessage(LoiNghiepVu, 'Chỉ nhân sự Full-time được sử dụng phép năm.'):
             self.gui(self.pt)
         self.dang_nhap(self.pt)
         r = self.client.post(reverse('leave:leave_create'), {
-            'leave_type': 'ANNUAL', 'duration_type': 'FULL_DAY', 'start_date': '2026-10-12', 'end_date': '2026-10-13', 'reason': 'x'})
+            'leave_type': 'ANNUAL', 'start_date': '2026-10-12', 'end_date': '2026-10-13', 'reason': 'x'})
         self.assertContains(r, 'Chỉ nhân sự Full-time được sử dụng phép năm.')
 
     def test_uc5_1_exc_3_5_khong_co_ngay_lam_viec(self):
         chu_nhat = date(2026, 10, 11)
         with self.assertRaisesMessage(LoiNghiepVu, 'Khoảng thời gian đã chọn không có ngày làm việc.'):
             self.gui(self.gv, 'SICK', tu=chu_nhat, den=chu_nhat)
-        with self.assertRaisesMessage(LoiNghiepVu, thong_bao.KHONG_CO_NGAY_LAM_VIEC):
-            self.gui(self.gv1, 'SICK', 'HALF_DAY_AM', chu_nhat, chu_nhat)
-
-    def test_nua_ngay_phai_cung_ngay(self):
-        with self.assertRaisesMessage(LoiNghiepVu, thong_bao.NUA_NGAY_CUNG_NGAY):
-            self.gui(self.gv, 'SICK', 'HALF_DAY_AM', T2, T3)
 
     def test_uc5_1_thang_da_chot_luong_khong_gui_duoc_don(self):
         Payroll.objects.create(employee=self.gv, period_month=10, period_year=2026, status='SENT')
@@ -310,20 +309,10 @@ class Uc52Test(NenTangNghi):
         for ql in (self.ql, self.ql2):                                            # Quản lý nhận thông báo "cần người thay"
             self.assertTrue(Notification.objects.filter(recipient=ql.user, title=thong_bao.TB_CAN_DAY_THAY_TIEU_DE).exists())
 
-    def test_uc5_2_nghi_nua_ngay_tinh_theo_moc_giua_ca(self):
-        self.tao_lop_gv()                                                         # gv Ca 2, buổi dạy 18:00 → thuộc nửa sau (từ 17:00)
+    def test_uc5_2_nghi_ca_ngay_anh_huong_moi_buoi_trong_ngay(self):
+        self.tao_lop_gv()                                                         # gv Ca 2, buổi dạy 18:00
         ngay = date(2026, 10, 7)
-        self.assertEqual(len(lich.lich_bi_anh_huong(self.gv, ngay, ngay, 'HALF_DAY_AM')['buoi_chinh']), 0)
-        self.assertEqual(len(lich.lich_bi_anh_huong(self.gv, ngay, ngay, 'HALF_DAY_PM')['buoi_chinh']), 1)
-
-    def test_ca_2_nghi_nua_ngay_chia_o_17_gio(self):
-        from leave.models import moc_nua_ngay, nhan_hinh_thuc
-        self.assertEqual(moc_nua_ngay(self.gv), '17:00')                          # Ca 2 13:00–21:00
-        self.assertEqual(nhan_hinh_thuc(self.gv)['HALF_DAY_AM'], 'Buổi chiều (13:00–17:00)')
-        self.assertEqual(nhan_hinh_thuc(self.gv)['HALF_DAY_PM'], 'Buổi tối (17:00–21:00)')
-        self.assertEqual(self.gui(self.gv, 'SICK', 'HALF_DAY_AM', T2, T2).total_days, Decimal('0.5'))   # Ca 2 nghỉ nửa ngày được
-        self.gui(self.gv, 'SICK', 'HALF_DAY_PM', T2, T2)                          # nửa còn lại cũng được
-        self.gui(self.pt, 'SICK', 'HALF_DAY_PM', T3, T3)                        # Part-time vẫn được nghỉ nửa ngày
+        self.assertEqual(len(lich.lich_bi_anh_huong(self.gv, ngay, ngay)['buoi_chinh']), 1)
 
     def test_uc5_2_duyet_thi_bo_tro_giang_va_tra_cho_ca_ve_trong(self):
         tg = hoat_dong('tg@icls.vn', UserRole.EMPLOYEE, Position.TEACHING_ASSISTANT, PT)
@@ -494,18 +483,18 @@ class Uc52Test(NenTangNghi):
 
 class Uc53Test(NenTangNghi):
     def test_uc5_3_basic_ba_the_quy_phep_va_danh_sach_don(self):
-        d1 = self.gui(self.gv1, tu=T2, den=T2 + timedelta(days=0), hinh_thuc='HALF_DAY_AM')       # 0,5 ngày
+        d1 = self.gui(self.gv1, tu=T2, den=T2)                                                    # 1 ngày
         services.duyet_don_nghi(self.ql.user, d1, BAY_GIO)
         d2 = self.gui(self.gv1, tu=date(2026, 10, 14), den=date(2026, 10, 15))                    # 2 ngày, chờ duyệt
         self.gui(self.kt)                                                                         # đơn người khác
         self.dang_nhap(self.gv1)
         r = self.client.get(reverse('leave:my_leaves'), {'nam': 2026})
         quy = r.context['quy']
-        self.assertEqual((quy.total_days, quy.used_days, quy.remaining_days), (12, Decimal('0.5'), Decimal('11.5')))
+        self.assertEqual((quy.total_days, quy.used_days, quy.remaining_days), (12, Decimal('1'), Decimal('11')))
         self.assertEqual(set(r.context['trang']), {d1, d2})                                       # chỉ đơn của chính mình
         self.assertEqual((r.context['dem']['PENDING'], r.context['dem']['APPROVED']), (1, 1))
         self.assertContains(r, 'Phép còn lại')
-        self.assertContains(r, '11,5')
+        self.assertContains(r, '11')
 
     def test_uc5_3_loc_theo_trang_thai_va_nam(self):
         d1 = self.gui(self.gv)
@@ -543,15 +532,15 @@ class Uc53Test(NenTangNghi):
 
 
 class Uc54Test(NenTangNghi):
-    def don_da_duyet(self, nv, loai, tu, den, ht='FULL_DAY'):
-        don = services.gui_don_nghi(nv, loai, ht, tu, den, 'x')
+    def don_da_duyet(self, nv, loai, tu, den):
+        don = services.gui_don_nghi(nv, loai, tu, den, 'x')
         services.duyet_don_nghi(self.ql.user if nv.user.role != 'MANAGER' else self.gd, don, BAY_GIO)
         return don
 
     def test_uc5_4_basic_don_da_duyet_tong_theo_loai_va_phep_con_lai(self):
         self.don_da_duyet(self.gv, 'ANNUAL', T2, T3)                                   # 2 ngày phép năm
         self.don_da_duyet(self.kt, 'SICK', date(2026, 10, 14), date(2026, 10, 14))     # 1 ngày ốm
-        self.don_da_duyet(self.pt, 'UNPAID', date(2026, 10, 15), date(2026, 10, 15), 'HALF_DAY_AM')   # 0,5 ngày
+        self.don_da_duyet(self.pt, 'UNPAID', date(2026, 10, 15), date(2026, 10, 15))   # 1 ngày
         self.gui(self.gv, 'SICK', tu=date(2026, 10, 20), den=date(2026, 10, 20))       # còn chờ duyệt: không tính
         self.dang_nhap(self.ql)
         r = self.client.get(reverse('leave:summary'), {'thang': '2026-10'})
@@ -559,7 +548,7 @@ class Uc54Test(NenTangNghi):
         self.assertEqual(len(ket_qua['dong']), 3)
         tong = dict(ket_qua['tong_theo_loai'])
         self.assertEqual((tong['Phép năm'], tong['Nghỉ ốm'], tong['Không lương'], tong['Khác']),
-                         (Decimal('2'), Decimal('1'), Decimal('0.5'), Decimal('0')))
+                         (Decimal('2'), Decimal('1'), Decimal('1'), Decimal('0')))
         con_lai = {d['nhan_su'].full_name: d['quy'].remaining_days for d in ket_qua['phep_con_lai']}
         self.assertEqual(con_lai['gv@icls.vn'], Decimal('10'))
         self.assertEqual(con_lai['kt@icls.vn'], Decimal('12'))

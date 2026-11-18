@@ -97,7 +97,8 @@ def _ve_bang(request, chon=None, bay_gio=None, **form_co_loi):
         'so_vi_tri': len({u.position for u in danh_sach}),
         'cac_dot': RecruitmentCampaign.objects.order_by('-start_date'),
         'tham_so_dot': _tham_so_loc(request), 'chi_can_danh_gia': chi_can_danh_gia,
-        'so_vong_can_danh_gia': services.vong_can_danh_gia(bay_gio).count()}
+        'so_vong_can_danh_gia': services.vong_can_danh_gia(bay_gio).count(),
+        'tien_do': services.tien_do_tuyen_dung(dot) if dot is not None and not chi_can_danh_gia else None}
     if chon is not None:
         boi_canh.update(_ngan_ho_so(chon, bay_gio, form_co_loi))
     return render(request, 'recruitment/bang.html', boi_canh)
@@ -151,9 +152,14 @@ def them_dot(request):
     form = DotTuyenDungForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
-        dot = services.tao_dot_tuyen_dung(request.user, d['campaign_name'], d['start_date'], d['end_date'])
-        messages.success(request, thong_bao.TAO_DOT_THANH_CONG)
-        return redirect(f"{reverse('recruitment:board')}?dot={dot.pk}")
+        try:
+            dot = services.tao_dot_tuyen_dung(request.user, d['campaign_name'], d['start_date'], d['end_date'],
+                                              form.chi_tieu())
+        except LoiNghiepVu as loi:
+            form.add_error(None, str(loi))
+        else:
+            messages.success(request, thong_bao.TAO_DOT_THANH_CONG)
+            return redirect(f"{reverse('recruitment:board')}?dot={dot.pk}")
     return render(request, 'recruitment/form_dot.html', {'form': form})
 
 

@@ -19,7 +19,7 @@ from core.services import KhongCoQuyen, LoiNghiepVu, LoiTruongNhap
 from employees.models import EmploymentType
 from . import services
 from .forms import BoLocDuyetForm, BoLocTongHopForm, DonNghiForm
-from .models import LeaveRequest, LeaveStatus, nhan_hinh_thuc
+from .models import LeaveRequest, LeaveStatus
 
 QL, GD = UserRole.MANAGER, UserRole.DIRECTOR
 
@@ -83,7 +83,7 @@ def gui_don(request):
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
         try:
-            services.gui_don_nghi(nhan_su, d['leave_type'], d['duration_type'], d['start_date'], d['end_date'], d['reason'])
+            services.gui_don_nghi(nhan_su, d['leave_type'], d['start_date'], d['end_date'], d['reason'])
         except LoiTruongNhap as loi:
             form.add_error(loi.truong if loi.truong in form.fields else None, str(loi))    # luồng 3.1 – 3.5
         except LoiNghiepVu as loi:
@@ -93,9 +93,7 @@ def gui_don(request):
             return redirect('leave:my_leaves')
     quy = services.thong_tin_quy_phep(nhan_su, date.today().year)
     return render(request, 'leave/form_don.html', {
-        'form': form, 'nhan_su': nhan_su, 'quy': quy, 'tab': 'cua_toi',
-        'hinh_thuc': form['duration_type'].value() or 'FULL_DAY',
-        'cac_hinh_thuc': list(nhan_hinh_thuc(nhan_su).items())})      # nhãn nút ghi rõ giờ theo ca của người xin nghỉ
+        'form': form, 'nhan_su': nhan_su, 'quy': quy, 'tab': 'cua_toi'})
 
 
 @role_required()

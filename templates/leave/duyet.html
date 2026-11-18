@@ -28,7 +28,7 @@
     <tr>
       <td><span class="d-flex align-items-center gap-2">{% avatar don.employee %}<span><span class="name">{{ don.employee.full_name }}</span><div class="sub">{{ don.employee.code }} · {{ don.get_leave_type_display }}</div></span></span></td>
       <td>{{ don.employee.get_department_display }}</td>
-      <td>{% include 'leave/_khoang.html' %}<div class="sub">{{ don.get_duration_type_display }}</div></td>
+      <td>{% include 'leave/_khoang.html' %}</td>
       <td>{% include 'leave/_so_ngay.html' with so=don.total_days %}</td>
       <td>{{ don.reason|truncatechars:40 }}</td>
       <td>{% if don.so_anh_huong %}<span class="chip plain expiring"><i class="ri-error-warning-line"></i> Ảnh hưởng {{ don.so_anh_huong }} buổi</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>

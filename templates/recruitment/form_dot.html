@@ -2,14 +2,29 @@
 {% block page_title %}Recruitment{% endblock %}
 {% block page_title_ko %}채용{% endblock %}
 {% block content %}
-<div style="max-width: 520px;">
+<div style="max-width: 560px;">
   <h3>Tạo đợt tuyển dụng</h3>
   <form method="post" novalidate>{% csrf_token %}
+    {% for loi in form.non_field_errors %}<div class="alert alert-danger"><i class="ri-error-warning-line"></i> {{ loi }}</div>{% endfor %}
     {% include 'core/_truong_form.html' with truong=form.campaign_name %}
     <div class="row">
       <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
       <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
     </div>
+
+    {# Chỉ tiêu: số lượng cần tuyển cho từng vị trí, để so với số thực tế tuyển được trên bảng ứng viên #}
+    <label class="form-label">Vị trí và số lượng cần tuyển <span class="bat-buoc" title="Bắt buộc">*</span></label>
+    <div class="form-text mt-0 mb-2">Nhập số lượng cho các vị trí đợt này cần tuyển; để trống hoặc 0 nếu không tuyển vị trí đó.</div>
+    <table class="table table-sm align-middle mb-3 bang-chi-tieu">
+      <thead><tr><th>Vị trí</th><th style="width: 180px">Số lượng cần tuyển</th></tr></thead>
+      <tbody>
+      {% for o in form.o_chi_tieu %}
+        <tr><td><label for="{{ o.id_for_label }}" class="mb-0">{{ o.label }}</label></td>
+            <td>{{ o }}{% for loi in o.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
     <button class="btn btn-icls">Tạo đợt</button>
     <a href="{% url 'recruitment:board' %}" class="btn btn-ghost">Hủy</a>
   </form>

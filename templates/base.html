@@ -15,7 +15,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
   {# "?v=3": đổi số mỗi khi sửa icls.css để trình duyệt bỏ bản CSS cũ đã lưu #}
-  <link href="{% static 'css/icls.css' %}?v=10" rel="stylesheet">
+  <link href="{% static 'css/icls.css' %}?v=13" rel="stylesheet">
 </head>
 <body>
 {% if user.is_authenticated %}
@@ -120,5 +120,31 @@
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Nút con mắt hiện/ẩn mật khẩu: tự gắn vào MỌI ô type="password" (đăng nhập, quên/đặt lại/đổi mật khẩu, thêm tài khoản...)
+document.querySelectorAll('input[type="password"]').forEach(function (o) {
+  var nut = document.createElement('button');
+  nut.type = 'button';
+  nut.className = 'nut-mat';
+  nut.setAttribute('aria-label', 'Hiện mật khẩu');
+  nut.innerHTML = '<i class="ri-eye-line"></i>';
+  nut.addEventListener('click', function () {
+    var dangAn = o.type === 'password';
+    o.type = dangAn ? 'text' : 'password';
+    nut.innerHTML = dangAn ? '<i class="ri-eye-off-line"></i>' : '<i class="ri-eye-line"></i>';
+    nut.setAttribute('aria-label', dangAn ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+    o.focus();
+  });
+  if (o.parentNode.classList.contains('login-input')) {   // ô của trang đăng nhập đã là hàng flex: đặt nút ngay sau ô
+    o.after(nut);
+  } else {                                               // ô form thường: bọc lại để nút nằm đè ở mép phải
+    var boc = document.createElement('div');
+    boc.className = 'o-mat-khau';
+    o.parentNode.insertBefore(boc, o);
+    boc.appendChild(o);
+    boc.appendChild(nut);
+  }
+});
+</script>
 </body>
 </html>

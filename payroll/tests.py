@@ -125,7 +125,7 @@ class NenTangLuong(TestCase):
         """Dữ liệu chấm công tháng 10/2026 để tính tay (xem số trong các test)."""
         for ngay in self.ngay_lam(20):                                            # gv: 20 ngày đi làm + 2 ngày phép năm = 22 công
             self.di_lam(self.gv, ngay)
-        LeaveRequest.objects.create(employee=self.gv, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=date(2026, 10, 28),
+        LeaveRequest.objects.create(employee=self.gv, leave_type='ANNUAL', start_date=date(2026, 10, 28),
                                     end_date=date(2026, 10, 29), total_days=2, reason='x', status='APPROVED')
         for ngay in self.ngay_lam(26):                                            # ql: đủ 26 công
             self.di_lam(self.ql, ngay)
@@ -505,12 +505,12 @@ class Uc72Test(NenTangLuong):
         self.lap()
         services.chot_va_phat_hanh(self.kt.user, 10, 2026)
         with self.assertRaisesMessage(LoiNghiepVu, thong_bao.BANG_LUONG_DA_CHOT):
-            gui_giai_trinh(self.gv, loi, 'lý do')
+            gui_giai_trinh(self.gv, loi, 'lý do', None)
         with self.assertRaisesMessage(LoiNghiepVu, 'đã chốt lương'):
-            gui_don_nghi(self.gv, 'SICK', 'FULL_DAY', date(2026, 10, 20), date(2026, 10, 20), 'x')
+            gui_don_nghi(self.gv, 'SICK', date(2026, 10, 20), date(2026, 10, 20), 'x')
         with self.assertRaisesMessage(LoiNghiepVu, thong_bao.CAU_HINH_THANG_DA_CHOT):
             services.luu_cau_hinh_luong(self.kt.user, self.gv, D(15_000_000), D(0), D(0), D(0), date(2026, 10, 20))
-        gui_don_nghi(self.gv, 'SICK', 'FULL_DAY', date(2026, 11, 10), date(2026, 11, 10), 'x')   # tháng 11 chưa chốt: bình thường
+        gui_don_nghi(self.gv, 'SICK', date(2026, 11, 10), date(2026, 11, 10), 'x')   # tháng 11 chưa chốt: bình thường
 
     def test_danh_sach_thang_va_tong_ket(self):
         self.du_lieu_thang_10()

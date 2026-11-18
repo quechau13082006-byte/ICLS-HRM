@@ -16,19 +16,57 @@ from core import thong_bao
 from core.models import NotificationType
 from core.services import LoiNghiepVu, ghi_nhat_ky, tao_thong_bao
 from employees.models import EmploymentType, Position
-from .models import (CampaignStatus, Candidate, CandidateStatus, RecruitmentCampaign, RecruitmentResult,
+from .models import (CampaignStatus, Candidate, CandidateStatus, RecruitmentCampaign, RecruitmentResult, RecruitmentTarget,
                      RecruitmentRound, RecruitmentRoundStatus, RecruitmentRoundType)
 
 TEN_VONG = {RecruitmentRoundType.INTERVIEW: 'phỏng vấn', RecruitmentRoundType.DEMO: 'dạy thử (Demo)'}
 
 
 # ============================================================ UC 8.1 – Đợt tuyển dụng và ứng viên
-def tao_dot_tuyen_dung(nguoi_thuc_hien, ten_dot, ngay_bat_dau, ngay_ket_thuc=None):
-    """UC 8.1 – bước 2: lưu đợt tuyển dụng với status = OPEN."""
-    dot = RecruitmentCampaign.objects.create(
-        campaign_name=ten_dot, start_date=ngay_bat_dau, end_date=ngay_ket_thuc, created_by=nguoi_thuc_hien)
-    ghi_nhat_ky(nguoi_thuc_hien, 'CREATE', 'RecruitmentCampaign', dot.pk, f'Tạo đợt tuyển dụng "{ten_dot}"')
+def tao_dot_tuyen_dung(nguoi_thuc_hien, ten_dot, ngay_bat_dau, ngay_ket_thuc, chi_tieu):
+    """UC 8.1 – bước 2: lưu đợt tuyển dụng (status = OPEN) cùng chỉ tiêu từng vị trí.
+
+    `chi_tieu`: dict {vị trí: số lượng cần tuyển}; vị trí có số lượng 0/trống thì bỏ qua, phải còn ít nhất một vị trí.
+    """
+    chi_tieu = {vi_tri: int(so) for vi_tri, so in (chi_tieu or {}).items() if so and int(so) > 0}
+    if not chi_tieu:
+        raise LoiNghiepVu(thong_bao.THIEU_CHI_TIEU_TUYEN)
+    with transaction.atomic():
+        dot = RecruitmentCampaign.objects.create(
+            campaign_name=ten_dot, start_date=ngay_bat_dau, end_date=ngay_ket_thuc, created_by=nguoi_thuc_hien)
+        RecruitmentTarget.objects.bulk_create(
+            RecruitmentTarget(campaign=dot, position=vi_tri, quantity=so)
+            for vi_tri, so in sorted(chi_tieu.items(), key=lambda m: Position.values.index(m[0])))
+        tom_tat = ', '.join(f'{Position(vi_tri).label} {so}' for vi_tri, so in chi_tieu.items())
+        ghi_nhat_ky(nguoi_thuc_hien, 'CREATE', 'RecruitmentCampaign', dot.pk, f'Tạo đợt tuyển dụng "{ten_dot}" ({tom_tat})')
     return dot
+
+
+def tien_do_tuyen_dung(dot):
+    """UC 8.1: so sánh chỉ tiêu với thực tế của một đợt, theo từng vị trí.
+
+    Mỗi dòng: vị trí, cần tuyển, đã tuyển (ứng viên HIRED của đợt, cùng vị trí), đạt yêu cầu chờ tiếp nhận (PASSED),
+    còn thiếu và % hoàn thành. Vị trí không đặt chỉ tiêu nhưng có người được tuyển vẫn hiện (cần tuyển = 0).
+    Trả về dict {'dong': [...], 'can_tuyen', 'da_tuyen', 'phan_tram'}.
+    """
+    can = {c.position: c.quantity for c in dot.targets.all()}
+    dem = {}
+    for vi_tri, trang_thai in Candidate.objects.filter(campaign=dot, status__in=[CandidateStatus.HIRED, CandidateStatus.PASSED]
+                                                       ).values_list('position', 'status'):
+        dem.setdefault(vi_tri, {CandidateStatus.HIRED: 0, CandidateStatus.PASSED: 0})[trang_thai] += 1
+    dong = []
+    for vi_tri in Position.values:
+        if vi_tri not in can and vi_tri not in dem:
+            continue
+        can_tuyen = can.get(vi_tri, 0)
+        da_tuyen = dem.get(vi_tri, {}).get(CandidateStatus.HIRED, 0)
+        dong.append({'vi_tri': Position(vi_tri).label, 'can_tuyen': can_tuyen, 'da_tuyen': da_tuyen,
+                     'cho_tiep_nhan': dem.get(vi_tri, {}).get(CandidateStatus.PASSED, 0),
+                     'con_thieu': max(can_tuyen - da_tuyen, 0),
+                     'phan_tram': min(round(da_tuyen * 100 / can_tuyen), 100) if can_tuyen else (100 if da_tuyen else 0)})
+    can_tuyen, da_tuyen = sum(can.values()), sum(min(d['da_tuyen'], d['can_tuyen']) for d in dong)
+    return {'dong': dong, 'can_tuyen': can_tuyen, 'da_tuyen': sum(d['da_tuyen'] for d in dong),
+            'phan_tram': round(da_tuyen * 100 / can_tuyen) if can_tuyen else 0}
 
 
 def dong_dot_tuyen_dung(nguoi_thuc_hien, dot):

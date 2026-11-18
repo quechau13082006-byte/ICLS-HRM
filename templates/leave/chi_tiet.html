@@ -12,7 +12,6 @@
 <div class="info-grid mb-4">
   <div><div class="k">Nhân sự</div><div class="v">{{ don.employee.full_name }} · {{ don.employee.get_position_display }} ({{ don.employee.get_employment_type_display }})</div></div>
   <div><div class="k">Loại nghỉ</div><div class="v">{{ don.get_leave_type_display }}</div></div>
-  <div><div class="k">Hình thức</div><div class="v">{{ don.get_duration_type_display }}</div></div>
   <div><div class="k">Thời gian</div><div class="v">{% include 'leave/_khoang.html' %}</div></div>
   <div><div class="k">Số ngày nghỉ</div><div class="v">{% include 'leave/_so_ngay.html' with so=don.total_days %} ngày</div></div>
   <div><div class="k">Quỹ phép còn lại</div><div class="v">{% if quy %}{% include 'leave/_so_ngay.html' with so=quy.remaining_days %} / {% include 'leave/_so_ngay.html' with so=quy.total_days %} ngày (năm {{ quy.year }}){% else %}Part-time không có phép năm{% endif %}</div></div>

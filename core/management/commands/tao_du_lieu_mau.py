@@ -26,7 +26,7 @@ from contracts.services import so_hop_dong_ke_tiep
 from employees.models import (Department, Employee, EmployeeStatus, EmploymentType, Gender, Position, WorkShift)
 from leave.models import LeaveBalance
 from payroll.models import SalaryConfig
-from recruitment.models import (Candidate, CandidateStatus, RecruitmentCampaign, RecruitmentRound,
+from recruitment.models import (Candidate, CandidateStatus, RecruitmentCampaign, RecruitmentRound, RecruitmentTarget,
                                 RecruitmentRoundType)
 from leave.models import LeaveRequest
 from schedule.models import (AssignmentRole, ClassAssignment, ClassStatus, ShiftAssignment, ShiftStatus,
@@ -218,6 +218,9 @@ class Command(BaseCommand):
             campaign_name='Tuyển dụng Q4-2026',
             defaults={'start_date': date(hom_nay.year, 10, 1), 'end_date': date(hom_nay.year, 12, 31),
                       'created_by': ql1})
+        # Chỉ tiêu của đợt (vị trí + số lượng cần tuyển) để so với số đã tuyển được trên bảng ứng viên
+        for vi_tri, so in ((Position.TEACHER, 3), (Position.TEACHING_ASSISTANT, 2), (Position.STAFF, 1)):
+            RecruitmentTarget.objects.get_or_create(campaign=dot, position=vi_tri, defaults={'quantity': so})
         ung_vien = [
             ('ungvien1@example.com', 'Lê Thu Hương', Position.TEACHER, EmploymentType.FULL_TIME, CandidateStatus.NEW),
             ('ungvien2@example.com', 'Phạm Quốc Việt', Position.TEACHER, EmploymentType.FULL_TIME,
@@ -312,26 +315,26 @@ class Command(BaseCommand):
         thu_2_toi = hom_nay + timedelta(days=7 - hom_nay.weekday())     # Thứ 2 của tuần sau
         nv = lambda email: Employee.objects.get(user__email=email)
 
-        def don(email, loai, hinh_thuc, tu, den, so_ngay, ly_do, trang_thai='PENDING', ghi_chu=''):
+        def don(email, loai, tu, den, so_ngay, ly_do, trang_thai='PENDING', ghi_chu=''):
             return LeaveRequest.objects.create(
-                employee=nv(email), leave_type=loai, duration_type=hinh_thuc, start_date=tu, end_date=den,
+                employee=nv(email), leave_type=loai, start_date=tu, end_date=den,
                 total_days=so_ngay, reason=ly_do, status=trang_thai, review_note=ghi_chu)
 
-        # Chờ duyệt: gv01 (Ca 1, có lớp 09:00–11:00 Thứ 2-4-6) nghỉ 2 ngày → ảnh hưởng buổi dạy; gv03 (Ca 1) nghỉ buổi chiều
-        # (nửa ngày chia theo ca: Ca 1 ở 12:00, Ca 2 ở 17:00 – gv09 Ca 2 nghỉ nửa sau 17:00–21:00)
-        don('gv01@icls.vn', 'ANNUAL', 'FULL_DAY', thu_2_toi, thu_2_toi + timedelta(days=1), 2, 'Giải quyết việc gia đình')
-        don('gv03@icls.vn', 'SICK', 'HALF_DAY_PM', thu_2_toi + timedelta(days=2), thu_2_toi + timedelta(days=2), 0.5, 'Khám sức khỏe')
-        don('gv09@icls.vn', 'ANNUAL', 'HALF_DAY_PM', thu_2_toi + timedelta(days=1), thu_2_toi + timedelta(days=1), 0.5, 'Đi khám răng buổi tối')
-        don('ql1@icls.vn', 'ANNUAL', 'FULL_DAY', thu_2_toi + timedelta(days=3), thu_2_toi + timedelta(days=3), 1, 'Việc cá nhân (chờ Giám đốc duyệt)')
+        # Chờ duyệt: gv01 (Ca 1, có lớp 09:00–11:00 Thứ 2-4-6) nghỉ 2 ngày → ảnh hưởng buổi dạy; gv03, gv09 nghỉ 1 ngày
+        # (nghỉ phép luôn tính theo cả ngày)
+        don('gv01@icls.vn', 'ANNUAL', thu_2_toi, thu_2_toi + timedelta(days=1), 2, 'Giải quyết việc gia đình')
+        don('gv03@icls.vn', 'SICK', thu_2_toi + timedelta(days=2), thu_2_toi + timedelta(days=2), 1, 'Khám sức khỏe')
+        don('gv09@icls.vn', 'ANNUAL', thu_2_toi + timedelta(days=1), thu_2_toi + timedelta(days=1), 1, 'Đi khám răng')
+        don('ql1@icls.vn', 'ANNUAL', thu_2_toi + timedelta(days=3), thu_2_toi + timedelta(days=3), 1, 'Việc cá nhân (chờ Giám đốc duyệt)')
         # Đã duyệt (đã trừ quỹ phép) và Từ chối (kèm lý do) trong quá khứ gần
         qua_khu = hom_nay - timedelta(days=14)
         qua_khu -= timedelta(days=qua_khu.weekday())                      # Thứ 2 cách đây ~2 tuần
-        da_duyet = don('gv02@icls.vn', 'ANNUAL', 'FULL_DAY', qua_khu, qua_khu + timedelta(days=1), 2, 'Nghỉ phục hồi sức khỏe', 'APPROVED')
+        da_duyet = don('gv02@icls.vn', 'ANNUAL', qua_khu, qua_khu + timedelta(days=1), 2, 'Nghỉ phục hồi sức khỏe', 'APPROVED')
         quy = LeaveBalance.objects.filter(employee=da_duyet.employee, year=da_duyet.start_date.year).first()
         if quy:
             quy.used_days += 2
             quy.save(update_fields=['used_days'])
-        don('gv03@icls.vn', 'ANNUAL', 'FULL_DAY', qua_khu + timedelta(days=2), qua_khu + timedelta(days=2), 1, 'Việc cá nhân',
+        don('gv03@icls.vn', 'ANNUAL', qua_khu + timedelta(days=2), qua_khu + timedelta(days=2), 1, 'Việc cá nhân',
             'REJECTED', 'Trùng đợt kiểm tra cuối khóa')
 
 
@@ -396,13 +399,15 @@ class Command(BaseCommand):
         # gv01: đi trễ 35 phút, ĐÃ giải trình (chờ Quản lý duyệt) · gv09: về sớm 20 phút, chưa giải trình
         # gv02: quên check-out, chưa giải trình · gv10: đi trễ 12 phút, chưa giải trình
         ghi('gv01@icls.vn', ngay_lam[0], 'LATE', tre=35, explanation_status='PENDING',
-            explanation_reason='Xe hỏng giữa đường nên phải dừng sửa chữa, đã báo lễ tân trước giờ học.')
+            explanation_reason='Xe hỏng giữa đường nên phải dừng sửa chữa, đã báo lễ tân trước giờ học.',
+            explanation_evidence=self._file_pdf('gv01_hoa_don_sua_xe.pdf'))
         ghi('gv09@icls.vn', ngay_lam[1], 'EARLY_LEAVE', early_leave_minutes=20)
         ghi('gv02@icls.vn', ngay_lam[1], 'MISSING_CHECKOUT')
         ghi('gv10@icls.vn', ngay_lam[2], 'LATE', tre=12)
         # ql2 (Quản lý): đi trễ, ĐÃ giải trình → chỉ Giám đốc duyệt được (Quản lý không tự duyệt cho nhau)
         ghi('ql2@icls.vn', ngay_lam[2], 'LATE', tre=25, explanation_status='PENDING',
-            explanation_reason='Đi gặp đối tác trường Đại học Ngoại ngữ về chương trình liên kết, đã báo Giám đốc từ hôm trước.')
+            explanation_reason='Đi gặp đối tác trường Đại học Ngoại ngữ về chương trình liên kết, đã báo Giám đốc từ hôm trước.',
+            explanation_evidence=self._file_pdf('ql2_giay_moi_doi_tac.pdf'))
 
     # ------------------------------------------------------------------ chấm công tháng trước
     def tao_cham_cong_thang_truoc(self, hom_nay):
@@ -543,6 +548,7 @@ class Command(BaseCommand):
             campaign_name='Tuyển dụng Q3-2026', defaults={
                 'start_date': date(hom_nay.year, 7, 1), 'end_date': date(hom_nay.year, 9, 30),
                 'status': CampaignStatus.CLOSED, 'created_by': ql1})
+        RecruitmentTarget.objects.get_or_create(campaign=dot_cu, position=Position.TEACHER, defaults={'quantity': 2})
         Candidate.objects.get_or_create(campaign=dot_cu, email='ungvien10@example.com', defaults={
             'full_name': 'Phan Gia Bảo', 'phone': '0980000010', 'position': Position.TEACHER,
             'employment_type': EmploymentType.FULL_TIME, 'status': CandidateStatus.REJECTED,
@@ -600,7 +606,7 @@ class Command(BaseCommand):
             return
         gv = Employee.objects.get(user__email='gv05@icls.vn')
         thu_2 = hom_nay + timedelta(days=14 - hom_nay.weekday())
-        don = gui_don_nghi(gv, 'SICK', 'FULL_DAY', thu_2, thu_2, 'Tiểu phẫu, bác sĩ yêu cầu nghỉ một ngày')
+        don = gui_don_nghi(gv, 'SICK', thu_2, thu_2, 'Tiểu phẫu, bác sĩ yêu cầu nghỉ một ngày')
         duyet_don_nghi(User.objects.get(email='ql1@icls.vn'), don)
 
     # ------------------------------------------------------------------ lịch sử cấu hình lương (UC 7.1)

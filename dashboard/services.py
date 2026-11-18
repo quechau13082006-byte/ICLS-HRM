@@ -16,7 +16,7 @@ from core import thong_bao
 from core.models import ActivityLog, NotificationType
 from core.services import ghi_nhat_ky, tao_thong_bao
 from employees.models import Employee, EmployeeStatus, EmploymentType
-from leave.models import DurationType, LeaveRequest, LeaveStatus
+from leave.models import LeaveRequest, LeaveStatus
 from schedule.models import ClassStatus, StudyClass
 
 
@@ -114,12 +114,15 @@ def du_lieu_dashboard(nguoi_dung, hom_nay=None, tab=''):
 
     Khóa `loai` cho template biết dựng phần nào: 'sa', 'ql', 'kt', 'ca_nhan', hoặc 'thieu_ho_so' (luồng 1.3: tài khoản
     không phải Super Admin/Giám đốc mà chưa có hồ sơ nhân sự). `tabs` là các tab được xem (Figma): Quản lý có Tổng quan +
-    Cá nhân, Kế toán có Kế toán + Cá nhân, Nhân viên chỉ Cá nhân, Super Admin (kỹ thuật) và Giám đốc chỉ Tổng quan.
+    Cá nhân, Kế toán có Kế toán + Cá nhân, Nhân viên chỉ Cá nhân, Super Admin (kỹ thuật) chỉ Tổng quan, Giám đốc có
+    Tổng quan + Kế toán (tab Kế toán của Giám đốc CHỈ XEM: không có nút/link sang trang nghiệp vụ lương của Kế toán).
     """
     hom_nay = hom_nay or date.today()
     vai_tro = nguoi_dung.role
-    if vai_tro in (UserRole.SUPER_ADMIN, UserRole.DIRECTOR):
+    if vai_tro == UserRole.SUPER_ADMIN:
         tabs = [('tong_quan', 'Tổng quan')]
+    elif vai_tro == UserRole.DIRECTOR:
+        tabs = [('tong_quan', 'Tổng quan'), ('ke_toan', 'Kế toán')]
     elif getattr(nguoi_dung, 'employee', None) is None:
         return {'loai': 'thieu_ho_so', 'tabs': [], 'tab': '', 'hom_nay': hom_nay}
     elif vai_tro == UserRole.MANAGER:
@@ -138,6 +141,10 @@ def du_lieu_dashboard(nguoi_dung, hom_nay=None, tab=''):
         du_lieu = ham[tab](nguoi_dung, hom_nay)
         du_lieu['loai'] = {'tong_quan': 'ql', 'ke_toan': 'kt', 'ca_nhan': 'ca_nhan'}[tab]
     du_lieu.update({'tabs': tabs, 'tab': tab, 'hom_nay': hom_nay})
+    if vai_tro == UserRole.DIRECTOR and tab == 'ke_toan':
+        du_lieu['chi_xem'] = True                   # Giám đốc xem dashboard lương của Kế toán, không thao tác
+        if du_lieu.get('luong'):
+            du_lieu['luong']['url'] = ''            # trang bảng lương tháng chỉ dành cho Kế toán
     return du_lieu
 
 
@@ -180,7 +187,7 @@ def du_lieu_quan_ly(nguoi_dung, hom_nay):
     full_time = sum(1 for _, loai in cac_nv if loai == EmploymentType.FULL_TIME)
     dang_lam = sum(1 for st, _ in cac_nv if st == EmployeeStatus.ACTIVE)
     da_nghi = sum(1 for st, _ in cac_nv if st in (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED))
-    nghi_hom_nay = (LeaveRequest.objects.filter(status=LeaveStatus.APPROVED, duration_type=DurationType.FULL_DAY,
+    nghi_hom_nay = (LeaveRequest.objects.filter(status=LeaveStatus.APPROVED,
                                                 start_date__lte=hom_nay, end_date__gte=hom_nay,
                                                 employee__status=EmployeeStatus.ACTIVE).values('employee').distinct().count())
     lop_dang_day = StudyClass.objects.filter(status=ClassStatus.ACTIVE).count()

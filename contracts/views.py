@@ -76,6 +76,8 @@ def them_hop_dong(request):
             form.add_error(truong, str(loi))
         else:
             messages.success(request, thong_bao.THEM_HOP_DONG_THANH_CONG)
+            if not hop_dong.file_url:
+                messages.info(request, thong_bao.NHAC_BO_SUNG_FILE_SCAN)
             _canh_bao_chon_ca(request, d['nhan_su'])
             return redirect('contracts:contract_detail', pk=hop_dong.pk)
     goi_y = _dien_so_hop_dong(request, form, loai)
@@ -109,10 +111,8 @@ def in_hop_dong(request, pk):
 # ============================================================ UC 3.3 – Gia hạn, cập nhật file
 @role_required(QL)
 def gia_han(request, pk):
-    hop_dong_cu = get_object_or_404(Contract.objects.select_related('employee'), pk=pk)
-    if hop_dong_cu.status != ContractStatus.ACTIVE:
-        messages.error(request, thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
-        return redirect('contracts:contract_detail', pk=pk)
+    # Chỉ hợp đồng đang hiệu lực mới có nút này; gõ URL của hợp đồng khác thì trả 404.
+    hop_dong_cu = get_object_or_404(Contract.objects.select_related('employee'), pk=pk, status=ContractStatus.ACTIVE)
     form = GiaHanForm(request.POST or None, request.FILES or None, hop_dong_cu=hop_dong_cu,
                       initial={'employment_type': hop_dong_cu.employment_type, 'start_date': hop_dong_cu.end_date,
                                'contract_number': services.so_hop_dong_ke_tiep(hop_dong_cu.employment_type)})
@@ -125,6 +125,8 @@ def gia_han(request, pk):
             form.add_error(None, str(loi))
         else:
             messages.success(request, thong_bao.GIA_HAN_THANH_CONG)
+            if not moi.file_url:
+                messages.info(request, thong_bao.NHAC_BO_SUNG_FILE_SCAN)
             _canh_bao_chon_ca(request, hop_dong_cu.employee)
             return redirect('contracts:contract_detail', pk=moi.pk)
     goi_y = _dien_so_hop_dong(request, form, hop_dong_cu.employment_type)
@@ -133,7 +135,7 @@ def gia_han(request, pk):
 
 @role_required(QL)
 def cap_nhat_file(request, pk):
-    hop_dong = get_object_or_404(Contract.objects.select_related('employee'), pk=pk)
+    hop_dong = get_object_or_404(Contract.objects.select_related('employee'), pk=pk, status=ContractStatus.ACTIVE)
     form = FileScanForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         try:
@@ -149,10 +151,8 @@ def cap_nhat_file(request, pk):
 # ============================================================ UC 3.4 – Thanh lý
 @role_required(QL)
 def thanh_ly(request, pk):
-    hop_dong = get_object_or_404(Contract.objects.select_related('employee'), pk=pk)
-    if hop_dong.status != ContractStatus.ACTIVE:
-        messages.error(request, thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
-        return redirect('contracts:contract_detail', pk=pk)
+    # Chỉ hợp đồng đang hiệu lực mới có nút này; gõ URL của hợp đồng khác thì trả 404.
+    hop_dong = get_object_or_404(Contract.objects.select_related('employee'), pk=pk, status=ContractStatus.ACTIVE)
     form = ThanhLyForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data

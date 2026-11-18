@@ -18,20 +18,11 @@
   <form method="post" novalidate>{% csrf_token %}
     {% for loi in form.non_field_errors %}<div class="alert alert-danger"><i class="ri-error-warning-line"></i> {{ loi }}</div>{% endfor %}
     {% include 'core/_truong_form.html' with truong=form.leave_type %}
-    <div class="mb-3">
-      <label class="form-label">Hình thức <span class="bat-buoc" title="Bắt buộc">*</span></label><br>
-      <div class="btn-group" role="group" aria-label="Hình thức nghỉ">
-        {% for ma, ten in cac_hinh_thuc %}
-        <input type="radio" class="btn-check" name="duration_type" id="ht_{{ ma }}" value="{{ ma }}" autocomplete="off" {% if hinh_thuc == ma %}checked{% endif %}>
-        <label class="btn btn-outline-icls" for="ht_{{ ma }}">{{ ten }}</label>
-        {% endfor %}
-      </div>
-      {% for loi in form.duration_type.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
-    </div>
     <div class="row">
       <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.start_date %}</div>
       <div class="col-md-6">{% include 'core/_truong_form.html' with truong=form.end_date %}</div>
     </div>
+    <div class="form-text mt-n2 mb-3"><i class="ri-information-line"></i> Nghỉ phép tính theo cả ngày: mỗi ngày làm việc (Thứ 2 – Thứ 7) trong khoảng đã chọn tính 1 ngày.</div>
     {% include 'core/_truong_form.html' with truong=form.reason %}
     <div class="form-footer"><a href="{% url 'leave:my_leaves' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Gửi đơn</button></div>
   </form>

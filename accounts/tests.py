@@ -78,14 +78,73 @@ class DangNhapTest(TestCase):          # UC 1.1
         self.assertRedirects(r, reverse('dashboard:dashboard'))
 
 
-class KhongConDatMatKhauQuaLinkTest(TestCase):       # đã bỏ Quên mật khẩu và đặt mật khẩu qua link email
-    def test_khong_con_chuc_nang_quen_mat_khau(self):
-        r = self.client.get(reverse('accounts:login'))
-        self.assertNotContains(r, 'Quên mật khẩu')
-        self.assertEqual(self.client.get('/tai-khoan/quen-mat-khau/').status_code, 404)
+class QuenMatKhauTest(TestCase):       # UC 1.2
+    def setUp(self):
+        self.nv = tao_user('nv@icls.vn')
+        self.url = reverse('accounts:password_reset')
 
-    def test_khong_con_trang_dat_mat_khau_qua_link(self):
-        self.assertEqual(self.client.get('/tai-khoan/dat-mat-khau/MQ/token-gia/').status_code, 404)
+    def _lay_link(self):
+        return re.search(r'http://testserver(/tai-khoan/dat-lai-mat-khau/[^\s]+)', mail.outbox[-1].body).group(1)
+
+    def test_uc1_2_basic(self):
+        self.assertContains(self.client.get(reverse('accounts:login')), 'Quên mật khẩu?')
+        r = self.client.post(self.url, {'email': 'NV@icls.vn'}, follow=True)
+        self.assertRedirects(r, reverse('accounts:login'))
+        self.assertContains(r, thong_bao.DA_GUI_LINK_DAT_LAI_MK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['nv@icls.vn'])
+        link = self._lay_link()
+        self.assertEqual(self.client.get(link).status_code, 200)
+        r = self.client.post(link, {'mat_khau_moi': 'MatKhauMoi9', 'xac_nhan': 'MatKhauMoi9'}, follow=True)
+        self.assertRedirects(r, reverse('accounts:login'))
+        self.assertContains(r, thong_bao.DAT_LAI_MK_THANH_CONG)
+        self.nv.refresh_from_db()
+        self.assertTrue(self.nv.check_password('MatKhauMoi9'))
+        self.assertTrue(ActivityLog.objects.filter(action='PASSWORD_RESET', user=self.nv).exists())
+
+    def test_uc1_2_exc_3_2_email_khong_ton_tai_van_cung_thong_bao(self):
+        r = self.client.post(self.url, {'email': 'khongco@icls.vn'}, follow=True)
+        self.assertContains(r, thong_bao.DA_GUI_LINK_DAT_LAI_MK)      # không tiết lộ email có tồn tại hay không
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_uc1_2_tai_khoan_bi_khoa_khong_gui(self):
+        self.nv.is_active = False
+        self.nv.save()
+        self.client.post(self.url, {'email': 'nv@icls.vn'})
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_uc1_2_exc_6_1_link_da_dung(self):
+        self.client.post(self.url, {'email': 'nv@icls.vn'})
+        link = self._lay_link()
+        self.client.post(link, {'mat_khau_moi': 'MatKhauMoi9', 'xac_nhan': 'MatKhauMoi9'})
+        r = self.client.get(link, follow=True)
+        self.assertRedirects(r, self.url)
+        self.assertContains(r, thong_bao.LINK_DAT_LAI_MK_HET_HAN)
+
+    def test_uc1_2_exc_6_1_link_sai(self):
+        r = self.client.get('/tai-khoan/dat-lai-mat-khau/MQ/token-gia/', follow=True)
+        self.assertContains(r, thong_bao.LINK_DAT_LAI_MK_HET_HAN)
+
+    @override_settings(PASSWORD_RESET_TIMEOUT=60)
+    def test_uc1_2_exc_6_1_link_het_han(self):
+        from unittest import mock
+        from datetime import datetime, timedelta
+        self.client.post(self.url, {'email': 'nv@icls.vn'})
+        link = self._lay_link()
+        with mock.patch('django.contrib.auth.tokens.PasswordResetTokenGenerator._now',
+                        return_value=datetime.now() + timedelta(minutes=5)):
+            r = self.client.get(link, follow=True)
+        self.assertContains(r, thong_bao.LINK_DAT_LAI_MK_HET_HAN)
+
+    def test_uc1_2_exc_6_2_mat_khau(self):
+        self.client.post(self.url, {'email': 'nv@icls.vn'})
+        link = self._lay_link()
+        r = self.client.post(link, {'mat_khau_moi': 'MatKhauMoi9', 'xac_nhan': 'Khac12345'})
+        self.assertContains(r, thong_bao.MAT_KHAU_XAC_NHAN_KHONG_KHOP)
+        r = self.client.post(link, {'mat_khau_moi': '12345678', 'xac_nhan': '12345678'})
+        self.assertContains(r, thong_bao.MAT_KHAU_CHUA_DU_MANH)
+        self.nv.refresh_from_db()
+        self.assertTrue(self.nv.check_password(MAT_KHAU))
 
 
 class DoiMatKhauTest(TestCase):        # UC 1.3

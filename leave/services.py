@@ -20,22 +20,20 @@ from core.models import NotificationType
 from core.permissions import co_quyen_duyet
 from core.services import KhongCoQuyen, LoiNghiepVu, LoiTruongNhap, ghi_nhat_ky, tao_thong_bao
 from employees.models import Employee, EmployeeStatus, EmploymentType
-from .models import DurationType, LeaveBalance, LeaveRequest, LeaveStatus, LeaveType
+from .models import LeaveBalance, LeaveRequest, LeaveStatus, LeaveType
 
 
 # ============================================================ 1. Tính toán chung (§9.1, §9.2)
-def tinh_so_ngay_nghi(tu_ngay, den_ngay, hinh_thuc=DurationType.FULL_DAY):
+def tinh_so_ngay_nghi(tu_ngay, den_ngay):
     """§9.2 – `total_days`: đếm các ngày thuộc NGAY_LAM_VIEC (Thứ 2 – Thứ 7) từ tu_ngay đến den_ngay.
 
-    Hình thức nửa ngày = 0,5 (bắt buộc tu_ngay = den_ngay và hôm đó phải là ngày làm việc, nếu không trả 0).
+    Chỉ nghỉ theo CẢ NGÀY (không có nghỉ nửa ngày): mỗi ngày làm việc trong khoảng tính 1 ngày.
     """
     so_ngay, ngay = 0, tu_ngay
     while ngay <= den_ngay:
         if ngay.weekday() in settings.NGAY_LAM_VIEC:
             so_ngay += 1
         ngay += timedelta(days=1)
-    if hinh_thuc != DurationType.FULL_DAY:
-        return Decimal('0.5') if (so_ngay == 1 and tu_ngay == den_ngay) else Decimal('0')
     return Decimal(so_ngay)
 
 
@@ -69,41 +67,33 @@ def _cac_thang_trong(tu_ngay, den_ngay):
     return ket_qua
 
 
-def _trung_don(don_khac, tu_ngay, den_ngay, hinh_thuc):
-    """Hai đơn trùng nhau khi khoảng ngày giao nhau, TRỪ trường hợp hai đơn nửa ngày cùng ngày nhưng khác nửa
-    (nghỉ sáng + nghỉ chiều là hợp lệ)."""
-    if don_khac.start_date > den_ngay or don_khac.end_date < tu_ngay:
-        return False
-    nua = (DurationType.HALF_DAY_AM, DurationType.HALF_DAY_PM)
-    if hinh_thuc in nua and don_khac.duration_type in nua and hinh_thuc != don_khac.duration_type:
-        return False
-    return True
+def _trung_don(don_khac, tu_ngay, den_ngay):
+    """Hai đơn trùng nhau khi khoảng ngày giao nhau."""
+    return not (don_khac.start_date > den_ngay or don_khac.end_date < tu_ngay)
 
 
 # ============================================================ 2. UC 5.1 – GỬI / HỦY ĐƠN
-def gui_don_nghi(nhan_su, loai_nghi, hinh_thuc, tu_ngay, den_ngay, ly_do):
+def gui_don_nghi(nhan_su, loai_nghi, tu_ngay, den_ngay, ly_do):
     """UC 5.1 – bước 4–6: kiểm tra, tính số ngày, lưu đơn PENDING và báo người duyệt. Trả về đơn.
 
-    Thứ tự kiểm tra (đúng §10): ngày bắt đầu ≤ kết thúc (3.2) · nửa ngày cùng ngày · Part-time không phép năm (3.4) ·
+    Nghỉ luôn theo cả ngày. Thứ tự kiểm tra (đúng §10): ngày bắt đầu ≤ kết thúc (3.2) · Part-time không phép năm (3.4) ·
     không trùng đơn PENDING/APPROVED (3.3) · tháng chưa chốt lương · có ngày làm việc (3.5) · đủ quỹ phép (3.1).
     """
     if nhan_su.status != EmployeeStatus.ACTIVE:
         raise LoiNghiepVu(thong_bao.CHI_NHAN_SU_HOAT_DONG_NGHI)
     if tu_ngay > den_ngay:
         raise LoiTruongNhap(thong_bao.NGAY_BAT_DAU_SAU_KET_THUC, 'end_date')
-    if hinh_thuc != DurationType.FULL_DAY and tu_ngay != den_ngay:
-        raise LoiTruongNhap(thong_bao.NUA_NGAY_CUNG_NGAY, 'end_date')
     if loai_nghi == LeaveType.ANNUAL and nhan_su.employment_type != EmploymentType.FULL_TIME:
         raise LoiTruongNhap(thong_bao.PART_TIME_KHONG_PHEP_NAM, 'leave_type')
     for don_khac in LeaveRequest.objects.filter(employee=nhan_su, status__in=[LeaveStatus.PENDING, LeaveStatus.APPROVED]):
-        if _trung_don(don_khac, tu_ngay, den_ngay, hinh_thuc):
+        if _trung_don(don_khac, tu_ngay, den_ngay):
             raise LoiTruongNhap(thong_bao.TRUNG_DON_NGHI)
     from payroll.services import thang_da_chot   # import trong hàm (§3.2)
     for thang, nam in _cac_thang_trong(tu_ngay, den_ngay):
         if thang_da_chot(thang, nam):
             raise LoiTruongNhap(thong_bao.THANG_DA_CHOT_LUONG.format(thang=thang, nam=nam))
 
-    so_ngay = tinh_so_ngay_nghi(tu_ngay, den_ngay, hinh_thuc)
+    so_ngay = tinh_so_ngay_nghi(tu_ngay, den_ngay)
     if so_ngay == 0:
         raise LoiTruongNhap(thong_bao.KHONG_CO_NGAY_LAM_VIEC)
     if loai_nghi == LeaveType.ANNUAL:
@@ -113,7 +103,7 @@ def gui_don_nghi(nhan_su, loai_nghi, hinh_thuc, tu_ngay, den_ngay, ly_do):
 
     with transaction.atomic():
         don = LeaveRequest.objects.create(
-            employee=nhan_su, leave_type=loai_nghi, duration_type=hinh_thuc, start_date=tu_ngay, end_date=den_ngay,
+            employee=nhan_su, leave_type=loai_nghi, start_date=tu_ngay, end_date=den_ngay,
             total_days=so_ngay, reason=ly_do.strip(), status=LeaveStatus.PENDING)
         noi_dung = thong_bao.TB_DON_MOI_NOI_DUNG.format(
             nhan_su=nhan_su.full_name, so_ngay=dinh_dang_so_ngay(so_ngay), loai=LeaveType(loai_nghi).label.lower(),
@@ -151,7 +141,7 @@ def don_cua_nhan_su(nhan_su, nam, trang_thai=''):
 def tom_tat_anh_huong(don):
     """Số buổi dạy chính / trợ giảng / ca làm việc bị ảnh hưởng của một đơn (hiện ở cột "Ảnh hưởng lịch dạy")."""
     from schedule.services import lich_bi_anh_huong   # import trong hàm (§3.2)
-    return lich_bi_anh_huong(don.employee, don.start_date, don.end_date, don.duration_type)
+    return lich_bi_anh_huong(don.employee, don.start_date, don.end_date)
 
 
 # ============================================================ 3. UC 5.2 – DUYỆT ĐƠN
@@ -228,7 +218,7 @@ def duyet_don_nghi(nguoi_duyet, don, bay_gio=None):
             quy.used_days += don.total_days
             quy.save(update_fields=['used_days'])
         don.status, don.reviewed_by, don.reviewed_at = LeaveStatus.APPROVED, nguoi_duyet, bay_gio
-        anh_huong = lich_bi_anh_huong(nhan_su, don.start_date, don.end_date, don.duration_type)
+        anh_huong = lich_bi_anh_huong(nhan_su, don.start_date, don.end_date)
         don.needs_substitute = bool(anh_huong['buoi_chinh'])
         don.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'needs_substitute'])
         for buoi in anh_huong['buoi_chinh']:
@@ -289,7 +279,7 @@ def thong_tin_quy_phep(nhan_su, nam):
 def so_ngay_trong_thang(don, thang, nam):
     """Phần số ngày của đơn rơi vào tháng đang xem (đơn vắt qua hai tháng chỉ đếm phần trong tháng)."""
     dau, cuoi = date(nam, thang, 1), date(nam + (thang == 12), thang % 12 + 1, 1) - timedelta(days=1)
-    return tinh_so_ngay_nghi(max(don.start_date, dau), min(don.end_date, cuoi), don.duration_type)
+    return tinh_so_ngay_nghi(max(don.start_date, dau), min(don.end_date, cuoi))
 
 
 def tong_hop_nghi_phep(thang, nam, phong_ban='', vi_tri='', loai=''):

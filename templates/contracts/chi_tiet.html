@@ -63,7 +63,7 @@
         </span>
       </div>
       {% else %}
-      <p class="text-muted mb-0">Chưa có file scan.</p>
+      <p class="text-muted mb-0"><i class="ri-file-warning-line"></i> Chưa có file scan.{% if hop_dong.status == 'ACTIVE' %} Có thể bổ sung bằng nút "Tải file scan lên".{% endif %}</p>
       {% endif %}
     </div>
   </div>

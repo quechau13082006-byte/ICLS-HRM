@@ -27,7 +27,8 @@
       <td>{% if hd.end_date %}{{ hd.end_date|date:"d/m/Y" }}{% else %}Không xác định{% endif %}</td>
       <td>{% include 'contracts/_chip_hop_dong.html' %}
         {% if hd.status == 'ACTIVE' and hd.end_date and hd.end_date < hom_nay %}<span class="chip expired">Quá hạn</span>
-        {% elif hd.status == 'ACTIVE' and hd.end_date and hd.end_date <= hom_nay|add_days:30 %}<span class="chip expiring">Sắp hết hạn</span>{% endif %}</td>
+        {% elif hd.status == 'ACTIVE' and hd.end_date and hd.end_date <= hom_nay|add_days:30 %}<span class="chip expiring">Sắp hết hạn</span>{% endif %}
+        {% if not hd.file_url and hd.status == 'ACTIVE' %}<span class="chip pending" title="Chưa tải file scan bản đã ký"><i class="ri-file-warning-line"></i> Chưa có file scan</span>{% endif %}</td>
       <td class="text-end"><a class="btn btn-ghost btn-sm" href="{% url 'contracts:contract_detail' hd.pk %}">Xem chi tiết</a></td>
     </tr>
   {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Không có hợp đồng nào.</td></tr>{% endfor %}

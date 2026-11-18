@@ -9,10 +9,10 @@ from .models import ExplanationStatus
 
 
 class GiaiTrinhForm(BootstrapForm):
-    """UC 4.2 – bước 2–3: Lý do giải trình (bắt buộc, kiểm tra trong service để đúng thứ tự §10) + File minh chứng."""
+    """UC 4.2 – bước 2–3: Lý do giải trình + File minh chứng (cả hai bắt buộc, kiểm tra trong service để đúng thứ tự §10)."""
     ly_do = forms.CharField(label='Lý do', required=False,
                             widget=forms.Textarea(attrs={'rows': 4, 'placeholder': 'Mô tả sự cố đã xảy ra ảnh hưởng đến ca làm'}))
-    minh_chung = forms.FileField(label='File minh chứng (ảnh/PDF, không bắt buộc)', required=False)
+    minh_chung = forms.FileField(label='File minh chứng (ảnh JPG/PNG hoặc PDF, tối đa 5 MB)', required=False)
 
     def clean_minh_chung(self):
         tep = self.cleaned_data.get('minh_chung')

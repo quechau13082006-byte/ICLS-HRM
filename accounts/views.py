@@ -13,7 +13,7 @@ from core.services import LoiNghiepVu
 from core.views import ALL_ROLES
 from core.permissions import role_required
 from . import services
-from .forms import DangNhapForm, DoiMatKhauForm, DoiVaiTroForm, TaiKhoanCaNhanForm, ThemTaiKhoanForm
+from .forms import DangNhapForm, DoiMatKhauForm, MatKhauMoiForm, QuenMatKhauForm, DoiVaiTroForm, TaiKhoanCaNhanForm, ThemTaiKhoanForm
 from .models import User, UserRole
 
 
@@ -33,6 +33,33 @@ def dang_nhap(request):
         form.add_error(None, thong_bao.TAI_KHOAN_BI_KHOA if ket_qua == services.DANG_NHAP_BI_KHOA
                        else thong_bao.DANG_NHAP_SAI_THONG_TIN)
     return render(request, 'accounts/dang_nhap.html', {'form': form, 'next': request.GET.get('next', '')})
+
+
+# ============================================================ UC 1.2 – Quên mật khẩu
+def quen_mat_khau(request):
+    """UC 1.2 – bước 1–5: nhập Email → gửi đường dẫn đặt lại mật khẩu. Luôn hiện cùng một câu thông báo."""
+    if request.user.is_authenticated:
+        return redirect('accounts:change_password')
+    form = QuenMatKhauForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        services.gui_link_dat_lai_mat_khau(request, form.cleaned_data['email'])
+        messages.success(request, thong_bao.DA_GUI_LINK_DAT_LAI_MK)
+        return redirect('accounts:login')
+    return render(request, 'accounts/quen_mat_khau.html', {'form': form})
+
+
+def dat_lai_mat_khau(request, uidb64, token):
+    """UC 1.2 – bước 6–7: mở đường dẫn trong email, nhập mật khẩu mới (luồng 6.1: đường dẫn hết hạn/đã dùng)."""
+    tai_khoan = services.tai_khoan_tu_duong_dan(uidb64, token)
+    if tai_khoan is None:
+        messages.error(request, thong_bao.LINK_DAT_LAI_MK_HET_HAN)
+        return redirect('accounts:password_reset')
+    form = MatKhauMoiForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        services.dat_lai_mat_khau(tai_khoan, form.cleaned_data['mat_khau_moi'])
+        messages.success(request, thong_bao.DAT_LAI_MK_THANH_CONG)
+        return redirect('accounts:login')
+    return render(request, 'accounts/dat_lai_mat_khau.html', {'form': form, 'tai_khoan': tai_khoan})
 
 
 # ============================================================ UC 1.6 – Đăng xuất

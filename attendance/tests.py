@@ -95,8 +95,8 @@ class NenTangCC(TestCase):
             slot_group=ma or f'g-{nv.pk}-{ngay}-{bd}', employee=nv, shift_role=vai_tro, work_date=ngay, planned_start=bd,
             planned_end=kt, registration_deadline=datetime(2026, 9, 1), status=trang_thai)
 
-    def nghi(self, nv, hinh_thuc='FULL_DAY', ngay=T3, den=None, loai='SICK', trang_thai='APPROVED', so_ngay=1):
-        return LeaveRequest.objects.create(employee=nv, leave_type=loai, duration_type=hinh_thuc, start_date=ngay,
+    def nghi(self, nv, ngay=T3, den=None, loai='SICK', trang_thai='APPROVED', so_ngay=1):
+        return LeaveRequest.objects.create(employee=nv, leave_type=loai, start_date=ngay,
                                            end_date=den or ngay, total_days=so_ngay, reason='x', status=trang_thai)
 
     def cc(self, nv, ngay=T3, bd=time(8), kt=time(17), trang_thai=TT.ON_TIME, vao=None, ra=None, tre=0, som=0, ca=None,
@@ -127,20 +127,6 @@ class LichDuKienTest(NenTangCC):
         self.assertEqual(self.khung(self.gv1), [])
         self.assertTrue(services.nghi_ca_ngay(self.gv1, T3))
 
-    def test_nghi_nua_ngay_chia_o_moc_12_gio(self):
-        # Mọi nhân sự cùng mốc 12:00: Ca 1 nghỉ buổi sáng còn 12–17; Part-time ca 8–14 nghỉ buổi chiều còn 8–12
-        self.nghi(self.gv1, 'HALF_DAY_AM')
-        self.ca(self.pt, bd=time(8), kt=time(14))
-        self.nghi(self.pt, 'HALF_DAY_PM')
-        self.assertEqual(self.khung(self.gv1), [(time(12), time(17))])
-        self.assertEqual(self.khung(self.pt), [(time(8), time(12))])
-
-    def test_nghi_ca_hai_nua_thi_khong_con_lich(self):
-        self.nghi(self.gv1, 'HALF_DAY_AM')
-        self.nghi(self.gv1, 'HALF_DAY_PM')
-        self.assertEqual(self.khung(self.gv1), [])
-        self.assertTrue(services.nghi_ca_ngay(self.gv1, T3))
-
     def test_part_time_moi_ca_scheduled_la_mot_khung_gan_ca(self):
         sang = self.ca(self.pt, bd=time(8), kt=time(12))
         chieu = self.ca(self.pt, bd=time(14), kt=time(18), vai_tro='Tư vấn')
@@ -158,14 +144,11 @@ class LichDuKienTest(NenTangCC):
         cac_khung = services.lich_du_kien(self.tg, T3)
         self.assertEqual([(k['bd'], k['kt'], k['ca']) for k in cac_khung], [(time(9), time(16), None)])   # buổi hủy không tính
 
-    def test_part_time_nghi_nua_ngay_dung_moc_12h(self):
+    def test_part_time_nghi_thi_bo_moi_ca_trong_ngay(self):
         self.ca(self.pt, bd=time(8), kt=time(12))
         self.ca(self.pt, bd=time(14), kt=time(18), vai_tro='Tư vấn')
-        don = self.nghi(self.pt, 'HALF_DAY_AM')
-        self.assertEqual(self.khung(self.pt), [(time(14), time(18))])                  # ca sáng nằm trọn nửa đầu: bỏ
-        don.duration_type = 'HALF_DAY_PM'
-        don.save()
-        self.assertEqual(self.khung(self.pt), [(time(8), time(12))])
+        self.nghi(self.pt)                                                             # nghỉ luôn cả ngày
+        self.assertEqual(self.khung(self.pt), [])
 
     def test_part_time_khong_co_ca_khong_co_lich(self):
         self.assertEqual(self.khung(self.pt), [])
@@ -209,17 +192,8 @@ class Uc41Test(NenTangCC):
         b = services.check_out(self.gv1, luc(17, 30))
         self.assertEqual((b.attendance_status, b.late_minutes, b.early_leave_minutes), (TT.LATE, 20, 0))
 
-    def test_check_in_ca_2_va_nua_ca_sau_nghi_nua_dau(self):
+    def test_check_in_ca_2(self):
         self.assertEqual(services.check_in(self.gv2, luc(13, 0)).planned_start, time(13))
-        self.nghi(self.gv1, 'HALF_DAY_AM')                                       # chỉ còn 12:00–17:00
-        b = services.check_in(self.gv1, luc(12, 3))
-        self.assertEqual((b.planned_start, b.planned_end, b.attendance_status), (time(12), time(17), TT.ON_TIME))
-
-    def test_ca_2_nghi_nua_ngay_chia_o_17_gio(self):
-        self.nghi(self.gv2, 'HALF_DAY_AM')                                       # Ca 2 nghỉ nửa đầu → chỉ còn 17:00–21:00
-        self.assertEqual([(k['bd'], k['kt']) for k in services.lich_du_kien(self.gv2, T3)], [(time(17), time(21))])
-        self.nghi(self.gv1, 'HALF_DAY_PM')                                       # Ca 1 nghỉ nửa sau → chỉ còn 08:00–12:00
-        self.assertEqual([(k['bd'], k['kt']) for k in services.lich_du_kien(self.gv1, T3)], [(time(8), time(12))])
 
     def test_part_time_nhieu_ca_phai_chon_ca_va_moi_ca_mot_ban_ghi(self):
         sang = self.ca(self.pt, bd=time(8), kt=time(12))
@@ -364,16 +338,6 @@ class TinhCongTest(NenTangCC):
         self.nghi(self.gv1, ngay=date(2026, 10, 22), loai='ANNUAL', trang_thai='PENDING')      # chưa duyệt: 0
         self.assertEqual(services.tinh_ngay_cong(self.gv1, 10, 2026), Decimal('3'))
 
-    def test_ngay_co_don_nghi_nua_ca_thi_di_lam_chi_tinh_0_5_va_phep_nam_nua_ngay_cong_them_0_5(self):
-        ngay = date(2026, 10, 7)
-        self.cc(self.gv1, ngay=ngay, bd=time(12), kt=time(17))                                 # chỉ làm nửa sau ca
-        self.nghi(self.gv1, 'HALF_DAY_AM', ngay=ngay, loai='ANNUAL', so_ngay=Decimal('0.5'))   # nghỉ phép năm nửa đầu
-        self.assertEqual(services.tinh_ngay_cong(self.gv1, 10, 2026), Decimal('1.0'))          # 0,5 + 0,5
-        ngay2 = date(2026, 10, 8)
-        self.cc(self.gv1, ngay=ngay2, bd=time(12), kt=time(17))
-        self.nghi(self.gv1, 'HALF_DAY_AM', ngay=ngay2, loai='SICK', so_ngay=Decimal('0.5'))    # nghỉ ốm nửa đầu: chỉ 0,5
-        self.assertEqual(services.tinh_ngay_cong(self.gv1, 10, 2026), Decimal('1.5'))
-
     def test_don_phep_nam_vat_qua_hai_thang_chi_dem_phan_trong_thang(self):
         self.nghi(self.gv1, ngay=date(2026, 10, 30), den=date(2026, 11, 3), loai='ANNUAL', so_ngay=4)    # T6, T7 | CN, T2, T3
         self.assertEqual(services.tinh_ngay_cong(self.gv1, 10, 2026), Decimal('2'))
@@ -466,6 +430,15 @@ class TinhCongTest(NenTangCC):
 
 
 # ---------------------------------------------------------------------------------- UC 4.2
+THU_MUC_MEDIA_GT = tempfile.mkdtemp()
+
+
+def mc(ten='minh-chung.pdf'):
+    """File minh chứng giải trình (UC 4.2 bắt buộc đính kèm)."""
+    return SimpleUploadedFile(ten, b'%PDF-1.4 x', content_type='application/pdf')
+
+
+@override_settings(MEDIA_ROOT=THU_MUC_MEDIA_GT)
 class Uc42Test(NenTangCC):
     def loi(self, nv=None, **kw):
         kw.setdefault('trang_thai', TT.LATE)
@@ -474,7 +447,7 @@ class Uc42Test(NenTangCC):
 
     def test_uc4_2_basic_gui_giai_trinh(self):
         b = self.loi()
-        services.gui_giai_trinh(self.gv1, b, '  Bị hư xe, phải dừng sửa chữa  ')
+        services.gui_giai_trinh(self.gv1, b, '  Bị hư xe, phải dừng sửa chữa  ', mc())
         b.refresh_from_db()
         self.assertEqual((b.explanation_status, b.explanation_reason), (GT.PENDING, 'Bị hư xe, phải dừng sửa chữa'))
         self.assertEqual(b.attendance_status, TT.LATE)                                  # lỗi giữ nguyên cho tới khi được chấp thuận
@@ -483,19 +456,19 @@ class Uc42Test(NenTangCC):
         self.assertTrue(ActivityLog.objects.filter(model_name='attendance', object_id=b.pk, action='UPDATE').exists())
 
     def test_giai_trinh_cua_quan_ly_bao_giam_doc(self):
-        services.gui_giai_trinh(self.ql, self.loi(self.ql), 'x')
+        services.gui_giai_trinh(self.ql, self.loi(self.ql), 'x', mc())
         self.assertEqual(set(Notification.objects.filter(title=thong_bao.TB_GIAI_TRINH_MOI_TIEU_DE).values_list('recipient_id', flat=True)),
                          {self.gd.pk})
 
     def test_moi_loai_loi_deu_giai_trinh_duoc_va_on_time_thi_khong(self):
         for i, tt in enumerate((TT.LATE, TT.EARLY_LEAVE, TT.ABSENT, TT.MISSING_CHECKOUT)):
             b = self.cc(self.gv1, ngay=date(2026, 10, 1) + timedelta(days=i), trang_thai=tt)
-            services.gui_giai_trinh(self.gv1, b, 'lý do')
+            services.gui_giai_trinh(self.gv1, b, 'lý do', mc())
             b.refresh_from_db()
             self.assertEqual(b.explanation_status, GT.PENDING)
         tot = self.cc(self.gv1, ngay=date(2026, 10, 8))
         with self.assertRaisesMessage(LoiNghiepVu, thong_bao.KHONG_CO_LOI_DE_GIAI_TRINH):
-            services.gui_giai_trinh(self.gv1, tot, 'lý do')
+            services.gui_giai_trinh(self.gv1, tot, 'lý do', mc())
 
     def test_uc4_2_basic_qua_man_hinh_kem_minh_chung(self):
         thu_muc = tempfile.mkdtemp()
@@ -517,7 +490,7 @@ class Uc42Test(NenTangCC):
         b = self.loi()
         for ly_do in ('', '   '):
             with self.assertRaises(LoiNghiepVu) as ctx:
-                services.gui_giai_trinh(self.gv1, b, ly_do)
+                services.gui_giai_trinh(self.gv1, b, ly_do, mc())
             self.assertEqual(str(ctx.exception), 'Vui lòng nhập lý do giải trình.')
         b.refresh_from_db()
         self.assertEqual(b.explanation_status, GT.NONE)
@@ -526,11 +499,22 @@ class Uc42Test(NenTangCC):
         self.assertContains(r, 'Vui lòng nhập lý do giải trình.')
         self.assertContains(r, 'invalid-feedback')
 
+    def test_uc4_2_exc_3_3_bat_buoc_dinh_kem_minh_chung(self):
+        b = self.loi()
+        with self.assertRaisesMessage(LoiNghiepVu, thong_bao.THIEU_MINH_CHUNG_GIAI_TRINH):
+            services.gui_giai_trinh(self.gv1, b, 'Bị hư xe', None)
+        b.refresh_from_db()
+        self.assertEqual(b.explanation_status, GT.NONE)
+        self.dang_nhap(self.gv1)
+        r = self.client.post(reverse('attendance:explain', args=[b.pk]), {'ly_do': 'Bị hư xe'})
+        self.assertContains(r, thong_bao.THIEU_MINH_CHUNG_GIAI_TRINH)
+        self.assertEqual(Attendance.objects.get(pk=b.pk).explanation_status, GT.NONE)
+
     def test_uc4_2_exc_1_1_da_giai_trinh_truoc_do(self):
         for tt in (GT.PENDING, GT.APPROVED, GT.REJECTED):
             b = self.loi(ngay=date(2026, 10, 1) + timedelta(days={'PENDING': 0, 'APPROVED': 1, 'REJECTED': 2}[tt]), giai_trinh=tt)
             with self.assertRaises(LoiNghiepVu) as ctx:
-                services.gui_giai_trinh(self.gv1, b, 'lần hai')
+                services.gui_giai_trinh(self.gv1, b, 'lần hai', mc())
             self.assertEqual(str(ctx.exception), 'Ca làm việc này đã được giải trình.')
         self.dang_nhap(self.gv1)                                                       # chặn ngay khi mở form (bước 1)
         r = self.client.get(reverse('attendance:explain', args=[b.pk]), follow=True)
@@ -541,23 +525,23 @@ class Uc42Test(NenTangCC):
         b = self.loi()
         Payroll.objects.create(employee=self.gv1, period_month=10, period_year=2026, status='SENT')
         with self.assertRaises(LoiNghiepVu) as ctx:
-            services.gui_giai_trinh(self.gv1, b, 'lý do')
+            services.gui_giai_trinh(self.gv1, b, 'lý do', mc())
         self.assertEqual(str(ctx.exception), 'Bảng lương tháng này đã chốt, không thể thay đổi chấm công.')
         self.dang_nhap(self.gv1)
         self.assertContains(self.client.get(reverse('attendance:explain', args=[b.pk]), follow=True),
                             'Bảng lương tháng này đã chốt, không thể thay đổi chấm công.')
         Payroll.objects.update(status='DRAFT')                                         # bảng lương nháp thì chưa khóa
-        services.gui_giai_trinh(self.gv1, b, 'lý do')
+        services.gui_giai_trinh(self.gv1, b, 'lý do', mc())
         self.assertEqual(Attendance.objects.get(pk=b.pk).explanation_status, GT.PENDING)
 
     def test_thang_khac_chua_chot_van_giai_trinh_duoc(self):
         Payroll.objects.create(employee=self.gv1, period_month=9, period_year=2026, status='SENT')
-        services.gui_giai_trinh(self.gv1, self.loi(), 'lý do')
+        services.gui_giai_trinh(self.gv1, self.loi(), 'lý do', mc())
 
     def test_khong_giai_trinh_ho_nguoi_khac_va_file_sai_dinh_dang_bi_chan(self):
         b = self.loi(self.gv2)
         with self.assertRaises(KhongCoQuyen):
-            services.gui_giai_trinh(self.gv1, b, 'lý do')
+            services.gui_giai_trinh(self.gv1, b, 'lý do', mc())
         self.dang_nhap(self.gv1)
         self.assertEqual(self.client.get(reverse('attendance:explain', args=[b.pk])).status_code, 403)
         mine = self.loi(self.gv1, ngay=date(2026, 10, 7))
@@ -842,7 +826,7 @@ class TacVuNgayChamCongTest(TestCase):
         self.assertIn('check-out', Notification.objects.get(recipient=self.ft.user).message)
 
     def test_nghi_ca_ngay_da_duyet_va_ngay_khong_lam_viec_khong_bi_vang(self):
-        LeaveRequest.objects.create(employee=self.ft, leave_type='ANNUAL', duration_type='FULL_DAY', start_date=self.NGAY,
+        LeaveRequest.objects.create(employee=self.ft, leave_type='ANNUAL', start_date=self.NGAY,
                                     end_date=self.NGAY, total_days=1, reason='Việc nhà', status='APPROVED')
         self.assertEqual(services.ghi_nhan_cham_cong_ngay(self.NGAY), (0, 0))
         self.assertEqual(services.ghi_nhan_cham_cong_ngay(date(2026, 10, 25)), (0, 0))   # Chủ nhật

@@ -18,6 +18,7 @@
       {% for loi in form.mat_khau.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
     </div>
 
+    <div class="login-forgot"><a href="{% url 'accounts:password_reset' %}">Quên mật khẩu?</a></div>
     <button class="login-submit">Đăng nhập</button>
   </form>
   <p class="login-note">Bằng việc đăng nhập, bạn đồng ý với <u>Điều khoản sử dụng</u> và <u>Chính sách quyền riêng tư</u></p>

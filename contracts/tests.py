@@ -165,14 +165,33 @@ class ThemHopDongTest(UcHopDongCoSo):            # UC 3.1
         self.assertContains(r, thong_bao.SO_HOP_DONG_DA_TON_TAI)
         self.assertEqual(Contract.objects.count(), 1)
 
-    def test_uc3_1_exc_5_3_ngay_ket_thuc_truoc_ngay_bat_dau_hoac_thieu_file(self):
+    def test_uc3_1_exc_5_3_ngay_ket_thuc_truoc_ngay_bat_dau_hoac_file_sai(self):
         r = self.client.post(self.url, self._du_lieu(end_date='2026-10-01'))
         self.assertContains(r, thong_bao.NGAY_KET_THUC_HD_SAI)
-        r = self.client.post(self.url, self._du_lieu(file_url=''))
-        self.assertContains(r, thong_bao.THIEU_FILE_SCAN)
         r = self.client.post(self.url, self._du_lieu(file_url=tep('x.exe')))
         self.assertContains(r, thong_bao.FILE_KHONG_HOP_LE)
         self.assertEqual(Contract.objects.count(), 0)
+
+    def test_uc3_1_khong_bat_buoc_file_scan_bo_sung_sau(self):
+        du_lieu = self._du_lieu()
+        du_lieu.pop('file_url')
+        r = self.client.post(self.url, du_lieu, follow=True)
+        hop_dong = Contract.objects.get()
+        self.assertFalse(hop_dong.file_url)
+        self.assertContains(r, thong_bao.THEM_HOP_DONG_THANH_CONG)
+        self.assertContains(r, 'Chưa có file scan')
+        r = self.client.post(reverse('contracts:contract_update_file', args=[hop_dong.pk]), {'file_url': tep('ky.pdf')})
+        hop_dong.refresh_from_db()
+        self.assertIn('ky', hop_dong.file_url.name)
+
+    def test_uc3_3_cap_nhat_file_van_bat_buoc_chon_file(self):
+        du_lieu = self._du_lieu()
+        du_lieu.pop('file_url')
+        self.client.post(self.url, du_lieu)
+        hop_dong = Contract.objects.get()
+        r = self.client.post(reverse('contracts:contract_update_file', args=[hop_dong.pk]), {'file_url': ''})
+        self.assertContains(r, thong_bao.THIEU_FILE_SCAN)
+        self.assertFalse(Contract.objects.get().file_url)
 
     def test_uc3_1_giao_dich_loi_giua_chung_khong_luu_gi(self):
         """Nhân sự đã nghỉ: service chặn trước, không tạo hợp đồng; hợp đồng + đổi loại hình không bao giờ lệch nhau."""
@@ -362,19 +381,26 @@ class GiaHanTest(UcHopDongCoSo):                 # UC 3.3
         self.assertContains(r, thong_bao.SO_HOP_DONG_DA_TON_TAI)
 
     def test_uc3_3_chi_gia_han_hop_dong_active(self):
+        """Hợp đồng hết hiệu lực không có nút Gia hạn / Cập nhật file; gõ thẳng URL thì 404."""
         self.cu.status = ContractStatus.EXPIRED
         self.cu.save()
-        r = self.client.get(self.url, follow=True)
-        self.assertContains(r, thong_bao.HOP_DONG_KHONG_CON_HIEU_LUC)
-        with self.assertRaises(LoiNghiepVu):
-            services.gia_han_hop_dong(self.ql.user, self.cu, 'HD-Z', 'FULL_TIME', date(2026, 11, 1), None, tep())
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertEqual(self.client.get(reverse('contracts:contract_update_file', args=[self.cu.pk])).status_code, 404)
+        r = self.client.get(reverse('contracts:contract_detail', args=[self.cu.pk]))
+        self.assertNotContains(r, self.url)
 
     def test_uc3_3_loi_thi_hop_dong_cu_van_active(self):
-        """Lỗi sau khi đổi hợp đồng cũ thì phải hoàn tác: ở đây thiếu file → không đụng tới hợp đồng cũ."""
+        """Lỗi nghiệp vụ thì không đụng tới hợp đồng cũ: ở đây trùng số hợp đồng."""
         with self.assertRaises(LoiNghiepVu):
-            services.gia_han_hop_dong(self.ql.user, self.cu, 'HD-Z', 'FULL_TIME', date(2026, 11, 1), None, None)
+            services.gia_han_hop_dong(self.ql.user, self.cu, self.cu.contract_number, 'FULL_TIME', date(2026, 11, 1), None, None)
         self.cu.refresh_from_db()
         self.assertEqual(self.cu.status, ContractStatus.ACTIVE)
+
+    def test_uc3_3_gia_han_khong_bat_buoc_file_scan(self):
+        moi = services.gia_han_hop_dong(self.ql.user, self.cu, 'HD-Z', 'FULL_TIME', date(2026, 11, 1), None, None)
+        self.assertFalse(moi.file_url)
+        self.cu.refresh_from_db()
+        self.assertEqual(self.cu.status, ContractStatus.EXPIRED)
 
     def test_uc3_3_phan_quyen_chi_quan_ly(self):
         for nguoi in (self.sa, self.kt.user, self.nv.user):
@@ -513,9 +539,11 @@ class ThanhLyTest(UcHopDongCoSo):                # UC 3.4
         self.assertFalse(SubstituteRequest.objects.exists())
 
     def test_uc3_4_chi_thanh_ly_hop_dong_active(self):
+        """Đã thanh lý thì không còn nút Thanh lý; gõ thẳng URL thì 404 (không thanh lý lần hai)."""
         self._thanh_ly()
-        with self.assertRaises(LoiNghiepVu):
-            self._thanh_ly()
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        r = self.client.get(reverse('contracts:contract_detail', args=[self.hd_nv.pk]))
+        self.assertNotContains(r, self.url)
 
     def test_uc3_4_sau_thanh_ly_khong_dang_nhap_duoc_va_hop_dong_moi_bi_chan(self):
         self._thanh_ly()

@@ -3,19 +3,17 @@ from django import forms
 
 from core.forms import BootstrapForm
 from employees.models import Department, Position
-from .models import DurationType, LeaveStatus, LeaveType
+from .models import LeaveStatus, LeaveType
 
 NGAY = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
 THANG = forms.TextInput(attrs={'type': 'month'})
 
 
 class DonNghiForm(BootstrapForm):
-    """UC 5.1 – bước 2–3: Loại nghỉ, Hình thức (ô chọn tự vẽ ở template), Từ ngày, Đến ngày, Lý do.
+    """UC 5.1 – bước 2–3: Loại nghỉ, Từ ngày, Đến ngày, Lý do. Nghỉ luôn theo cả ngày (không có nghỉ nửa ngày).
 
     Cố ý KHÔNG kiểm tra "ngày bắt đầu ≤ kết thúc" ở đây: luật đó nằm trong `services.gui_don_nghi` theo đúng thứ tự §10."""
     leave_type = forms.ChoiceField(label='Loại nghỉ', choices=LeaveType.choices)
-    duration_type = forms.ChoiceField(label='Hình thức', choices=DurationType.choices, initial=DurationType.FULL_DAY,
-                                      widget=forms.RadioSelect)
     start_date = forms.DateField(label='Từ ngày', widget=NGAY)
     end_date = forms.DateField(label='Đến ngày', widget=NGAY)
     reason = forms.CharField(label='Lý do', widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Nhập lý do xin nghỉ'}))

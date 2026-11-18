@@ -17,7 +17,7 @@
   <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
     {% for loi in form.non_field_errors %}<div class="alert alert-danger">{{ loi }}</div>{% endfor %}
     {% include 'core/_truong_form.html' with truong=form.ly_do bat_buoc=True %}
-    {% include 'core/_truong_form.html' with truong=form.minh_chung %}
+    {% include 'core/_truong_form.html' with truong=form.minh_chung bat_buoc=True %}
     <div class="alert alert-warning small"><i class="ri-time-line"></i> Sẵn sàng cho Quản lý duyệt: giải trình sẽ ở trạng thái "Chờ duyệt" sau khi gửi.</div>
     <div class="form-footer"><a href="{% url 'attendance:my_attendance' %}" class="btn btn-ghost">Hủy</a><button class="btn btn-icls">Gửi đơn</button></div>
   </form>

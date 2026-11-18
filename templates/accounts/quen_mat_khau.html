@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+{# UC 1.2 – Quên mật khẩu: nhập Email để nhận đường dẫn đặt lại mật khẩu. Cùng giao diện thẻ với trang Đăng nhập. #}
+{% block auth_wrap_class %}auth-login{% endblock %}
+{% block auth_logo %}<img src="{% static 'img/login/mascot.png' %}" alt="ICLS" class="login-mascot">{% endblock %}
+{% block auth_content %}
+  <h3 class="login-title">Quên mật khẩu</h3>
+  <p class="login-hint">Nhập email đã đăng ký. Hệ thống sẽ gửi đường dẫn để bạn đặt mật khẩu mới.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="login-field">
+      <span class="login-input"><img src="{% static 'img/login/icon-email.png' %}" alt="" class="icon-email">{{ form.email }}</span>
+      {% for loi in form.email.errors %}<div class="invalid-feedback d-block">{{ loi }}</div>{% endfor %}
+    </div>
+    <button class="login-submit">Gửi yêu cầu</button>
+  </form>
+  <div class="login-forgot text-center mt-3"><a href="{% url 'accounts:login' %}"><i class="ri-arrow-left-line"></i> Quay lại đăng nhập</a></div>
+{% endblock %}

@@ -406,7 +406,7 @@ a.rs-chip:hover { color: var(--icls-text); box-shadow: 0 1px 5px rgba(0, 0, 0, .
 .db-tabs { background: #eef3ee; border-radius: 12px; padding: .25rem; }
 .db-tieu-de { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1.8rem; margin: 0; }
 .db-the { container-type: inline-size; display: block; height: 100%; background: #f4f7f4; border: 1px solid var(--icls-border); border-radius: 14px; padding: .9rem 1.1rem; color: var(--icls-text); text-decoration: none; }
-a.db-the:hover { background: #eaf1ea; color: var(--icls-text); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+a.db-the[href]:hover { background: #eaf1ea; color: var(--icls-text); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
 .db-the-nhan { font-size: .85rem; }
 .db-the-icon { color: var(--icls-primary); font-size: 1.2rem; }
 .db-the-so { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1.25; color: var(--icls-primary); word-break: break-word; }
@@ -515,3 +515,25 @@ a.db-the:hover { background: #eaf1ea; color: var(--icls-text); box-shadow: 0 2px
 .rs-table.gon th.rs-ten { width: 190px; }
 .rs-table.gon .rs-nhom td { text-align: left; }
 .rs-table.gon .rs-chip { display: inline-block; max-width: 100%; margin: .1rem 0; }
+
+/* ===== Nút con mắt hiện/ẩn mật khẩu (JS cuối base.html tự gắn) ===== */
+.o-mat-khau { position: relative; }
+.o-mat-khau > input { padding-right: 2.6rem; }
+.nut-mat { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; padding: 0;
+  border: 0; background: transparent; color: #6c757d; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.nut-mat:hover, .nut-mat:focus-visible { color: #000; }
+.o-mat-khau > .nut-mat { position: absolute; top: 50%; right: .35rem; transform: translateY(-50%); }
+/* Bootstrap đặt ô không hợp lệ có icon ở phải: chừa chỗ cho nút mắt */
+.o-mat-khau > input.is-invalid { padding-right: 4.2rem; background-position: right 2.6rem center; }
+
+/* ===== Quên mật khẩu (UC 1.2) ===== */
+.auth-login .login-forgot { text-align: right; margin-top: -2px; font-family: 'Itim', cursive; font-size: 15px; }
+.auth-login .login-forgot a { color: var(--icls-primary); text-decoration: none; }
+.auth-login .login-forgot a:hover { text-decoration: underline; }
+.auth-login .login-hint { font-family: 'Itim', cursive; font-size: 15px; text-align: center; color: rgba(0, 0, 0, .75); margin: -8px 0 14px; }
+
+/* ===== Chỉ tiêu đợt tuyển dụng (UC 8.1) ===== */
+.chi-tieu-dot { background: #f4f7f4; border: 1px solid var(--icls-border); border-radius: 14px; padding: .9rem 1.1rem; }
+.chi-tieu-dot h4 { font-size: 1rem; font-weight: 700; }
+.chi-tieu-dot .table { background: transparent; --bs-table-bg: transparent; }
+.bang-chi-tieu input { max-width: 160px; }

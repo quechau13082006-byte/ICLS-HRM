@@ -4,6 +4,10 @@ View chỉ làm: kiểm tra quyền → nhận form → gọi hàm ở đây →
 """
 from django.conf import settings
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
@@ -44,6 +48,46 @@ def dang_xuat(request):
     nguoi_dung = request.user
     ghi_nhat_ky(nguoi_dung, 'LOGOUT', 'User', nguoi_dung.pk, f'Đăng xuất: {nguoi_dung.email}')
     logout(request)
+
+
+# ============================================================ UC 1.2 – Quên mật khẩu
+def gui_link_dat_lai_mat_khau(request, email):
+    """UC 1.2 – bước 4–5: email thuộc tài khoản đang hoạt động thì gửi đường dẫn đặt lại mật khẩu.
+
+    Đường dẫn dùng `default_token_generator` của Django: hiệu lực theo PASSWORD_RESET_TIMEOUT (mặc định 3 ngày) và
+    tự mất hiệu lực khi mật khẩu đã đổi (dùng một lần). Email không tồn tại hoặc tài khoản bị khóa thì không gửi gì,
+    nhưng view vẫn hiện cùng một câu thông báo để người ngoài không dò được email nào có tài khoản.
+    Trả về True nếu đã gửi thư.
+    """
+    tai_khoan = User.objects.filter(email__iexact=email.strip(), is_active=True).first()
+    if tai_khoan is None:
+        return False
+    duong_dan = request.build_absolute_uri(reverse('accounts:password_reset_confirm', kwargs={
+        'uidb64': urlsafe_base64_encode(force_bytes(tai_khoan.pk)),
+        'token': default_token_generator.make_token(tai_khoan)}))
+    send_mail(thong_bao.EMAIL_DAT_LAI_MK_TIEU_DE,
+              thong_bao.EMAIL_DAT_LAI_MK_NOI_DUNG.format(ten=tai_khoan.full_name or tai_khoan.email, duong_dan=duong_dan),
+              None, [tai_khoan.email])
+    ghi_nhat_ky(tai_khoan, 'PASSWORD_RESET_REQUEST', 'User', tai_khoan.pk, f'Yêu cầu đặt lại mật khẩu: {tai_khoan.email}')
+    return True
+
+
+def tai_khoan_tu_duong_dan(uidb64, token):
+    """UC 1.2 – bước 7 (luồng 6.1): trả về tài khoản nếu đường dẫn còn hiệu lực, ngược lại None."""
+    try:
+        tai_khoan = User.objects.get(pk=force_str(urlsafe_base64_decode(uidb64)))
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return None
+    if not tai_khoan.is_active or not default_token_generator.check_token(tai_khoan, token):
+        return None
+    return tai_khoan
+
+
+def dat_lai_mat_khau(tai_khoan, mat_khau_moi):
+    """UC 1.2 – bước 7: lưu mật khẩu mới (đường dẫn cũ tự hết hiệu lực vì token gắn với mật khẩu), ghi nhật ký."""
+    tai_khoan.set_password(mat_khau_moi)
+    tai_khoan.save(update_fields=['password', 'updated_at'])
+    ghi_nhat_ky(tai_khoan, 'PASSWORD_RESET', 'User', tai_khoan.pk, f'Đặt lại mật khẩu qua email: {tai_khoan.email}')
 
 
 # ============================================================ UC 1.3 – Đổi mật khẩu

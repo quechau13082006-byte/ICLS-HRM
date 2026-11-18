@@ -19,7 +19,7 @@ from core.services import LoiNghiepVu
 from employees.models import Employee
 from recruitment import services
 from recruitment.models import (CampaignStatus, Candidate, CandidateStatus, RecruitmentCampaign, RecruitmentResult,
-                                RecruitmentRound, RecruitmentRoundStatus, RecruitmentRoundType)
+                                RecruitmentRound, RecruitmentRoundStatus, RecruitmentRoundType, RecruitmentTarget)
 
 BAY_GIO = datetime(2026, 10, 27, 9, 0)        # "bây giờ" cố định để test không phụ thuộc ngày chạy (§0 luật 5)
 TUONG_LAI = datetime(2026, 10, 30, 9, 0)
@@ -81,9 +81,11 @@ class DotVaUngVienTest(UcTuyenDungCoSo):         # UC 8.1
 
     def test_uc8_1_basic_tao_dot_them_ung_vien_so_tuyen_dat(self):
         r = self.client.post(reverse('recruitment:campaign_add'),
-                             {'campaign_name': 'Đợt mới', 'start_date': '2026-11-01', 'end_date': '2026-11-30'})
+                             {'campaign_name': 'Đợt mới', 'start_date': '2026-11-01', 'end_date': '2026-11-30',
+                              'sl_TEACHER': '3', 'sl_TEACHING_ASSISTANT': '2', 'sl_STAFF': ''})
         dot = RecruitmentCampaign.objects.get(campaign_name='Đợt mới')
         self.assertEqual((dot.status, dot.created_by), (CampaignStatus.OPEN, self.ql))        # bước 2
+        self.assertEqual(list(dot.targets.values_list('position', 'quantity')), [('TEACHER', 3), ('TEACHING_ASSISTANT', 2)])
         cv = SimpleUploadedFile('cv.pdf', b'%PDF-1.4 x', content_type='application/pdf')
         r = self.client.post(reverse('recruitment:candidate_add'), self._du_lieu(dot=dot.pk, cv_file=cv))
         uv = Candidate.objects.get(email='a@x.vn')
@@ -93,6 +95,41 @@ class DotVaUngVienTest(UcTuyenDungCoSo):         # UC 8.1
         uv.refresh_from_db()
         self.assertEqual((uv.status, uv.screening_note), (CandidateStatus.SCREENING, 'Hồ sơ tốt'))   # bước 6
         self.assertTrue(ActivityLog.objects.filter(action='CREATE', model_name='RecruitmentCampaign').exists())
+
+    def test_uc8_1_tao_dot_bat_buoc_it_nhat_mot_vi_tri(self):
+        self.assertContains(self.client.get(reverse('recruitment:campaign_add')), 'Số lượng cần tuyển')
+        r = self.client.post(reverse('recruitment:campaign_add'),
+                             {'campaign_name': 'Đợt trống', 'start_date': '2026-11-01', 'sl_TEACHER': '0'})
+        self.assertContains(r, thong_bao.THIEU_CHI_TIEU_TUYEN)
+        r = self.client.post(reverse('recruitment:campaign_add'),
+                             {'campaign_name': 'Đợt âm', 'start_date': '2026-11-01', 'sl_TEACHER': '-2'})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(RecruitmentCampaign.objects.filter(campaign_name__in=['Đợt trống', 'Đợt âm']).exists())
+        with self.assertRaisesMessage(LoiNghiepVu, thong_bao.THIEU_CHI_TIEU_TUYEN):
+            services.tao_dot_tuyen_dung(self.ql, 'X', date(2026, 11, 1), None, {})
+
+    def test_uc8_1_tien_do_so_voi_chi_tieu(self):
+        RecruitmentTarget.objects.create(campaign=self.dot, position='TEACHER', quantity=3)
+        RecruitmentTarget.objects.create(campaign=self.dot, position='STAFF', quantity=1)
+        self.ung_vien('a@x.vn', CandidateStatus.HIRED)
+        self.ung_vien('b@x.vn', CandidateStatus.PASSED)
+        self.ung_vien('c@x.vn', CandidateStatus.INTERVIEWING)
+        self.ung_vien('d@x.vn', CandidateStatus.HIRED, vi_tri='TEACHING_ASSISTANT', loai='PART_TIME')   # ngoài chỉ tiêu
+        td = services.tien_do_tuyen_dung(self.dot)
+        dong = {d['vi_tri']: d for d in td['dong']}
+        self.assertEqual(list(dong), ['Giáo viên', 'Trợ giảng', 'Staff'])
+        self.assertEqual((dong['Giáo viên']['can_tuyen'], dong['Giáo viên']['da_tuyen'], dong['Giáo viên']['cho_tiep_nhan'],
+                          dong['Giáo viên']['con_thieu'], dong['Giáo viên']['phan_tram']), (3, 1, 1, 2, 33))
+        self.assertEqual((dong['Trợ giảng']['can_tuyen'], dong['Trợ giảng']['da_tuyen']), (0, 1))
+        self.assertEqual((dong['Staff']['da_tuyen'], dong['Staff']['phan_tram']), (0, 0))
+        self.assertEqual((td['can_tuyen'], td['da_tuyen'], td['phan_tram']), (4, 2, 25))   # 1 người ngoài chỉ tiêu không tính %
+        r = self.client.get(reverse('recruitment:board'), {'dot': self.dot.pk})
+        self.assertContains(r, 'Chỉ tiêu tuyển dụng')
+        self.assertContains(r, 'Đã tuyển <b>2</b> / 4')
+
+    def test_uc8_1_dot_chua_dat_chi_tieu(self):
+        r = self.client.get(reverse('recruitment:board'), {'dot': self.dot.pk})
+        self.assertContains(r, 'chưa đặt chỉ tiêu')
 
     def test_uc8_1_basic_so_tuyen_khong_dat_van_luu_ho_so(self):
         uv = self.ung_vien()

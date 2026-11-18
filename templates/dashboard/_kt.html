@@ -1,19 +1,21 @@
 {# Kế toán – theo Figma "DB kế toán": quỹ lương kỳ gần nhất, cột 6 tháng, phân bổ loại hình, bảng tóm tắt, chấm công tháng #}
+{# Giám đốc cũng xem tab này ở chế độ chi_xem: không có nút/link sang các trang lương chỉ Kế toán dùng #}
 {% load icls_filters %}
 <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
   <div>
     <h2 class="db-tieu-de">Theo dõi quỹ lương trong kỳ</h2>
-    <p class="text-muted mb-0">Kế toán theo dõi chi phí lương và tình hình chấm công của tháng hiện tại.</p>
+    <p class="text-muted mb-0">{% if chi_xem %}Giám đốc xem chi phí lương và tình hình chấm công do Kế toán theo dõi (chỉ xem).{% else %}Kế toán theo dõi chi phí lương và tình hình chấm công của tháng hiện tại.{% endif %}</p>
   </div>
-  <a href="{% url 'payroll:period_list' %}" class="btn btn-icls">Xem bảng lương <i class="ri-arrow-right-up-line"></i></a>
+  {% if chi_xem %}<span class="badge rounded-pill text-bg-light border"><i class="ri-eye-line"></i> Chỉ xem</span>
+  {% else %}<a href="{% url 'payroll:period_list' %}" class="btn btn-icls">Xem bảng lương <i class="ri-arrow-right-up-line"></i></a>{% endif %}
 </div>
 
 {% if luong %}
 <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-4">
-  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thu nhập</div><div class="db-the-so db-tien">{{ luong.gross|vnd }}</div><div class="db-the-phu">Tháng {{ luong.thang }}/{{ luong.nam }} · {{ luong.so_nhan_su }} nhân sự</div></a></div>
-  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thực nhận</div><div class="db-the-so db-tien">{{ luong.thuc_nhan|vnd }}</div><div class="db-the-phu">Sau khấu trừ và thuế</div></a></div>
-  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Tổng thuế</div><div class="db-the-so db-tien">{{ luong.thue|vnd }}</div><div class="db-the-phu">Thuế TNCN</div></a></div>
-  <div class="col"><a href="{{ luong.url }}" class="db-the"><div class="db-the-nhan">Trạng thái bảng lương</div>
+  <div class="col"><a {% if luong.url %}href="{{ luong.url }}" {% endif %}class="db-the"><div class="db-the-nhan">Tổng thu nhập</div><div class="db-the-so db-tien">{{ luong.gross|vnd }}</div><div class="db-the-phu">Tháng {{ luong.thang }}/{{ luong.nam }} · {{ luong.so_nhan_su }} nhân sự</div></a></div>
+  <div class="col"><a {% if luong.url %}href="{{ luong.url }}" {% endif %}class="db-the"><div class="db-the-nhan">Tổng thực nhận</div><div class="db-the-so db-tien">{{ luong.thuc_nhan|vnd }}</div><div class="db-the-phu">Sau khấu trừ và thuế</div></a></div>
+  <div class="col"><a {% if luong.url %}href="{{ luong.url }}" {% endif %}class="db-the"><div class="db-the-nhan">Tổng thuế</div><div class="db-the-so db-tien">{{ luong.thue|vnd }}</div><div class="db-the-phu">Thuế TNCN</div></a></div>
+  <div class="col"><a {% if luong.url %}href="{{ luong.url }}" {% endif %}class="db-the"><div class="db-the-nhan">Trạng thái bảng lương</div>
     <div class="db-the-so">{% if luong.trang_thai == 'SENT' %}Đã chốt &amp; phát hành{% else %}Nháp{% endif %}</div>
     <div class="db-the-phu">Tháng {{ luong.thang }}/{{ luong.nam }}</div></a></div>
 </div>
@@ -57,7 +59,7 @@
   </table></div>
 </div>
 {% else %}
-  <div class="alert alert-light border">{{ chua_co_du_lieu }}: chưa có bảng lương nào được lập. <a href="{% url 'payroll:period_list' %}">Lập bảng lương</a></div>
+  <div class="alert alert-light border">{{ chua_co_du_lieu }}: chưa có bảng lương nào được lập.{% if not chi_xem %} <a href="{% url 'payroll:period_list' %}">Lập bảng lương</a>{% endif %}</div>
 {% endif %}
 
 <div class="db-khoi">

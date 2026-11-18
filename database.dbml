@@ -1,0 +1,747 @@
+// ICLS HRM – Hệ thống quản lý nhân sự Trung tâm tiếng Hàn ICLS
+// Sinh tự động từ models.py (Django 5.2, SQLite). Dán vào https://dbdiagram.io để xem sơ đồ.
+
+Project ICLS_HRM {
+  database_type: 'SQLite'
+  Note: '''
+  21 bảng nghiệp vụ thuộc 9 app Django. Khóa chính id kiểu BigAutoField: SQLite lưu là INTEGER PRIMARY KEY AUTOINCREMENT,
+  cột khóa ngoại trỏ tới id có kiểu bigint (đúng như migration Django tạo ra).
+  Cột FileField (avatar, file_url, cv_file, explanation_evidence) lưu đường dẫn tương đối trong thư mục media/.
+  Nhân sự, hợp đồng, chấm công, bảng lương không bao giờ bị xóa: trạng thái thể hiện bằng cột status,
+  khóa ngoại trỏ tới employees dùng PROTECT (restrict) để giữ lịch sử.
+  Ràng buộc có điều kiện (UniqueConstraint ... condition=...) và CheckConstraint ghi trong Note của từng bảng.
+  '''
+}
+
+Table users {
+  id integer [pk, increment, note: 'Mã tài khoản']
+  password varchar(128) [not null, note: 'Mật khẩu đã mã hóa. Có sẵn từ AbstractUser; lưu dạng đã mã hóa. Mật khẩu ban đầu do người tạo tài khoản nhập (UC 1.4, 2.5), người dùng tự đổi tại UC 1.2']
+  last_login datetime [note: 'Lần đăng nhập cuối. Có sẵn']
+  is_superuser bool [not null, default: false, note: 'Toàn quyền trang quản trị Django. Có sẵn; tự đặt theo vai trò như is_staff']
+  is_staff bool [not null, default: false, note: 'Quyền vào trang quản trị Django. Có sẵn; tự đặt = True khi role = SUPER_ADMIN (User.save), không dùng cho nghiệp vụ']
+  is_active bool [not null, default: true, note: 'Trạng thái tài khoản. False = bị khóa (UC 1.4, 3.4)']
+  date_joined datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo tài khoản. Có sẵn']
+  email varchar(255) [not null, unique, note: 'Email đăng nhập. Dùng làm tên đăng nhập']
+  full_name varchar(150) [not null, note: 'Họ và tên hiển thị. Đồng bộ từ employees nếu có hồ sơ (UC 1.3, 2.2, 2.5)']
+  phone varchar(20) [not null, note: 'Số điện thoại. Đồng bộ từ employees nếu có hồ sơ']
+  role UserRole [not null, default: 'EMPLOYEE', note: 'Vai trò hệ thống. Enum UserRole; chỉ Super Admin đổi (UC 1.4)']
+  avatar varchar(100) [not null, note: 'Ảnh đại diện. Chỉ nhận .jpg/.png ≤ 2 MB; dùng FileField để không cần cài thêm thư viện xử lý ảnh']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm cập nhật']
+
+  Note: '''
+  Model User (app accounts).
+  Kế thừa AbstractUser của Django. Bỏ các trường username, first_name, last_name (đặt = None); đăng nhập bằng email (USERNAME_FIELD = 'email') với UserManager riêng. Các trường password, last_login, is_staff, is_superuser, date_joined có sẵn từ AbstractUser; hai bảng phụ groups, user_permissions của Django không dùng trong nghiệp vụ nên không liệt kê.
+  '''
+}
+
+Table employees {
+  id integer [pk, increment, note: 'Mã nhân sự']
+  user_id bigint [not null, unique, note: 'Tài khoản đăng nhập (Django: user, on_delete=PROTECT)']
+  candidate_id bigint [unique, note: 'Ứng viên nguồn. Có giá trị nếu tiếp nhận từ tuyển dụng; chặn tạo hồ sơ hai lần (Django: candidate, on_delete=SET_NULL)']
+  full_name varchar(150) [not null, note: 'Họ và tên']
+  phone varchar(20) [not null, note: 'Số điện thoại']
+  gender Gender [not null, note: 'Giới tính. Enum Gender. Cho phép để trống (chuỗi rỗng \'\').']
+  date_of_birth date [note: 'Ngày sinh']
+  id_card_number varchar(20) [unique, note: 'Số CCCD. Đúng 12 chữ số']
+  address text [not null, note: 'Địa chỉ']
+  nationality varchar(30) [not null, default: 'Việt Nam', note: 'Quốc tịch']
+  department Department [not null, note: 'Phòng ban. Enum Department']
+  position Position [not null, note: 'Chức danh. Enum Position']
+  employment_type EmploymentType [not null, note: 'Loại hình làm việc. Đồng bộ theo hợp đồng ACTIVE (UC 3.1, 3.3)']
+  work_shift WorkShift [not null, note: 'Ca làm việc. Enum WorkShift; bắt buộc với Full-time (Ca 1 08:00–17:00, Ca 2 13:00–21:00), để trống với Part-time (UC 2.5). Cho phép để trống (chuỗi rỗng \'\').']
+  bank_account varchar(100) [not null, note: 'Tài khoản ngân hàng. VD: Vietcombank – 0123456789']
+  status EmployeeStatus [not null, default: 'ONBOARDING', note: 'Trạng thái nhân sự. Enum EmployeeStatus; ONBOARDING → ACTIVE khi có hợp đồng đầu tiên']
+  join_date date [not null, note: 'Ngày vào làm']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm cập nhật']
+
+  Note: '''
+  Model Employee (app employees).
+  Mỗi nhân sự có đúng một tài khoản. Super Admin và Giám đốc không có hồ sơ nhân sự. Mã NV hiển thị = “NV” + id 4 chữ số (ví dụ NV0012), không lưu cột riêng. Nhân sự không bao giờ bị xóa, chỉ đổi status.
+  '''
+}
+
+Table employee_documents {
+  id integer [pk, increment, note: 'Mã giấy tờ']
+  employee_id bigint [not null, note: 'Nhân sự sở hữu (Django: employee, on_delete=PROTECT)']
+  document_type DocumentType [not null, note: 'Loại giấy tờ. Enum DocumentType']
+  document_name varchar(150) [not null, note: 'Tên giấy tờ. VD: TOPIK cấp 6']
+  issue_date date [note: 'Ngày cấp']
+  expiry_date date [note: 'Ngày hết hạn. Trống = không thời hạn']
+  file_url varchar(100) [not null, note: 'File đính kèm. PDF/JPG/PNG ≤ 5 MB; chỉ tải qua trang có kiểm tra quyền']
+  status DocumentStatus [not null, default: 'PENDING', note: 'Trạng thái. Enum DocumentStatus']
+  rejection_reason text [not null, note: 'Lý do từ chối. Bắt buộc khi REJECTED']
+  reviewed_by_id bigint [note: 'Người duyệt. Quản lý hoặc Giám đốc (UC 2.6) (Django: reviewed_by, on_delete=SET_NULL)']
+  reviewed_at datetime [note: 'Thời điểm duyệt']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tải lên']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm cập nhật']
+
+  Note: '''
+  Model EmployeeDocument (app employees).
+  Mỗi giấy tờ được duyệt riêng (UC 2.6). Khi “Tải bản mới” (UC 2.2), chính bản ghi được cập nhật file, ngày, chuyển lại PENDING và xóa thông tin người duyệt.
+  CheckConstraint: doc_expiry_after_issue: CHECK ("expiry_date" IS NULL OR "expiry_date" >= ("issue_date"))
+  '''
+}
+
+Table contracts {
+  id integer [pk, increment, note: 'Mã hợp đồng']
+  employee_id bigint [not null, note: 'Nhân sự ký hợp đồng (Django: employee, on_delete=PROTECT)']
+  contract_number varchar(50) [not null, unique, note: 'Số hợp đồng. Gợi ý tự động dạng STT/Năm/HĐLĐ-ICLS (Full-time) hoặc STT/Năm/HĐBTG-ICLS (Part-time)']
+  employment_type EmploymentType [not null, note: 'Loại hình. Enum EmploymentType; đồng bộ sang employees']
+  start_date date [not null, note: 'Ngày bắt đầu']
+  end_date date [note: 'Ngày kết thúc. Trống = không xác định thời hạn']
+  previous_contract_id bigint [note: 'Hợp đồng trước. Lưu vết gia hạn (UC 3.3) (Django: previous_contract, on_delete=SET_NULL)']
+  status ContractStatus [not null, default: 'ACTIVE', note: 'Trạng thái. Enum ContractStatus']
+  termination_date date [note: 'Ngày thanh lý. UC 3.4']
+  termination_reason text [not null, note: 'Lý do thanh lý. UC 3.4']
+  file_url varchar(100) [not null, note: 'File scan hợp đồng. PDF/JPG/PNG ≤ 5 MB; không bắt buộc, có thể tải bổ sung sau']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  indexes {
+    (employee_id) [unique, name: 'one_active_contract_per_employee', note: 'Chỉ áp dụng khi WHERE "status" = \'ACTIVE\'']
+  }
+
+  Note: '''
+  Model Contract (app contracts).
+  Mỗi nhân sự chỉ có tối đa một hợp đồng ACTIVE. Gia hạn (UC 3.3) chuyển hợp đồng cũ sang EXPIRED và tạo hợp đồng mới trỏ về hợp đồng cũ qua previous_contract. Hệ thống không tự đổi trạng thái hợp đồng quá hạn; tác vụ hằng ngày chỉ nhắc (UC 3.5, 9.2).
+  CheckConstraint: contract_end_after_start: CHECK ("end_date" IS NULL OR "end_date" > ("start_date"))
+  '''
+}
+
+Table recruitment_campaigns {
+  id integer [pk, increment, note: 'Mã đợt tuyển dụng']
+  campaign_name varchar(255) [not null, note: 'Tên đợt tuyển dụng. VD: Tuyển dụng Q4-2026']
+  start_date date [not null, note: 'Ngày bắt đầu']
+  end_date date [note: 'Ngày kết thúc']
+  status CampaignStatus [not null, default: 'OPEN', note: 'Trạng thái. Enum CampaignStatus']
+  created_by_id bigint [note: 'Người tạo (Django: created_by, on_delete=SET_NULL)']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  Note: '''
+  Model RecruitmentCampaign (app recruitment).
+  CheckConstraint: campaign_end_after_start: CHECK ("end_date" IS NULL OR "end_date" >= ("start_date"))
+  '''
+}
+
+Table recruitment_targets {
+  id integer [pk, increment, note: 'Mã chỉ tiêu']
+  campaign_id bigint [not null, note: 'Đợt tuyển dụng (Django: campaign, on_delete=CASCADE)']
+  position Position [not null, note: 'Vị trí cần tuyển. Enum Position']
+  quantity integer [not null, note: 'Số lượng cần tuyển (≥ 1)']
+
+  Note: '''
+  Model RecruitmentTarget (app recruitment). Chỉ tiêu của đợt: mỗi vị trí một dòng.
+  "Đã tuyển được" không lưu, đếm từ candidates cùng đợt, cùng vị trí, status = HIRED.
+  UniqueConstraint: target_unique_position_per_campaign (campaign_id, position)
+  CheckConstraint: target_quantity_positive: CHECK ("quantity" >= 1)
+  '''
+}
+
+Table candidates {
+  id integer [pk, increment, note: 'Mã ứng viên']
+  campaign_id bigint [not null, note: 'Đợt tuyển dụng (Django: campaign, on_delete=PROTECT)']
+  full_name varchar(150) [not null, note: 'Họ và tên']
+  email varchar(255) [not null, note: 'Email']
+  phone varchar(20) [not null, note: 'Số điện thoại']
+  position Position [not null, note: 'Vị trí ứng tuyển. Enum Position']
+  employment_type EmploymentType [not null, note: 'Loại hình ứng tuyển. Quyết định có vòng Demo hay không (UC 8.3)']
+  cv_file varchar(100) [not null, note: 'CV ứng viên. Chỉ PDF ≤ 5 MB; không bắt buộc']
+  screening_note text [not null, note: 'Ghi chú sơ tuyển. UC 8.1']
+  status CandidateStatus [not null, default: 'NEW', note: 'Trạng thái. Enum CandidateStatus']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm cập nhật']
+
+  indexes {
+    (campaign_id, email) [unique, name: 'one_email_per_campaign']
+  }
+
+  Note: '''
+  Model Candidate (app recruitment).
+  Kết quả sơ tuyển ghi tại screening_note (không tạo vòng tuyển dụng riêng cho sơ tuyển).
+  '''
+}
+
+Table recruitment_rounds {
+  id integer [pk, increment, note: 'Mã vòng']
+  candidate_id bigint [not null, note: 'Ứng viên (Django: candidate, on_delete=PROTECT)']
+  round_type RecruitmentRoundType [not null, note: 'Loại vòng. Enum RecruitmentRoundType']
+  scheduled_at datetime [not null, note: 'Thời gian diễn ra. Mỗi vòng tính 60 phút khi kiểm tra trùng lịch']
+  location varchar(255) [not null, note: 'Địa điểm / link / phòng demo']
+  interviewer_id bigint [not null, note: 'Người phỏng vấn / giám sát. Chỉ tài khoản vai trò MANAGER đang hoạt động (Django: interviewer, on_delete=PROTECT)']
+  status RecruitmentRoundStatus [not null, default: 'SCHEDULED', note: 'Trạng thái vòng. Enum RecruitmentRoundStatus']
+  result RecruitmentResult [not null, default: 'PENDING', note: 'Kết quả. Enum RecruitmentResult; Quản lý chọn Đạt / Không đạt (UC 8.3)']
+  note text [not null, note: 'Nhận xét đánh giá. UC 8.3']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  Note: '''
+  Model RecruitmentRound (app recruitment).
+  Mỗi lần xếp lịch phỏng vấn hoặc dạy thử (Demo) là một vòng. Đánh giá vòng chỉ gồm kết quả Đạt / Không đạt và nhận xét (không chấm điểm). Muốn đổi lịch thì hủy vòng rồi xếp lại (UC 8.2).
+  '''
+}
+
+Table classes {
+  id integer [pk, increment, note: 'Mã lớp']
+  class_name varchar(150) [not null, note: 'Tên lớp']
+  subject varchar(100) [not null, note: 'Môn học / Trình độ. VD: Tiếng Hàn Sơ cấp 1']
+  room_name varchar(100) [not null, note: 'Phòng học. Dùng để kiểm tra trùng phòng']
+  max_students "integer unsigned" [not null, default: 0, note: 'Sĩ số tối đa. CHECK "max_students" >= 0']
+  weekdays varchar(20) [not null, note: 'Các thứ học trong tuần. VD: \'0,2,4\' = Thứ 2, 4, 6 (0 = Thứ 2)']
+  start_time time [not null, note: 'Giờ bắt đầu']
+  end_time time [not null, note: 'Giờ kết thúc']
+  start_date date [not null, note: 'Ngày bắt đầu']
+  end_date date [not null, note: 'Ngày kết thúc dự kiến. Có thể lùi khi thêm buổi học bù']
+  status ClassStatus [not null, default: 'UPCOMING', note: 'Trạng thái lớp. Enum ClassStatus']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm cập nhật']
+
+  Note: '''
+  Model StudyClass (app schedule).
+  Tên model là StudyClass (vì class là từ khóa của Python), tên bảng giữ là classes. Lịch học lưu có cấu trúc (thứ trong tuần, giờ) để hệ thống tự sinh buổi dạy và kiểm tra trùng lịch.
+  CheckConstraint: class_end_date_ok: CHECK "end_date" >= ("start_date"); class_end_time_ok: CHECK "end_time" > ("start_time")
+  '''
+}
+
+Table class_assignments {
+  id integer [pk, increment, note: 'Mã phân công']
+  study_class_id bigint [not null, note: 'Lớp học (Django: study_class, on_delete=CASCADE)']
+  employee_id bigint [not null, note: 'Nhân sự được phân công (Django: employee, on_delete=PROTECT)']
+  assignment_role AssignmentRole [not null, note: 'Vai trò trong lớp. Enum AssignmentRole']
+  start_date date [not null, note: 'Ngày bắt đầu phân công']
+  end_date date [note: 'Ngày kết thúc phân công. Trống = đang phân công; đặt khi hủy lớp / thanh lý hợp đồng']
+
+  Note: '''
+  Model ClassAssignment (app schedule).
+  '''
+}
+
+Table teaching_sessions {
+  id integer [pk, increment, note: 'Mã buổi dạy']
+  study_class_id bigint [not null, note: 'Lớp học (Django: study_class, on_delete=CASCADE)']
+  session_date date [not null, note: 'Ngày dạy']
+  planned_start time [not null, note: 'Giờ bắt đầu']
+  planned_end time [not null, note: 'Giờ kết thúc']
+  room_name varchar(100) [not null, note: 'Phòng học. Sao chép từ lớp khi sinh buổi']
+  planned_teacher_id bigint [not null, note: 'Giáo viên dự kiến (Django: planned_teacher, on_delete=PROTECT)']
+  actual_teacher_id bigint [note: 'Giáo viên thực tế. Đổi khi chốt dạy thay (UC 6.4) (Django: actual_teacher, on_delete=PROTECT)']
+  planned_assistant_id bigint [note: 'Trợ giảng dự kiến (Django: planned_assistant, on_delete=SET_NULL)']
+  actual_assistant_id bigint [note: 'Trợ giảng thực tế. Bỏ trống khi trợ giảng nghỉ phép được duyệt; dùng để chấm công, tính lương trợ giảng (Django: actual_assistant, on_delete=SET_NULL)']
+  status TeachingSessionStatus [not null, default: 'SCHEDULED', note: 'Trạng thái. Enum TeachingSessionStatus']
+  lesson_note text [not null, note: 'Nội dung buổi học. Chỉ giáo viên thực tế của buổi ghi (UC 6.2)']
+
+  Note: '''
+  Model TeachingSession (app schedule).
+  Khi sinh buổi dạy, actual_teacher = planned_teacher và actual_assistant = planned_assistant. Người thực tế chỉ đổi khi chốt dạy thay (UC 6.4) hoặc khi trợ giảng nghỉ phép được duyệt (UC 5.2). actual_assistant trống nghĩa là buổi không có trợ giảng. Chấm công và lương dùng người thực tế.
+  CheckConstraint: session_end_after_start: CHECK "planned_end" > ("planned_start")
+  '''
+}
+
+Table shift_assignments {
+  id integer [pk, increment, note: 'Mã chỗ trong ca']
+  slot_group varchar(36) [not null, note: 'Mã khung ca. Mã UUID chung cho các chỗ của một khung ca']
+  employee_id bigint [note: 'Nhân sự nhận ca. NULL = chỗ còn trống (Django: employee, on_delete=PROTECT)']
+  shift_role varchar(50) [not null, note: 'Vai trò ca. VD: Lễ tân, Tư vấn']
+  work_date date [not null, note: 'Ngày làm việc']
+  planned_start time [not null, note: 'Giờ bắt đầu']
+  planned_end time [not null, note: 'Giờ kết thúc']
+  registration_deadline datetime [not null, note: 'Hạn chót đăng ký. Sau mốc này không được đăng ký hoặc hủy đăng ký']
+  registered_at datetime [note: 'Thời điểm nhận chỗ. Lúc nhân sự đăng ký hoặc được Quản lý gán']
+  status ShiftStatus [not null, default: 'OPEN', note: 'Trạng thái. Enum ShiftStatus']
+  assigned_by_id bigint [note: 'Người gán ca. Quản lý gán người vào chỗ trống; trống khi nhân sự tự đăng ký (Django: assigned_by, on_delete=SET_NULL)']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  indexes {
+    slot_group [name: 'idx_shift_assignments_slot_group']
+    (slot_group, employee_id) [unique, name: 'one_seat_per_person_per_slot', note: 'Chỉ áp dụng khi WHERE "employee_id" IS NOT NULL']
+  }
+
+  Note: '''
+  Model ShiftAssignment (app schedule).
+  Mỗi dòng là một chỗ trong một khung ca. Khung ca cần N người thì có N dòng với cùng slot_group. Dùng cho ca Lễ tân, Tư vấn… của nhân sự Part-time; trợ giảng làm theo buổi dạy (teaching_sessions). Nhân sự bấm “Đăng ký” là nhận chỗ ngay (OPEN → SCHEDULED, câu UPDATE có điều kiện chỗ còn trống nên hai người bấm cùng lúc không thể cùng nhận một chỗ); Quản lý có thể gán hoặc gỡ người (UC 6.3).
+  CheckConstraint: shift_end_after_start: CHECK "planned_end" > ("planned_start")
+  '''
+}
+
+Table substitute_requests {
+  id integer [pk, increment, note: 'Mã yêu cầu']
+  teaching_session_id bigint [not null, note: 'Buổi dạy cần thay (Django: teaching_session, on_delete=PROTECT)']
+  leave_request_id bigint [note: 'Đơn nghỉ gốc. Trống nếu phát sinh từ thanh lý hợp đồng (Django: leave_request, on_delete=SET_NULL)']
+  substitute_employee_id bigint [note: 'Giáo viên dạy thay (Django: substitute_employee, on_delete=PROTECT)']
+  status SubstituteStatus [not null, default: 'SEARCHING', note: 'Trạng thái. Enum SubstituteStatus']
+  manager_confirmed_by_id bigint [note: 'Quản lý chốt. Lưu cả khi chốt người thay và khi hủy buổi (Django: manager_confirmed_by, on_delete=SET_NULL)']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  indexes {
+    (teaching_session_id) [unique, name: 'one_searching_request_per_session', note: 'Chỉ áp dụng khi WHERE "status" = \'SEARCHING\'']
+  }
+
+  Note: '''
+  Model SubstituteRequest (app schedule).
+  Được tạo tự động khi duyệt đơn nghỉ có buổi dạy chính bị ảnh hưởng (UC 5.2) hoặc khi thanh lý hợp đồng (UC 3.4). Quản lý chọn trực tiếp người dạy thay hoặc hủy buổi (UC 6.4); buổi đã qua mà chưa có người thì tác vụ hằng ngày chuyển FAILED (UC 9.2).
+  '''
+}
+
+Table attendance {
+  id integer [pk, increment, note: 'Mã chấm công']
+  employee_id bigint [not null, note: 'Nhân sự (Django: employee, on_delete=PROTECT)']
+  shift_assignment_id bigint [note: 'Ca làm việc. Có giá trị khi chấm công theo ca (Django: shift_assignment, on_delete=PROTECT)']
+  work_date date [not null, note: 'Ngày chấm công']
+  planned_start time [not null, note: 'Giờ bắt đầu dự kiến. Giờ ca Full-time / giờ khung ca / giờ buổi dạy (trợ giảng)']
+  planned_end time [not null, note: 'Giờ kết thúc dự kiến']
+  check_in datetime [note: 'Giờ vào thực tế']
+  check_out datetime [note: 'Giờ ra thực tế']
+  late_minutes "integer unsigned" [not null, default: 0, note: 'Số phút đi trễ. Chỉ ghi khi trễ quá 5 phút (ghi toàn bộ số phút trễ). CHECK "late_minutes" >= 0']
+  early_leave_minutes "integer unsigned" [not null, default: 0, note: 'Số phút về sớm. CHECK "early_leave_minutes" >= 0']
+  attendance_status AttendanceStatus [not null, note: 'Trạng thái chấm công. Enum AttendanceStatus']
+  explanation_status ExplanationStatus [not null, default: 'NONE', note: 'Trạng thái giải trình. Enum ExplanationStatus']
+  explanation_reason text [not null, note: 'Lý do giải trình. UC 4.2']
+  explanation_evidence varchar(100) [not null, note: 'Minh chứng. Ảnh/PDF']
+  explanation_reviewed_by_id bigint [note: 'Người duyệt giải trình. Quản lý hoặc Giám đốc (UC 4.4) (Django: explanation_reviewed_by, on_delete=SET_NULL)']
+  explanation_reviewed_at datetime [note: 'Thời điểm duyệt']
+  explanation_review_note text [not null, note: 'Lý do từ chối giải trình. Bắt buộc khi REJECTED']
+
+  indexes {
+    (employee_id, shift_assignment_id) [unique, name: 'one_attendance_per_shift', note: 'Chỉ áp dụng khi WHERE "shift_assignment_id" IS NOT NULL']
+    (employee_id, work_date) [unique, name: 'one_attendance_per_day', note: 'Chỉ áp dụng khi WHERE "shift_assignment_id" IS NULL']
+  }
+
+  Note: '''
+  Model Attendance (app attendance).
+  Chấm công bằng nút bấm, không kiểm tra IP Wi-Fi. Nhân sự Full-time: một bản ghi mỗi ngày theo ca cố định (work_shift). Nhân sự Part-time: một bản ghi cho mỗi ca đã nhận, cộng một bản ghi theo ngày nếu là trợ giảng của buổi dạy. Giờ dự kiến được lưu lại trên bản ghi để tính trễ/sớm và giờ công.
+  '''
+}
+
+Table leave_requests {
+  id integer [pk, increment, note: 'Mã đơn nghỉ']
+  employee_id bigint [not null, note: 'Nhân sự gửi đơn (Django: employee, on_delete=PROTECT)']
+  leave_type LeaveType [not null, note: 'Loại nghỉ. Enum LeaveType; ANNUAL chỉ cho Full-time']
+  start_date date [not null, note: 'Ngày bắt đầu']
+  end_date date [not null, note: 'Ngày kết thúc']
+  total_days decimal [not null, note: 'Tổng số ngày nghỉ. Số ngày Thứ 2 – Thứ 7 trong khoảng (luôn nghỉ cả ngày, không có nửa ngày)']
+  reason text [not null, note: 'Lý do']
+  status LeaveStatus [not null, default: 'PENDING', note: 'Trạng thái đơn. Enum LeaveStatus']
+  reviewed_by_id bigint [note: 'Người duyệt. Quản lý hoặc Giám đốc (UC 5.2) (Django: reviewed_by, on_delete=SET_NULL)']
+  reviewed_at datetime [note: 'Thời điểm duyệt']
+  review_note text [not null, note: 'Ghi chú / lý do từ chối. Bắt buộc khi REJECTED']
+  needs_substitute bool [not null, default: false, note: 'Cần người dạy thay. True khi đơn ảnh hưởng buổi dạy chính (UC 5.2)']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  Note: '''
+  Model LeaveRequest (app leave).
+  Nghỉ nửa ngày chia theo ca của người nghỉ: Ca 1 chia ở 12:00, Ca 2 chia ở 17:00, Part-time chia ở 12:00 (MOC_NUA_CA, MOC_NUA_NGAY trong settings.py).
+  CheckConstraint: leave_end_after_start: CHECK "end_date" >= ("start_date")
+  '''
+}
+
+Table leave_balances {
+  id integer [pk, increment, note: 'Mã quỹ phép']
+  employee_id bigint [not null, note: 'Nhân sự (Django: employee, on_delete=PROTECT)']
+  year "integer unsigned" [not null, note: 'Năm áp dụng. VD: 2026. CHECK "year" >= 0']
+  total_days decimal [not null, default: 12, note: 'Tổng phép năm. Mặc định 12 ngày']
+  used_days decimal [not null, default: 0, note: 'Số ngày đã dùng. Cộng total_days khi duyệt đơn ANNUAL (UC 5.2)']
+
+  indexes {
+    (employee_id, year) [unique, name: 'one_balance_per_year']
+  }
+
+  Note: '''
+  Model LeaveBalance (app leave).
+  Chỉ nhân sự Full-time có quỹ phép. Số ngày còn lại không lưu thành cột mà tính bằng thuộc tính remaining_days = total_days − used_days, nên không bao giờ bị lệch số liệu.
+  CheckConstraint: used_not_over_total: CHECK "used_days" <= ("total_days")
+  '''
+}
+
+Table salary_configs {
+  id integer [pk, increment, note: 'Mã cấu hình']
+  employee_id bigint [not null, note: 'Nhân sự áp dụng (Django: employee, on_delete=PROTECT)']
+  base_salary decimal [not null, default: 0, note: 'Lương cơ bản. Full-time']
+  hourly_rate decimal [not null, default: 0, note: 'Đơn giá giờ. Part-time; mặc định 35.000 đ']
+  class_allowance_rate decimal [not null, default: 0, note: 'Phụ cấp mỗi lớp. Giáo viên Full-time']
+  responsibility_allowance decimal [not null, default: 0, note: 'Phụ cấp trách nhiệm. VD: Quản lý']
+  effective_from date [not null, note: 'Ngày bắt đầu áp dụng']
+  effective_to date [note: 'Ngày kết thúc áp dụng. Trống = đang áp dụng']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  indexes {
+    (employee_id, effective_from) [unique, name: 'one_config_per_start_date']
+  }
+
+  Note: '''
+  Model SalaryConfig (app payroll).
+  Một nhân sự có nhiều cấu hình theo thời gian; cấu hình đang áp dụng là cấu hình có effective_to trống. Khi thanh lý hợp đồng, cấu hình đang áp dụng được đóng (effective_to = ngày thanh lý).
+  CheckConstraint: salary_config_valid: CHECK ("base_salary" >= '0' AND "class_allowance_rate" >= '0' AND "hourly_rate" >= '0' AND "responsibility_allowance" >= '0' AND ("effective_to" IS NULL OR "effective_to" >= ("effective_from")))
+  '''
+}
+
+Table payrolls {
+  id integer [pk, increment, note: 'Mã bảng lương']
+  employee_id bigint [not null, note: 'Nhân sự (Django: employee, on_delete=PROTECT)']
+  period_month "smallint unsigned" [not null, note: 'Tháng lương. CHECK "period_month" >= 0']
+  period_year "integer unsigned" [not null, note: 'Năm lương. CHECK "period_year" >= 0']
+  gross_pay decimal [not null, default: 0, note: 'Tổng thu nhập. Tổng các khoản EARNING']
+  total_deduction decimal [not null, default: 0, note: 'Tổng khấu trừ. Tổng DEDUCTION, không gồm thuế']
+  total_tax decimal [not null, default: 0, note: 'Thuế TNCN. Tổng TAX']
+  net_pay decimal [not null, default: 0, note: 'Thực nhận. gross − deduction − tax']
+  status PayrollStatus [not null, default: 'DRAFT', note: 'Trạng thái. Enum PayrollStatus (DRAFT → SENT khi Chốt & phát hành)']
+  created_by_id bigint [note: 'Người lập (Django: created_by, on_delete=SET_NULL)']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+  locked_at datetime [note: 'Thời điểm chốt. Ghi cùng lúc với sent_at (UC 7.2)']
+  sent_at datetime [note: 'Thời điểm phát hành. Thời điểm nhân sự nhận được phiếu lương']
+
+  indexes {
+    (employee_id, period_month, period_year) [unique, name: 'one_payroll_per_month']
+  }
+
+  Note: '''
+  Model Payroll (app payroll).
+  Mỗi nhân sự một bản ghi mỗi tháng. Bảng lương tháng gồm toàn bộ bản ghi cùng period_month, period_year; trạng thái của cả tháng suy ra từ các bản ghi. “Chốt & phát hành” là một bước: toàn bộ bản ghi DRAFT của tháng chuyển SENT, ghi locked_at và sent_at cùng thời điểm (UC 7.2).
+  CheckConstraint: payroll_month_1_12: CHECK ("period_month" >= 1 AND "period_month" <= 12)
+  '''
+}
+
+Table payroll_details {
+  id integer [pk, increment, note: 'Mã chi tiết']
+  payroll_id bigint [not null, note: 'Bảng lương (Django: payroll, on_delete=CASCADE)']
+  detail_type PayrollDetailType [not null, note: 'Loại khoản. EARNING: cộng; DEDUCTION: trừ; TAX: thuế']
+  category PayrollDetailCategory [not null, note: 'Nhóm khoản. Enum PayrollDetailCategory']
+  description varchar(255) [not null, note: 'Nội dung. VD: Lương ngày công: 24/26 ngày']
+  amount decimal [not null, note: 'Số tiền']
+
+  Note: '''
+  Model PayrollDetail (app payroll).
+  Dòng tự động (hệ thống tính lại được): WORKDAY_SALARY, PART_TIME_HOURLY_PAY, CLASS_ALLOWANCE, RESPONSIBILITY_ALLOWANCE và dòng thuế TNCN tự tính. Dòng thủ công (Kế toán nhập, được giữ khi tính lại): BONUS, ADJUSTMENT_INCREASE, ADJUSTMENT_DECREASE, PERSONAL_INCOME_TAX, OTHER. Số tiền luôn dương; khoản cộng hay trừ do detail_type quyết định: ADJUSTMENT_DECREASE là DEDUCTION, PERSONAL_INCOME_TAX là TAX, OTHER do Kế toán chọn EARNING hoặc DEDUCTION, các nhóm còn lại là EARNING.
+  CheckConstraint: detail_amount_not_negative: CHECK "amount" >= '0'
+  '''
+}
+
+Table notifications {
+  id integer [pk, increment, note: 'Mã thông báo']
+  recipient_id bigint [not null, note: 'Người nhận (Django: recipient, on_delete=CASCADE)']
+  title varchar(255) [not null, note: 'Tiêu đề']
+  message text [not null, note: 'Nội dung']
+  notification_type NotificationType [not null, note: 'Loại thông báo. Enum NotificationType']
+  is_read bool [not null, default: false, note: 'Đã đọc']
+  related_url varchar(500) [not null, note: 'Liên kết. Trang xử lý liên quan']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm tạo']
+
+  Note: '''
+  Model Notification (app core).
+  Kênh thông báo chính trong web; số thông báo chưa đọc hiển thị trên biểu tượng chuông ở mọi trang.
+  '''
+}
+
+Table activity_logs {
+  id integer [pk, increment, note: 'Mã nhật ký']
+  user_id bigint [note: 'Người thực hiện. Trống với LOGIN_FAILED và tác vụ tự động (Django: user, on_delete=SET_NULL)']
+  action varchar(50) [not null, note: 'Hành động. LOGIN, LOGIN_FAILED, LOGOUT, CREATE, UPDATE, APPROVE, REJECT, LOCK, UNLOCK, REMIND, RUN_DAILY_JOB']
+  model_name varchar(100) [not null, note: 'Bảng bị tác động. VD: Employee, Contract']
+  object_id "integer unsigned" [note: 'ID bản ghi. CHECK "object_id" >= 0']
+  description text [not null, note: 'Mô tả chi tiết. VD: email đăng nhập thất bại']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`, note: 'Thời điểm']
+
+  Note: '''
+  Model ActivityLog (app core).
+  Ghi mọi thao tác quan trọng: đăng nhập, đăng xuất, tạo, sửa, duyệt, từ chối, khóa / mở khóa tài khoản, nhắc nhở, chạy tác vụ hằng ngày.
+  '''
+}
+
+// UserRole – dùng ở: users
+Enum UserRole {
+  SUPER_ADMIN [note: 'Super Admin']
+  DIRECTOR [note: 'Giám đốc']
+  MANAGER [note: 'Quản lý']
+  ACCOUNTANT [note: 'Kế toán']
+  EMPLOYEE [note: 'Nhân viên']
+}
+
+// Gender – dùng ở: employees
+Enum Gender {
+  MALE [note: 'Nam']
+  FEMALE [note: 'Nữ']
+  OTHER [note: 'Khác']
+}
+
+// Department – dùng ở: employees
+Enum Department {
+  ACADEMIC [note: 'Đào tạo']
+  HR_ADMIN [note: 'Nhân sự - Hành chính']
+  ACCOUNTING [note: 'Kế toán']
+}
+
+// Position – dùng ở: candidates, employees, recruitment_targets
+Enum Position {
+  TEACHER [note: 'Giáo viên']
+  TEACHING_ASSISTANT [note: 'Trợ giảng']
+  STAFF [note: 'Staff']
+  MANAGER [note: 'Quản lý']
+  ACCOUNTANT [note: 'Kế toán']
+}
+
+// EmploymentType – dùng ở: candidates, contracts, employees
+Enum EmploymentType {
+  FULL_TIME [note: 'Full-time']
+  PART_TIME [note: 'Part-time']
+}
+
+// WorkShift – dùng ở: employees
+Enum WorkShift {
+  SHIFT_1 [note: 'Ca 1 (08:00–17:00)']
+  SHIFT_2 [note: 'Ca 2 (13:00–21:00)']
+}
+
+// EmployeeStatus – dùng ở: employees
+Enum EmployeeStatus {
+  ONBOARDING [note: 'Đang onboarding']
+  ACTIVE [note: 'Đang làm việc']
+  RESIGNED [note: 'Đã nghỉ việc']
+  TERMINATED [note: 'Đã chấm dứt']
+}
+
+// DocumentType – dùng ở: employee_documents
+Enum DocumentType {
+  PERSONAL_ID [note: 'Giấy tờ tùy thân']
+  CERTIFICATION [note: 'Chứng chỉ']
+  OTHER [note: 'Khác']
+}
+
+// DocumentStatus – dùng ở: employee_documents
+Enum DocumentStatus {
+  PENDING [note: 'Chờ duyệt']
+  APPROVED [note: 'Đã duyệt']
+  REJECTED [note: 'Từ chối']
+  EXPIRED [note: 'Hết hạn']
+}
+
+// ContractStatus – dùng ở: contracts
+Enum ContractStatus {
+  ACTIVE [note: 'Đang hiệu lực']
+  EXPIRED [note: 'Đã hết hạn']
+  TERMINATED [note: 'Đã thanh lý']
+}
+
+// CampaignStatus – dùng ở: recruitment_campaigns
+Enum CampaignStatus {
+  OPEN [note: 'Đang mở']
+  CLOSED [note: 'Đã đóng']
+}
+
+// CandidateStatus – dùng ở: candidates
+Enum CandidateStatus {
+  NEW [note: 'Mới']
+  SCREENING [note: 'Đạt sơ tuyển']
+  INTERVIEWING [note: 'Đang phỏng vấn']
+  TEACHING_TRIAL [note: 'Dạy thử']
+  PASSED [note: 'Đạt']
+  REJECTED [note: 'Không đạt']
+  HIRED [note: 'Đã tuyển']
+}
+
+// RecruitmentRoundType – dùng ở: recruitment_rounds
+Enum RecruitmentRoundType {
+  INTERVIEW [note: 'Phỏng vấn']
+  DEMO [note: 'Dạy thử (Demo)']
+}
+
+// RecruitmentRoundStatus – dùng ở: recruitment_rounds
+Enum RecruitmentRoundStatus {
+  SCHEDULED [note: 'Đã lên lịch']
+  COMPLETED [note: 'Hoàn thành']
+  CANCELLED [note: 'Đã hủy']
+}
+
+// RecruitmentResult – dùng ở: recruitment_rounds
+Enum RecruitmentResult {
+  PENDING [note: 'Chờ kết quả']
+  PASSED [note: 'Đạt']
+  FAILED [note: 'Không đạt']
+}
+
+// ClassStatus – dùng ở: classes
+Enum ClassStatus {
+  UPCOMING [note: 'Sắp khai giảng']
+  ACTIVE [note: 'Đang học']
+  COMPLETED [note: 'Đã kết thúc']
+  CANCELLED [note: 'Đã hủy']
+}
+
+// AssignmentRole – dùng ở: class_assignments
+Enum AssignmentRole {
+  MAIN_TEACHER [note: 'Giáo viên chính']
+  TEACHING_ASSISTANT [note: 'Trợ giảng']
+}
+
+// TeachingSessionStatus – dùng ở: teaching_sessions
+Enum TeachingSessionStatus {
+  SCHEDULED [note: 'Đã lên lịch']
+  COMPLETED [note: 'Đã dạy']
+  CANCELLED [note: 'Đã hủy']
+}
+
+// ShiftStatus – dùng ở: shift_assignments
+Enum ShiftStatus {
+  OPEN [note: 'Trống']
+  SCHEDULED [note: 'Đã có người']
+  CANCELLED [note: 'Đã hủy']
+}
+
+// SubstituteStatus – dùng ở: substitute_requests
+Enum SubstituteStatus {
+  SEARCHING [note: 'Đang tìm người']
+  COMPLETED [note: 'Đã có người thay']
+  FAILED [note: 'Không có người thay']
+}
+
+// AttendanceStatus – dùng ở: attendance
+Enum AttendanceStatus {
+  ON_TIME [note: 'Đúng giờ']
+  LATE [note: 'Đi trễ']
+  EARLY_LEAVE [note: 'Về sớm']
+  ABSENT [note: 'Vắng mặt']
+  MISSING_CHECKOUT [note: 'Quên check-out']
+}
+
+// ExplanationStatus – dùng ở: attendance
+Enum ExplanationStatus {
+  NONE [note: 'Chưa giải trình']
+  PENDING [note: 'Chờ duyệt']
+  APPROVED [note: 'Đã chấp thuận']
+  REJECTED [note: 'Từ chối']
+}
+
+// LeaveType – dùng ở: leave_requests
+Enum LeaveType {
+  ANNUAL [note: 'Phép năm']
+  SICK [note: 'Nghỉ ốm']
+  UNPAID [note: 'Không lương']
+  OTHER [note: 'Khác']
+}
+
+// LeaveStatus – dùng ở: leave_requests
+Enum LeaveStatus {
+  PENDING [note: 'Chờ duyệt']
+  APPROVED [note: 'Đã duyệt']
+  REJECTED [note: 'Từ chối']
+  CANCELLED [note: 'Đã hủy']
+}
+
+// PayrollStatus – dùng ở: payrolls
+Enum PayrollStatus {
+  DRAFT [note: 'Nháp']
+  SENT [note: 'Đã chốt & phát hành']
+}
+
+// PayrollDetailType – dùng ở: payroll_details
+Enum PayrollDetailType {
+  EARNING [note: 'Khoản cộng']
+  DEDUCTION [note: 'Khoản trừ']
+  TAX [note: 'Thuế']
+}
+
+// PayrollDetailCategory – dùng ở: payroll_details
+Enum PayrollDetailCategory {
+  WORKDAY_SALARY [note: 'Lương ngày công']
+  PART_TIME_HOURLY_PAY [note: 'Lương theo giờ Part-time']
+  CLASS_ALLOWANCE [note: 'Phụ cấp lớp']
+  RESPONSIBILITY_ALLOWANCE [note: 'Phụ cấp trách nhiệm']
+  BONUS [note: 'Thưởng']
+  ADJUSTMENT_INCREASE [note: 'Điều chỉnh tăng']
+  ADJUSTMENT_DECREASE [note: 'Điều chỉnh giảm']
+  PERSONAL_INCOME_TAX [note: 'Thuế TNCN']
+  OTHER [note: 'Khác']
+}
+
+// NotificationType – dùng ở: notifications
+Enum NotificationType {
+  LEAVE [note: 'Nghỉ phép']
+  ATTENDANCE [note: 'Chấm công']
+  CONTRACT [note: 'Hợp đồng']
+  RECRUITMENT [note: 'Tuyển dụng']
+  SCHEDULE [note: 'Lịch làm việc']
+  PAYROLL [note: 'Lương']
+  PROFILE [note: 'Hồ sơ']
+  SYSTEM [note: 'Hệ thống']
+}
+
+Ref: employees.user_id - users.id [delete: restrict]
+Ref: employees.candidate_id - candidates.id [delete: set null]
+Ref: employee_documents.employee_id > employees.id [delete: restrict]
+Ref: employee_documents.reviewed_by_id > users.id [delete: set null]
+Ref: contracts.employee_id > employees.id [delete: restrict]
+Ref: contracts.previous_contract_id > contracts.id [delete: set null]
+Ref: recruitment_campaigns.created_by_id > users.id [delete: set null]
+Ref: recruitment_targets.campaign_id > recruitment_campaigns.id [delete: cascade]
+Ref: candidates.campaign_id > recruitment_campaigns.id [delete: restrict]
+Ref: recruitment_rounds.candidate_id > candidates.id [delete: restrict]
+Ref: recruitment_rounds.interviewer_id > users.id [delete: restrict]
+Ref: class_assignments.study_class_id > classes.id [delete: cascade]
+Ref: class_assignments.employee_id > employees.id [delete: restrict]
+Ref: teaching_sessions.study_class_id > classes.id [delete: cascade]
+Ref: teaching_sessions.planned_teacher_id > employees.id [delete: restrict]
+Ref: teaching_sessions.actual_teacher_id > employees.id [delete: restrict]
+Ref: teaching_sessions.planned_assistant_id > employees.id [delete: set null]
+Ref: teaching_sessions.actual_assistant_id > employees.id [delete: set null]
+Ref: shift_assignments.employee_id > employees.id [delete: restrict]
+Ref: shift_assignments.assigned_by_id > users.id [delete: set null]
+Ref: substitute_requests.teaching_session_id > teaching_sessions.id [delete: restrict]
+Ref: substitute_requests.leave_request_id > leave_requests.id [delete: set null]
+Ref: substitute_requests.substitute_employee_id > employees.id [delete: restrict]
+Ref: substitute_requests.manager_confirmed_by_id > users.id [delete: set null]
+Ref: attendance.employee_id > employees.id [delete: restrict]
+Ref: attendance.shift_assignment_id > shift_assignments.id [delete: restrict]
+Ref: attendance.explanation_reviewed_by_id > users.id [delete: set null]
+Ref: leave_requests.employee_id > employees.id [delete: restrict]
+Ref: leave_requests.reviewed_by_id > users.id [delete: set null]
+Ref: leave_balances.employee_id > employees.id [delete: restrict]
+Ref: salary_configs.employee_id > employees.id [delete: restrict]
+Ref: payrolls.employee_id > employees.id [delete: restrict]
+Ref: payrolls.created_by_id > users.id [delete: set null]
+Ref: payroll_details.payroll_id > payrolls.id [delete: cascade]
+Ref: notifications.recipient_id > users.id [delete: cascade]
+Ref: activity_logs.user_id > users.id [delete: set null]
+
+TableGroup accounts [note: 'Tài khoản (UC1)'] {
+  users
+}
+
+TableGroup employees [note: 'Nhân sự (UC2)'] {
+  employees
+  employee_documents
+}
+
+TableGroup contracts [note: 'Hợp đồng (UC3)'] {
+  contracts
+}
+
+TableGroup recruitment [note: 'Tuyển dụng (UC8)'] {
+  recruitment_campaigns
+  recruitment_targets
+  candidates
+  recruitment_rounds
+}
+
+TableGroup schedule [note: 'Lịch, lớp, ca, dạy thay (UC6)'] {
+  classes
+  class_assignments
+  teaching_sessions
+  shift_assignments
+  substitute_requests
+}
+
+TableGroup attendance [note: 'Chấm công (UC4)'] {
+  attendance
+}
+
+TableGroup leave [note: 'Nghỉ phép (UC5)'] {
+  leave_requests
+  leave_balances
+}
+
+TableGroup payroll [note: 'Lương (UC7)'] {
+  salary_configs
+  payrolls
+  payroll_details
+}
+
+TableGroup core [note: 'Dùng chung: thông báo, nhật ký'] {
+  notifications
+  activity_logs
+}
