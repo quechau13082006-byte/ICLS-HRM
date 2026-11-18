@@ -55,7 +55,7 @@
             <i class="ri-arrow-up-s-line"></i>
           </button>
         <ul class="dropdown-menu account-menu">
-          {% if user.role != 'SUPER_ADMIN' and user.role != 'DIRECTOR' %}{# SA và Giám đốc không có hồ sơ nhân sự #}
+          {% if user.role != 'DIRECTOR' %}{# Giám đốc không có hồ sơ nhân sự #}
           <li><a class="dropdown-item {% if request.resolver_match.url_name == 'my_profile' or request.resolver_match.url_name == 'my_profile_edit' %}active{% endif %}" href="{% url 'employees:my_profile' %}">
             <i class="ri-contacts-book-2-line"></i><span><span class="ten-anh">My profile</span><span class="ten-han">내 프로필</span></span></a></li>
           {% endif %}

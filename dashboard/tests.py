@@ -31,10 +31,9 @@ HOM_NAY = date(2026, 10, 27)          # Thứ 3; hôm qua 26/10 là Thứ 2 (ng�
 
 
 class NenTangDashboard(TestCase):
-    """Một Super Admin (không có hồ sơ, Q1), một Quản lý, một Kế toán, một giáo viên Full-time, một Part-time."""
+    """Một Quản lý, một Kế toán, một giáo viên Full-time, một Part-time."""
 
     def setUp(self):
-        self.sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN, full_name='Super Admin')
         self.ql = hoat_dong('ql@icls.vn', UserRole.MANAGER, Position.MANAGER, EmploymentType.FULL_TIME, WorkShift.SHIFT_1)
         self.kt = hoat_dong('kt@icls.vn', UserRole.ACCOUNTANT, Position.ACCOUNTANT, EmploymentType.FULL_TIME, WorkShift.SHIFT_1)
         self.gv = hoat_dong('gv@icls.vn', UserRole.EMPLOYEE, Position.TEACHER, EmploymentType.FULL_TIME, WorkShift.SHIFT_1)
@@ -52,7 +51,7 @@ class NenTangDashboard(TestCase):
 
 # ============================================================ UC 9.1 – Dashboard theo vai trò
 class Uc91DashboardTest(NenTangDashboard):
-    def test_uc9_1_basic_super_admin_thay_tai_khoan_nhat_ky_va_nut_chay_tac_vu(self):
+    def test_uc9_1_basic_quan_ly_tab_he_thong_thay_tai_khoan_nhat_ky_va_nut_chay_tac_vu(self):
         for _ in range(3):
             ActivityLog.objects.create(action='LOGIN_FAILED', model_name='User', description='Sai mật khẩu')
         khoa = User.objects.get(email='pt@icls.vn')
@@ -61,19 +60,20 @@ class Uc91DashboardTest(NenTangDashboard):
         # Một lần thất bại cách đây 10 ngày: ngoài khung 7 ngày, không được đếm
         cu = ActivityLog.objects.create(action='LOGIN_FAILED', model_name='User')
         ActivityLog.objects.filter(pk=cu.pk).update(created_at=datetime.now() - timedelta(days=10))
-        r, the = self.cac_the(self.sa)
-        self.assertEqual(r.context['loai'], 'sa')
+        r, the = self.cac_the(self.ql, 'he_thong')
+        self.assertEqual(r.context['loai'], 'he_thong')
         self.assertContains(r, 'Chạy tác vụ hằng ngày')
         self.assertEqual(the['Đăng nhập thất bại']['so'], 3)                                  # không tính bản 10 ngày trước
         self.assertLessEqual(len(r.context['nhat_ky']), 10)                                   # tối đa 10 dòng nhật ký
         theo_ten = {d['ten']: d for d in r.context['tai_khoan']}
         self.assertEqual(theo_ten['Nhân viên']['hoat_dong'], 1)                               # gv; pt đã bị khóa
         self.assertEqual(theo_ten['Nhân viên']['bi_khoa'], 1)
-        self.assertEqual(theo_ten['Super Admin']['hoat_dong'], 1)
-        self.assertEqual(r.context['tong_tai_khoan'], 5)
+        self.assertEqual(theo_ten['Quản lý']['hoat_dong'], 1)
+        self.assertNotIn('Super Admin', theo_ten)
+        self.assertEqual(r.context['tong_tai_khoan'], 4)
 
-    def test_uc9_1_super_admin_chi_thay_ky_thuat_khong_co_viec_duyet(self):
-        r, the = self.cac_the(self.sa)
+    def test_uc9_1_tab_he_thong_chi_co_the_tai_khoan_va_dang_nhap(self):
+        r, the = self.cac_the(self.ql, 'he_thong')
         self.assertEqual(set(the), {'Tổng tài khoản', 'Đang hoạt động', 'Bị khóa', 'Đăng nhập thất bại'})
         self.assertNotIn('cho_xu_ly', r.context)
 
@@ -210,8 +210,8 @@ class Uc91DashboardTest(NenTangDashboard):
         self.assertEqual(du_lieu['cham_cong'][0]['trang_thai'], 'Đã check-in 08:00')
 
     def test_uc9_1_tab_cua_vai_tro_va_tab_sai_quay_ve_mac_dinh(self):
-        for nguoi, cac_tab in ((self.ql, ['tong_quan', 'ca_nhan']), (self.kt, ['ke_toan', 'ca_nhan']),
-                               (self.gv, ['ca_nhan']), (self.sa, ['tong_quan'])):   # Giám đốc: xem test riêng
+        for nguoi, cac_tab in ((self.ql, ['tong_quan', 'he_thong', 'ca_nhan']), (self.kt, ['ke_toan', 'ca_nhan']),
+                               (self.gv, ['ca_nhan'])):                              # Giám đốc: xem test riêng
             du_lieu = services.du_lieu_dashboard(nguoi.user if hasattr(nguoi, 'user') else nguoi, HOM_NAY, tab='sai')
             self.assertEqual([m for m, _ in du_lieu['tabs']], cac_tab)
             self.assertEqual(du_lieu['tab'], cac_tab[0])                                       # tab sai → tab đầu tiên
@@ -219,15 +219,18 @@ class Uc91DashboardTest(NenTangDashboard):
         self.assertEqual(du_lieu['loai'], 'ca_nhan')
         du_lieu = services.du_lieu_dashboard(self.gv.user, HOM_NAY, tab='ke_toan')             # NV không xem được tab Kế toán
         self.assertEqual(du_lieu['loai'], 'ca_nhan')
+        for nguoi in (self.kt, self.gv):                                                     # chỉ Quản lý có tab Hệ thống
+            self.assertNotEqual(services.du_lieu_dashboard(nguoi.user, HOM_NAY, tab='he_thong')['loai'], 'he_thong')
 
-    def test_uc9_1_alt_1_1_super_admin_bam_nut_chay_tac_vu_hien_ket_qua(self):
-        """UC 9.1 – luồng 1.1: nút trên Dashboard của Super Admin chạy UC 9.2 và hiện kết quả từng bước."""
-        self.vao(self.sa)
-        self.assertContains(self.client.get(reverse('dashboard:dashboard')), reverse('dashboard:run_daily_job'))
+    def test_uc9_1_alt_1_1_quan_ly_bam_nut_chay_tac_vu_hien_ket_qua(self):
+        """UC 9.1 – luồng 1.1: nút ở tab Hệ thống của Quản lý chạy UC 9.2 và hiện kết quả từng bước."""
+        self.vao(self.ql)
+        self.assertContains(self.client.get(reverse('dashboard:dashboard'), {'tab': 'he_thong'}),
+                            reverse('dashboard:run_daily_job'))
         r = self.client.post(reverse('dashboard:run_daily_job'), follow=True)
         self.assertContains(r, 'Đã chạy tác vụ hằng ngày')
         self.assertContains(r, 'Quỹ phép:')
-        self.assertTrue(ActivityLog.objects.filter(action='RUN_DAILY_JOB', user=self.sa).exists())
+        self.assertTrue(ActivityLog.objects.filter(action='RUN_DAILY_JOB', user=self.ql.user).exists())
 
     def test_uc9_1_exc_1_2_chua_co_so_lieu_hien_so_0_khong_loi(self):
         r, the = self.cac_the(self.kt)
@@ -236,7 +239,7 @@ class Uc91DashboardTest(NenTangDashboard):
         r, the = self.cac_the(self.ql)
         self.assertEqual(the['Lịch hôm nay']['so'] >= 0, True)
         self.assertEqual({t['so'] for t in r.context['cho_xu_ly']}, {0})
-        r, the = self.cac_the(self.sa)
+        r, the = self.cac_the(self.ql, 'he_thong')
         self.assertEqual(the['Đăng nhập thất bại']['so'], 0)
         r, the = self.cac_the(self.pt)
         self.assertEqual(the['Lương kỳ gần nhất']['so'], 'Chưa có')
@@ -247,7 +250,7 @@ class Uc91DashboardTest(NenTangDashboard):
             self.vao(nguoi)
             r = self.client.get(reverse('dashboard:dashboard'))
             self.assertEqual(r.status_code, 200)
-            self.assertContains(r, 'Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản trị viên.')
+            self.assertContains(r, 'Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản lý.')
             self.assertEqual(r.context['loai'], 'thieu_ho_so')
 
     def test_uc9_1_phan_quyen_chua_dang_nhap_chuyen_ve_dang_nhap(self):
@@ -283,7 +286,7 @@ class Uc92TacVuNgayTest(NenTangDashboard):
 
     def test_uc9_2_basic_chay_du_cac_buoc_va_ghi_nhat_ky(self):
         self.du_lieu_day_du()
-        ket_qua = services.chay_tac_vu_ngay(HOM_NAY, self.sa)
+        ket_qua = services.chay_tac_vu_ngay(HOM_NAY, self.ql.user)
         self.assertEqual([b['ten'] for b in ket_qua], ['Giấy tờ', 'Hợp đồng', 'Chấm công', 'Lịch học', 'Quỹ phép'])
         self.assertTrue(all(b['loi'] is None for b in ket_qua))
         so = {b['ten']: b['so'] for b in ket_qua}
@@ -299,16 +302,16 @@ class Uc92TacVuNgayTest(NenTangDashboard):
         self.assertEqual(LeaveBalance.objects.filter(year=2026).count(), 3)                          # gv, ql, kt (Full-time)
         self.assertEqual(so['Quỹ phép'], 3)
         log = ActivityLog.objects.filter(action='RUN_DAILY_JOB').latest('pk')
-        self.assertEqual(log.user, self.sa)
+        self.assertEqual(log.user, self.ql.user)
         self.assertIn('27/10/2026', log.description)
         self.assertIn(f'xử lý {sum(so.values())} bản ghi', log.description)                        # ghi kèm số bản ghi đã xử lý
 
     def test_uc9_2_alt_1_1_chay_lan_hai_trong_ngay_khong_tao_trung(self):
         self.du_lieu_day_du()
-        services.chay_tac_vu_ngay(HOM_NAY, self.sa)
+        services.chay_tac_vu_ngay(HOM_NAY, self.ql.user)
         so_thong_bao = Notification.objects.count()
         so_cham_cong = Attendance.objects.count()
-        lan_hai = services.chay_tac_vu_ngay(HOM_NAY, self.sa)
+        lan_hai = services.chay_tac_vu_ngay(HOM_NAY, self.ql.user)
         self.assertEqual({b['ten']: b['so'] for b in lan_hai},
                          {'Giấy tờ': 0, 'Hợp đồng': 0, 'Chấm công': 0, 'Lịch học': 0, 'Quỹ phép': 0})
         self.assertEqual(Notification.objects.count(), so_thong_bao)
@@ -318,14 +321,14 @@ class Uc92TacVuNgayTest(NenTangDashboard):
     def test_uc9_2_exc_1_2_mot_buoc_loi_cac_buoc_con_lai_van_chay(self):
         self.du_lieu_day_du()
         with mock.patch('dashboard.services._buoc_hop_dong', side_effect=RuntimeError('hỏng')):
-            ket_qua = services.chay_tac_vu_ngay(HOM_NAY, self.sa)
+            ket_qua = services.chay_tac_vu_ngay(HOM_NAY, self.ql.user)
         theo_ten = {b['ten']: b for b in ket_qua}
         self.assertIn('hỏng', theo_ten['Hợp đồng']['loi'])
         self.assertTrue(all(b['loi'] is None for ten, b in theo_ten.items() if ten != 'Hợp đồng'))
         self.assertEqual(theo_ten['Quỹ phép']['so'], 3)                                            # bước sau vẫn chạy xong
         self.assertTrue(LeaveBalance.objects.exists())
-        tb = Notification.objects.get(recipient=self.sa, notification_type='SYSTEM')
-        self.assertEqual(tb.message, 'Tác vụ hằng ngày: bước Hợp đồng gặp lỗi.')                     # nguyên văn §10
+        self.assertTrue(Notification.objects.filter(recipient=self.ql.user, notification_type='SYSTEM',   # báo Quản lý
+                                                    message='Tác vụ hằng ngày: bước Hợp đồng gặp lỗi.').exists())
         self.assertTrue(ActivityLog.objects.filter(action='RUN_DAILY_JOB', description__contains='Hợp đồng gặp lỗi').exists())
 
     def test_uc9_2_exc_1_2_buoc_loi_giua_chung_hoan_tac_phan_da_ghi_cua_buoc_do(self):
@@ -350,34 +353,38 @@ class Uc92TacVuNgayTest(NenTangDashboard):
         with self.assertRaises(CommandError):
             call_command('chay_tac_vu_ngay', '--ngay', '27-10-2026')
 
-    def test_uc9_2_nut_cua_super_admin_hien_ket_qua_tung_buoc(self):
-        self.vao(self.sa)
+    def test_uc9_2_nut_cua_quan_ly_hien_ket_qua_tung_buoc(self):
+        self.vao(self.ql)
         r = self.client.post(reverse('dashboard:run_daily_job'), follow=True)
-        self.assertRedirects(r, reverse('dashboard:dashboard'))
+        self.assertRedirects(r, reverse('dashboard:dashboard') + '?tab=he_thong')
         self.assertContains(r, 'Đã chạy tác vụ hằng ngày')
         for ten in ('Giấy tờ', 'Hợp đồng', 'Chấm công', 'Lịch học', 'Quỹ phép'):
             self.assertContains(r, f'{ten}:')
-        self.assertTrue(ActivityLog.objects.filter(action='RUN_DAILY_JOB', user=self.sa).exists())
+        self.assertTrue(ActivityLog.objects.filter(action='RUN_DAILY_JOB', user=self.ql.user).exists())
 
     def test_uc9_2_nut_hien_bao_loi_dung_cau_khi_buoc_hong(self):
-        self.vao(self.sa)
+        self.vao(self.ql)
         with mock.patch('dashboard.services._buoc_quy_phep', side_effect=RuntimeError('x')):
             r = self.client.post(reverse('dashboard:run_daily_job'), follow=True)
         self.assertContains(r, 'Tác vụ hằng ngày: bước Quỹ phép gặp lỗi.')
 
-    def test_uc9_2_phan_quyen_chi_super_admin_bam_nut(self):
-        for nguoi in (self.ql, self.kt, self.gv):
+    def test_uc9_2_phan_quyen_chi_quan_ly_bam_nut(self):
+        gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR)
+        for nguoi in (gd, self.kt, self.gv):
             self.vao(nguoi)
             self.assertEqual(self.client.post(reverse('dashboard:run_daily_job')).status_code, 403)
         self.assertFalse(ActivityLog.objects.filter(action='RUN_DAILY_JOB').exists())
-        self.vao(self.sa)
+        self.vao(self.ql)
         self.assertEqual(self.client.get(reverse('dashboard:run_daily_job')).status_code, 405)      # chỉ nhận POST
         self.client.logout()
         self.assertEqual(self.client.post(reverse('dashboard:run_daily_job')).status_code, 302)
 
-    def test_uc9_2_nut_chi_hien_cho_super_admin_tren_dashboard(self):
+    def test_uc9_2_nut_chi_hien_o_tab_he_thong_cua_quan_ly(self):
         self.vao(self.ql)
-        self.assertNotContains(self.client.get(reverse('dashboard:dashboard')), 'Chạy tác vụ hằng ngày')
+        self.assertNotContains(self.client.get(reverse('dashboard:dashboard')), 'Chạy tác vụ hằng ngày')   # tab Tổng quan
+        self.assertContains(self.client.get(reverse('dashboard:dashboard'), {'tab': 'he_thong'}), 'Chạy tác vụ hằng ngày')
+        self.vao(self.kt)
+        self.assertNotContains(self.client.get(reverse('dashboard:dashboard'), {'tab': 'he_thong'}), 'Chạy tác vụ hằng ngày')
 
 
 class TabCaNhanChiLichCuaMinhTest(NenTangDashboard):

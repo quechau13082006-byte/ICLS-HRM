@@ -1,7 +1,7 @@
 """View dạng hàm của app contracts (UC 3): kiểm tra quyền → nhận form → gọi service → hiển thị (§0 luật 2).
 
 Phân quyền (§5): thêm, gia hạn, cập nhật file, thanh lý, theo dõi hết hạn chỉ Quản lý; xem danh sách và chi tiết:
-Quản lý, Kế toán, Giám đốc (xem tất cả; Giám đốc chỉ xem), Nhân viên (chỉ của mình). Super Admin không thuộc phân hệ này.
+Quản lý, Kế toán, Giám đốc (xem tất cả; Giám đốc chỉ xem), Nhân viên (chỉ của mình).
 """
 from datetime import date
 

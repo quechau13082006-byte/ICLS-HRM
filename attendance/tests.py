@@ -75,7 +75,7 @@ def luc(gio, phut=0, giay=0, ngay=T3):
 
 
 class NenTangCC(TestCase):
-    """Super Admin, 2 Quản lý, Kế toán, giáo viên Full-time Ca 1 và Ca 2, nhân viên Part-time, trợ giảng Part-time."""
+    """Giám đốc, 2 Quản lý, Kế toán, giáo viên Full-time Ca 1 và Ca 2, nhân viên Part-time, trợ giảng Part-time."""
 
     def setUp(self):
         self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
@@ -642,7 +642,7 @@ class Uc44Test(NenTangCC):
         for nguoi in (self.ql2.user, self.ql.user):                                     # đơn Quản lý: Quản lý khác và chính mình đều không
             with self.assertRaises(KhongCoQuyen):
                 services.chap_thuan_giai_trinh(nguoi, ql)
-        services.chap_thuan_giai_trinh(self.gd, ql, self.BAY_GIO)                       # Super Admin duyệt giải trình của Quản lý
+        services.chap_thuan_giai_trinh(self.gd, ql, self.BAY_GIO)                       # Giám đốc duyệt giải trình của Quản lý
         self.assertEqual(Attendance.objects.get(pk=ql.pk).explanation_reviewed_by, self.gd)
         khac = self.cho_duyet(self.gv2, ngay=date(2026, 10, 9))
         with self.assertRaises(KhongCoQuyen):                                           # SA không duyệt của Nhân viên; Kế toán không duyệt ai
@@ -739,7 +739,6 @@ class Uc45Test(NenTangCC):
         self.assertEqual((dong['kt@icls.vn']['so_thieu_checkout'], dong['kt@icls.vn']['chua_giai_trinh']), (1, 1))
         t = dong['gv2@icls.vn']
         self.assertEqual((t['cong'], t['can_chu_y'], t['co_ban_ghi']), (Decimal('0'), False, False))
-        self.assertNotIn('sa@icls.vn', dong)                                # Super Admin không có hồ sơ nhân sự
 
     def test_giai_trinh_da_xu_ly_khong_con_to_do(self):
         b = self.cc(self.gv1, trang_thai=TT.LATE, tre=20, giai_trinh=GT.PENDING)

@@ -9,14 +9,14 @@ from accounts.models import UserRole
 
 TAT_CA = tuple(UserRole.values)
 QL, KT, NV, GD = UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.EMPLOYEE, UserRole.DIRECTOR
-NGHIEP_VU = (GD, QL, KT, NV)   # Super Admin chỉ làm kỹ thuật nên không thấy các mục nghiệp vụ
+NGHIEP_VU = (GD, QL, KT, NV)
 
 # (khóa app, tên tiếng Anh, tên tiếng Hàn, icon Remix Icon, tên URL trang đầu, vai trò được thấy, tiền tố tên URL để sáng mục)
 # Tiền tố chỉ cần khi nhiều mục chung một app: app `accounts` còn có trang đăng nhập, đổi mật khẩu, tài khoản cá nhân...
 # nên mục "User Management" chỉ sáng ở các trang có tên URL bắt đầu bằng `user_`.
 MUC_MENU = [
     ('dashboard', 'Overview', '개요', 'ri-dashboard-horizontal-line', 'dashboard:dashboard', TAT_CA, None),
-    ('accounts', 'User Management', '계정 설정', 'ri-file-settings-line', 'accounts:user_list', (UserRole.SUPER_ADMIN,), 'user_'),
+    ('accounts', 'User Management', '계정 설정', 'ri-file-settings-line', 'accounts:user_list', (QL,), 'user_'),
     ('recruitment', 'Recruitment', '채용', 'ri-user-search-line', 'recruitment:board', (QL,), None),
     ('employees', 'Employees', '직원', 'ri-user-line', 'employees:employee_list', NGHIEP_VU, None),
     ('contracts', 'Contract', '계약', 'ri-draft-line', 'contracts:contract_list', (GD, QL, KT, NV), None),
@@ -24,9 +24,9 @@ MUC_MENU = [
     ('attendance', 'Attendance', '근태', 'ri-verified-badge-line', 'attendance:my_attendance', NGHIEP_VU, None),
     ('leave', 'Leave', '휴가', 'ri-calendar-close-line', 'leave:my_leaves', NGHIEP_VU, None),
     ('payroll', 'Payroll', '급여', 'ri-money-dollar-circle-line', 'payroll:my_payslips', (QL, KT, NV), None),
-    # Trang quản trị Django (/admin/): Super Admin xem, sửa trực tiếp mọi bảng dữ liệu (phần kỹ thuật)
-    ('admin', 'Admin', '관리자', 'ri-shield-user-line', 'admin:index', (UserRole.SUPER_ADMIN,), None),
 ]
+# Trang quản trị Django (/admin/) KHÔNG nằm trong menu: chỉ tài khoản kỹ thuật của người phát triển (createsuperuser)
+# vào được, gõ thẳng đường dẫn /admin/. Không vai trò nghiệp vụ nào có quyền này.
 
 
 def menu_chinh(request):

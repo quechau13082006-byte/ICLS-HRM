@@ -2,7 +2,6 @@
 
 Phân quyền (§5): cấu hình lương, lập/chốt/phát hành bảng lương: chỉ Kế toán;
 phiếu lương cá nhân: Quản lý, Kế toán, Nhân viên (chỉ của mình và chỉ khi đã phát hành).
-Super Admin không thuộc phân hệ Lương.
 """
 from datetime import date, datetime
 

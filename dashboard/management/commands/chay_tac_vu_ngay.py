@@ -1,6 +1,6 @@
 """Lệnh `python manage.py chay_tac_vu_ngay` – UC 9.2, gọi dashboard.services.chay_tac_vu_ngay.
 
-Máy chủ đặt lịch chạy lệnh này lúc 06:00 mỗi ngày (cron). Nút "Chạy tác vụ hằng ngày" của Super Admin cũng gọi
+Máy chủ đặt lịch chạy lệnh này lúc 06:00 mỗi ngày (cron). Nút "Chạy tác vụ hằng ngày" của Quản lý (Dashboard, tab Hệ thống) cũng gọi
 đúng hàm này (§11 P10), nên hai đường chạy cho cùng một kết quả.
 """
 from datetime import date

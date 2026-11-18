@@ -93,13 +93,13 @@ def tai_khoan_cua_toi(request):
                                     form.cleaned_data['avatar'])
         messages.success(request, thong_bao.CAP_NHAT_TAI_KHOAN_THANH_CONG)
         return redirect('accounts:my_account')
-    # Super Admin không có hồ sơ nhân sự nên không hiện Phòng ban, Vị trí
+    # Giám đốc không có hồ sơ nhân sự nên không hiện Phòng ban, Vị trí
     nhan_su = nguoi_dung.employee if hasattr(nguoi_dung, 'employee') else None
     return render(request, 'accounts/tai_khoan.html', {'form': form, 'nhan_su': nhan_su})
 
 
-# ============================================================ UC 1.5 – Quản lý tài khoản (chỉ Super Admin)
-@role_required(UserRole.SUPER_ADMIN)
+# ============================================================ UC 1.5 – Quản lý tài khoản (Quản lý)
+@role_required(UserRole.MANAGER)
 def ds_tai_khoan(request):
     vai_tro = request.GET.get('vai_tro', '')
     trang_thai = request.GET.get('trang_thai', '')
@@ -110,7 +110,7 @@ def ds_tai_khoan(request):
         'trang': trang, 'vai_tro': vai_tro, 'trang_thai': trang_thai, 'q': tu_khoa, 'cac_vai_tro': UserRole.choices})
 
 
-@role_required(UserRole.SUPER_ADMIN)
+@role_required(UserRole.MANAGER)
 def them_tai_khoan(request):
     form = ThemTaiKhoanForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -125,13 +125,13 @@ def them_tai_khoan(request):
     return render(request, 'accounts/them_tai_khoan.html', {'form': form})
 
 
-@role_required(UserRole.SUPER_ADMIN)
+@role_required(UserRole.MANAGER)
 def doi_vai_tro(request, pk):
     """UC 1.5 – bước 4–5: đổi vai trò ngay trên danh sách tài khoản (ô chọn vai trò ở từng dòng, có hộp xác nhận).
 
     - POST: đổi vai trò rồi quay về danh sách (giữ nguyên bộ lọc đang xem).
     - GET (link trong thông báo "Yêu cầu cấp quyền" của UC 2.5, luồng 3.2): mở danh sách, lọc đúng tài khoản đó
-      để Super Admin đối chiếu cột Chức danh và đổi vai trò ngay tại dòng đó.
+      để Quản lý đối chiếu cột Chức danh và đổi vai trò ngay tại dòng đó.
     """
     tai_khoan = get_object_or_404(User, pk=pk)
     if request.method != 'POST':
@@ -152,7 +152,7 @@ def doi_vai_tro(request, pk):
     return redirect('accounts:user_list')
 
 
-@role_required(UserRole.SUPER_ADMIN)
+@role_required(UserRole.MANAGER)
 @require_POST
 def khoa_mo_khoa(request, pk):
     tai_khoan = get_object_or_404(User, pk=pk)

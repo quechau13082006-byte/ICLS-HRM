@@ -4,7 +4,7 @@ Tạo: 1 SA (kỹ thuật), 1 Giám đốc, 2 QL, 1 KT; 40 nhân sự (QL, KT, G
 mỗi người có hợp đồng ACTIVE, cấu hình lương, quỹ phép (Full-time); một đợt tuyển dụng với vài ứng viên;
 20 lớp kèm buổi dạy; vài khung ca; chấm công cả tháng trước.
 Bổ sung cho demo (tao_du_lieu_demo_bo_sung): giấy tờ ở đủ trạng thái và mức cảnh báo, 2 nhân sự đang Onboarding
-(1 từ ứng viên đợt tuyển dụng đã đóng, 1 vị trí Kế toán chờ Super Admin cấp quyền), 1 nhân sự đã nghỉ (hợp đồng thanh lý,
+(1 từ ứng viên đợt tuyển dụng đã đóng, 1 vị trí Kế toán chờ Quản lý cấp vai trò), 1 nhân sự đã nghỉ (hợp đồng thanh lý,
 tài khoản bị khóa), 1 hợp đồng đã gia hạn, giải trình của Quản lý chờ Giám đốc, 1 đơn nghỉ đã duyệt kèm yêu cầu dạy thay,
 lịch sử cấu hình lương, vài lần đăng nhập thất bại.
 Mật khẩu demo đặt bằng set_password (chỉ khi tạo mới tài khoản).
@@ -97,7 +97,7 @@ class Command(BaseCommand):
             self.tao_du_lieu_demo_bo_sung(hom_nay)
             self.gan_anh_dai_dien()
         self.stdout.write(self.style.SUCCESS(
-            f'Xong. Tài khoản: sa@icls.vn, {EMAIL_GIAM_DOC} (Giám đốc), ql1@icls.vn, ql2@icls.vn, kt@icls.vn, gv01..gv16@icls.vn, '
+            f'Xong. Tài khoản: {EMAIL_GIAM_DOC} (Giám đốc), ql1@icls.vn, ql2@icls.vn, kt@icls.vn, gv01..gv16@icls.vn, '
             f'tg01..tg12@icls.vn, st01..st10@icls.vn (st10 đã nghỉ, bị khóa), gv17@icls.vn và kt02@icls.vn (đang Onboarding). '
             f'Mật khẩu demo: xem MAT_KHAU_DEMO trong lệnh này.'))
         self.stdout.write(f'Nhân sự: {Employee.objects.count()} · Lớp: {StudyClass.objects.count()} · '
@@ -167,8 +167,7 @@ class Command(BaseCommand):
         return employee
 
     def tao_tai_khoan_va_nhan_su(self, hom_nay):
-        self._tao_user('sa@icls.vn', UserRole.SUPER_ADMIN, 'Super Admin', '0900000000')  # SA không có hồ sơ (Q1)
-        # Giám đốc (quản lý cấp cao): duyệt yêu cầu của Quản lý; không có hồ sơ nhân sự như SA.
+        # Giám đốc (quản lý cấp cao): duyệt yêu cầu của Quản lý; không có hồ sơ nhân sự (Q1).
         self._tao_user(EMAIL_GIAM_DOC, UserRole.DIRECTOR, 'Huỳnh Ngọc Quế Châu', '0905123456')
         ft, pt = EmploymentType.FULL_TIME, EmploymentType.PART_TIME
         so_tt = 1
@@ -538,7 +537,7 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------ nhân sự đang Onboarding (UC 2.5, 3.1, 1.5)
     def tao_onboarding(self, hom_nay):
         """gv17: tiếp nhận từ ứng viên PASSED của đợt tuyển dụng ĐÃ ĐÓNG (ứng viên → HIRED), chờ Quản lý tạo hợp đồng.
-        kt02: vị trí Kế toán nhưng tài khoản tạo ra là Nhân viên → Super Admin nhận thông báo "Yêu cầu cấp quyền"."""
+        kt02: vị trí Kế toán nhưng tài khoản tạo ra là Nhân viên → các Quản lý nhận thông báo "Yêu cầu cấp quyền"."""
         from employees.services import tao_ho_so_nhan_su
         from recruitment.models import CampaignStatus
         if User.objects.filter(email__in=['gv17@icls.vn', 'kt02@icls.vn']).exists():
@@ -619,7 +618,7 @@ class Command(BaseCommand):
         luu_cau_hinh_luong(User.objects.get(email='kt@icls.vn'), gv, Decimal(10_800_000), Decimal(0),
                            Decimal(350_000), Decimal(0), hom_nay.replace(day=1))
 
-    # ------------------------------------------------------------------ đăng nhập thất bại (Dashboard Super Admin)
+    # ------------------------------------------------------------------ đăng nhập thất bại (Dashboard Quản lý, tab Hệ thống)
     def tao_dang_nhap_that_bai(self):
         from core.models import ActivityLog
         from core.services import ghi_nhat_ky

@@ -2,10 +2,10 @@
 from django.contrib import admin
 from django.urls import include, path
 
-# Trang quản trị Django (/admin/): chỉ Super Admin vào được (is_staff tự bật theo vai trò, xem accounts.models.User.save)
+# Trang quản trị Django (/admin/): chỉ tài khoản kỹ thuật tạo bằng `createsuperuser` vào được (không phải vai trò nghiệp vụ)
 admin.site.site_header = 'ICLS HRM – Trang quản trị'
 admin.site.site_title = 'ICLS HRM Admin'
-admin.site.index_title = 'Quản trị dữ liệu hệ thống (chỉ Super Admin)'
+admin.site.index_title = 'Quản trị dữ liệu hệ thống (tài khoản kỹ thuật)'
 
 urlpatterns = [
     path('admin/', admin.site.urls),

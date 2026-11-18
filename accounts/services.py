@@ -115,13 +115,13 @@ def cap_nhat_tai_khoan(nguoi_dung, ho_ten, so_dien_thoai, anh_dai_dien=None):
         if anh_dai_dien:
             nguoi_dung.avatar = anh_dai_dien
         nguoi_dung.save()
-        if hasattr(nguoi_dung, 'employee'):          # Super Admin không có hồ sơ (Q1)
+        if hasattr(nguoi_dung, 'employee'):          # Giám đốc không có hồ sơ (Q1)
             from employees.services import dong_bo_ho_ten_sdt   # import trong hàm (§3.2 quy tắc 3)
             dong_bo_ho_ten_sdt(nguoi_dung.employee, ho_ten, so_dien_thoai)
         ghi_nhat_ky(nguoi_dung, 'UPDATE', 'User', nguoi_dung.pk, 'Cập nhật tài khoản cá nhân')
 
 
-# ============================================================ UC 1.5 – Quản lý tài khoản (Super Admin)
+# ============================================================ UC 1.5 – Quản lý tài khoản (Quản lý)
 def danh_sach_tai_khoan(vai_tro='', trang_thai='', tu_khoa=''):
     """UC 1.5 – bước 2: danh sách tài khoản kèm bộ lọc Vai trò, Trạng thái, ô tìm Email/Họ tên."""
     danh_sach = User.objects.select_related('employee').order_by('email')   # kèm hồ sơ để hiện Chức danh
@@ -137,7 +137,7 @@ def danh_sach_tai_khoan(vai_tro='', trang_thai='', tu_khoa=''):
 
 
 def _chan_tu_tac_dong(nguoi_thuc_hien, tai_khoan):
-    """Luồng 5.1: không cho Super Admin tự khóa hoặc tự đổi quyền chính mình."""
+    """Luồng 5.1: không cho Quản lý tự khóa hoặc tự đổi quyền chính mình."""
     if nguoi_thuc_hien is not None and nguoi_thuc_hien.pk == tai_khoan.pk:
         raise LoiNghiepVu(thong_bao.KHONG_TU_KHOA)
 

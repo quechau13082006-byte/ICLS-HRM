@@ -98,7 +98,7 @@ def kiem_tra_mat_khau_ban_dau(mat_khau):
 
 
 class ThemTaiKhoanForm(BootstrapForm):
-    """UC 1.5 – luồng 3.1: Super Admin nhập Email, Họ tên, Vai trò và Mật khẩu ban đầu."""
+    """UC 1.5 – luồng 3.1: Quản lý nhập Email, Họ tên, Vai trò và Mật khẩu ban đầu."""
     email = forms.EmailField(label='Email', max_length=255)
     full_name = forms.CharField(label='Họ và tên', max_length=150)
     role = forms.ChoiceField(label='Vai trò', choices=UserRole.choices)

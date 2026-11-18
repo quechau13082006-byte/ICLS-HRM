@@ -238,13 +238,13 @@ class TaiKhoanCaNhanTest(TestCase):    # UC 1.4
         self.assertContains(r, self.nv.get_position_display())
         self.assertContains(r, self.nv.get_department_display())
 
-    def test_uc1_4_basic_super_admin_khong_co_ho_so(self):
-        sa = tao_user('sa@icls.vn', UserRole.SUPER_ADMIN)
-        self.client.force_login(sa)
-        r = self.client.post(self.url, {'full_name': 'Admin', 'phone': '0912345678'})
+    def test_uc1_4_basic_giam_doc_khong_co_ho_so(self):
+        gd = tao_user('gd@icls.vn', UserRole.DIRECTOR)
+        self.client.force_login(gd)
+        r = self.client.post(self.url, {'full_name': 'Giám đốc', 'phone': '0912345678'})
         self.assertEqual(r.status_code, 302)
-        sa.refresh_from_db()
-        self.assertEqual(sa.full_name, 'Admin')
+        gd.refresh_from_db()
+        self.assertEqual(gd.full_name, 'Giám đốc')
 
     def test_uc1_4_exc_3_1_trong_ho_ten(self):
         r = self.client.post(self.url, {'full_name': '', 'phone': '0912345678'})
@@ -268,18 +268,18 @@ class TaiKhoanCaNhanTest(TestCase):    # UC 1.4
 
     def test_uc1_4_exc_3_2_bo_qua_truong_bi_khoa(self):
         self.client.post(self.url, {'full_name': 'A', 'phone': '0912345678',
-                                    'email': 'hack@icls.vn', 'role': 'SUPER_ADMIN', 'is_superuser': 'on'})
+                                    'email': 'hack@icls.vn', 'role': 'MANAGER', 'is_superuser': 'on'})
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, 'nv@icls.vn')
         self.assertEqual(self.user.role, UserRole.EMPLOYEE)
         self.assertFalse(self.user.is_superuser)
 
 
-class QuanLyTaiKhoanTest(TestCase):    # UC 1.5
+class QuanLyTaiKhoanTest(TestCase):    # UC 1.5 – Quản lý quản lý mọi tài khoản (không có vai trò Super Admin)
     def setUp(self):
-        self.sa = tao_user('sa@icls.vn', UserRole.SUPER_ADMIN)
+        self.ql = tao_user('ql@icls.vn', UserRole.MANAGER)
         self.nv = tao_user('nv@icls.vn')
-        self.client.force_login(self.sa)
+        self.client.force_login(self.ql)
 
     def test_uc1_5_basic_doi_vai_tro(self):
         url = reverse('accounts:user_change_role', args=[self.nv.pk])
@@ -287,7 +287,7 @@ class QuanLyTaiKhoanTest(TestCase):    # UC 1.5
         self.assertRedirects(r, reverse('accounts:user_list'))
         self.nv.refresh_from_db()
         self.assertEqual(self.nv.role, UserRole.MANAGER)
-        self.assertTrue(ActivityLog.objects.filter(action='UPDATE', object_id=self.nv.pk, user=self.sa).exists())
+        self.assertTrue(ActivityLog.objects.filter(action='UPDATE', object_id=self.nv.pk, user=self.ql).exists())
         self.assertTrue(Notification.objects.filter(recipient=self.nv, title=thong_bao.TB_DOI_VAI_TRO_TIEU_DE).exists())
 
     def test_uc1_5_basic_khoa_va_mo_khoa(self):
@@ -309,14 +309,14 @@ class QuanLyTaiKhoanTest(TestCase):    # UC 1.5
         self.assertEqual(nv_client.get(reverse('dashboard:dashboard')).status_code, 302)   # bị đẩy ra
 
     def test_uc1_5_basic_loc_va_tim_kiem(self):
-        tao_user('ql@icls.vn', UserRole.MANAGER)
-        self.assertEqual(services.danh_sach_tai_khoan(vai_tro=UserRole.MANAGER).count(), 1)
+        tao_user('kt@icls.vn', UserRole.ACCOUNTANT)
+        self.assertEqual(services.danh_sach_tai_khoan(vai_tro=UserRole.ACCOUNTANT).count(), 1)
         self.assertEqual(services.danh_sach_tai_khoan(tu_khoa='nv@').count(), 1)
         self.nv.is_active = False
         self.nv.save()
         self.assertEqual(services.danh_sach_tai_khoan(trang_thai='LOCKED').count(), 1)
-        r = self.client.get(reverse('accounts:user_list'), {'vai_tro': 'MANAGER'})
-        self.assertContains(r, 'ql@icls.vn')
+        r = self.client.get(reverse('accounts:user_list'), {'vai_tro': 'ACCOUNTANT'})
+        self.assertContains(r, 'kt@icls.vn')
         self.assertNotContains(r, 'nv@icls.vn')
 
     def test_uc1_5_alt_3_1_them_tai_khoan(self):
@@ -361,18 +361,25 @@ class QuanLyTaiKhoanTest(TestCase):    # UC 1.5
         self.assertEqual(User.objects.filter(email__iexact='nv@icls.vn').count(), 1)
 
     def test_uc1_5_exc_5_1_khong_tu_khoa_hoac_tu_doi_quyen(self):
-        r = self.client.post(reverse('accounts:user_toggle_lock', args=[self.sa.pk]), follow=True)
+        r = self.client.post(reverse('accounts:user_toggle_lock', args=[self.ql.pk]), follow=True)
         self.assertContains(r, thong_bao.KHONG_TU_KHOA)
-        r = self.client.post(reverse('accounts:user_change_role', args=[self.sa.pk]), {'role': UserRole.EMPLOYEE}, follow=True)
+        r = self.client.post(reverse('accounts:user_change_role', args=[self.ql.pk]), {'role': UserRole.EMPLOYEE}, follow=True)
         self.assertContains(r, thong_bao.KHONG_TU_KHOA)
-        self.sa.refresh_from_db()
-        self.assertTrue(self.sa.is_active)
-        self.assertEqual(self.sa.role, UserRole.SUPER_ADMIN)
+        self.ql.refresh_from_db()
+        self.assertTrue(self.ql.is_active)
+        self.assertEqual(self.ql.role, UserRole.MANAGER)
 
-    def test_uc1_5_exc_1_1_khong_phai_super_admin_bi_403(self):
+    def test_uc1_5_basic_quan_ly_khoa_duoc_quan_ly_khac_va_giam_doc(self):
+        for vai_tro in (UserRole.MANAGER, UserRole.DIRECTOR):
+            khac = tao_user(f'{vai_tro.lower()}2@icls.vn', vai_tro)
+            self.client.post(reverse('accounts:user_toggle_lock', args=[khac.pk]))
+            khac.refresh_from_db()
+            self.assertFalse(khac.is_active, vai_tro)
+
+    def test_uc1_5_exc_1_1_khong_phai_quan_ly_bi_403(self):
         urls = [reverse('accounts:user_list'), reverse('accounts:user_add'),
                 reverse('accounts:user_change_role', args=[self.nv.pk])]
-        for vai_tro in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.EMPLOYEE):
+        for vai_tro in (UserRole.DIRECTOR, UserRole.ACCOUNTANT, UserRole.EMPLOYEE):
             self.client.force_login(tao_user(f'{vai_tro}@icls.vn', vai_tro))
             for url in urls:
                 r = self.client.get(url)

@@ -8,7 +8,7 @@ KHONG_CO_QUYEN = 'Bạn không có quyền truy cập chức năng này.'       
 
 # ===== UC 1.1 Đăng nhập =====
 DANG_NHAP_SAI_THONG_TIN = 'Email/Mật khẩu không đúng'                        # 3.2.1
-TAI_KHOAN_BI_KHOA = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.'  # 3.3.1
+TAI_KHOAN_BI_KHOA = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản lý.'  # 3.3.1
 
 # ===== UC 1.2 Quên mật khẩu =====
 DA_GUI_LINK_DAT_LAI_MK = ('Nếu email này có tài khoản trên hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi vào email. '
@@ -102,7 +102,7 @@ DA_THEM_TAI_KHOAN = 'Đã tạo tài khoản. Hãy gửi email và mật khẩu 
 TB_KHOA_TIEU_DE = 'Tài khoản đã bị khóa'
 TB_MO_KHOA_TIEU_DE = 'Tài khoản đã được mở khóa'
 TB_DOI_VAI_TRO_TIEU_DE = 'Vai trò tài khoản đã thay đổi'
-TB_DOI_VAI_TRO_NOI_DUNG = 'Vai trò của bạn đã được Super Admin đổi từ "{cu}" thành "{moi}".'
+TB_DOI_VAI_TRO_NOI_DUNG = 'Vai trò của bạn đã được Quản lý đổi từ "{cu}" thành "{moi}".'
 TB_MO_KHOA_NOI_DUNG = 'Tài khoản của bạn đã được mở khóa, bạn có thể đăng nhập lại.'
 
 # --- Câu BỔ SUNG cho UC 2 (§10 chưa ghi nguyên văn) ---
@@ -311,7 +311,7 @@ XOA_KHOAN_THANH_CONG = 'Đã xóa khoản khỏi bảng lương.'
 TB_PHIEU_LUONG_TIEU_DE = 'Phiếu lương mới'
 
 # ===== UC 9 – Dashboard & Tác vụ hằng ngày (nguyên văn §10) =====
-CHUA_CO_HO_SO_NHAN_SU = 'Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản trị viên.'   # 9.1 – 1.3.1
+CHUA_CO_HO_SO_NHAN_SU = 'Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản lý.'   # 9.1 – 1.3.1
 CHUA_CO_DU_LIEU = 'Chưa có dữ liệu phát sinh'                                                # 9.1 – 1.2.1
 TAC_VU_BUOC_LOI = 'Tác vụ hằng ngày: bước {buoc} gặp lỗi.'                                   # 9.2 – 1.2.1
 

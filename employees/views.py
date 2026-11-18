@@ -19,7 +19,7 @@ GD, QL = UserRole.DIRECTOR, UserRole.MANAGER
 
 
 def _nhan_su_cua_toi(request):
-    """Hồ sơ nhân sự của chính người đang đăng nhập; Super Admin, Giám đốc không có hồ sơ (Q1) nên trả None."""
+    """Hồ sơ nhân sự của chính người đang đăng nhập; Giám đốc không có hồ sơ (Q1) nên trả None."""
     return request.user.employee if hasattr(request.user, 'employee') else None
 
 

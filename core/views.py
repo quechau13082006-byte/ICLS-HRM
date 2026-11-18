@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from accounts.models import UserRole
 from .permissions import role_required, tra_403
 
-ALL_ROLES = (UserRole.SUPER_ADMIN, UserRole.DIRECTOR, UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.EMPLOYEE)
+ALL_ROLES = (UserRole.DIRECTOR, UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.EMPLOYEE)
 
 
 @role_required(*ALL_ROLES)

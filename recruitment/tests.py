@@ -50,10 +50,10 @@ THU_MUC_MEDIA_TAM = tempfile.mkdtemp()      # CV khi test ghi vào thư mục t�
 
 
 class UcTuyenDungCoSo(TestCase):
-    """Dữ liệu chung: Super Admin, hai Quản lý, Kế toán, Nhân viên và một đợt tuyển dụng đang mở."""
+    """Dữ liệu chung: Giám đốc, hai Quản lý, Kế toán, Nhân viên và một đợt tuyển dụng đang mở."""
 
     def setUp(self):
-        self.sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN, full_name='SA')
+        self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
         self.ql = User.objects.create_user('ql@icls.vn', 'x', role=UserRole.MANAGER, full_name='Quản lý A')
         self.ql2 = User.objects.create_user('ql2@icls.vn', 'x', role=UserRole.MANAGER, full_name='Quản lý B')
         self.kt = User.objects.create_user('kt@icls.vn', 'x', role=UserRole.ACCOUNTANT)
@@ -197,7 +197,7 @@ class DotVaUngVienTest(UcTuyenDungCoSo):         # UC 8.1
         uv = self.ung_vien()
         urls = [reverse('recruitment:board'), reverse('recruitment:campaign_add'), reverse('recruitment:candidate_add'),
                 reverse('recruitment:board') + '?can_danh_gia=1']
-        for nguoi in (self.sa, self.kt, self.nv):
+        for nguoi in (self.gd, self.kt, self.nv):
             self.client.force_login(nguoi)
             for url in urls:
                 self.assertEqual(self.client.get(url).status_code, 403, (nguoi, url))
@@ -321,7 +321,7 @@ class LichVongTest(UcTuyenDungCoSo):             # UC 8.2
 
     def test_uc8_2_phan_quyen_chi_quan_ly(self):
         uv = self.ung_vien(trang_thai=CandidateStatus.SCREENING)
-        for nguoi in (self.sa, self.kt, self.nv):
+        for nguoi in (self.gd, self.kt, self.nv):
             self.client.force_login(nguoi)
             r = self.client.post(reverse('recruitment:schedule_interview', args=[uv.pk]), {})
             self.assertEqual(r.status_code, 403, nguoi)
@@ -430,7 +430,7 @@ class DanhGiaVongTest(UcTuyenDungCoSo):          # UC 8.3
 
     def test_uc8_3_phan_quyen_chi_quan_ly(self):
         vong = self._vong()
-        for nguoi in (self.sa, self.kt, self.nv):
+        for nguoi in (self.gd, self.kt, self.nv):
             self.client.force_login(nguoi)
             for ten in ('round_evaluate', 'round_absent', 'round_cancel'):
                 self.assertEqual(self.client.post(reverse(f'recruitment:{ten}', args=[vong.pk]), {}).status_code, 403, (nguoi, ten))

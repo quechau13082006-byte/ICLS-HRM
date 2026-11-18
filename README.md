@@ -18,7 +18,7 @@
 * **Tên đề tài:** Hệ thống Quản lý Nhân sự Trung tâm tiếng Hàn (**ICLS HRM**)
 * **Doanh nghiệp nghiên cứu:** Trung tâm tiếng Hàn **ICLS**, quy mô khoảng 40 nhân sự, 10 phòng học, 20 lớp
 * **Bài toán:** thay thế việc quản lý nhân sự bằng giấy tờ, Excel và tin nhắn rời rạc; bao phủ toàn bộ vòng đời nhân sự từ tuyển dụng, onboarding, hợp đồng, phân công lớp và xếp ca, chấm công, nghỉ phép, dạy thay, tính lương đến thanh lý hợp đồng
-* **Quy mô:** 10 app Django, 9 phân hệ, 38 use case, 5 vai trò, 21 bảng dữ liệu
+* **Quy mô:** 10 app Django, 9 phân hệ, 38 use case, 4 vai trò, 21 bảng dữ liệu
 * **Đội ngũ sinh viên thực hiện (Nhóm 4 thành viên):**
   1. **Huỳnh Ngọc Quế Châu (Trưởng nhóm):** Phân hệ chính **UC2** (Nhân sự, Onboarding); phụ trách thêm **UC6** (Lịch, lớp, ca, dạy thay).
   2. **Đặng Gia Huy:** Phân hệ chính **UC4** (Chấm công); phụ trách thêm **UC9** (Dashboard, tác vụ hằng ngày) và **UC5** (Nghỉ phép).
@@ -62,19 +62,20 @@ flowchart TB
 
 ---
 
-## 👥 III. CƠ CHẾ PHÂN QUYỀN NGƯỜI DÙNG (5 VAI TRÒ)
+## 👥 III. CƠ CHẾ PHÂN QUYỀN NGƯỜI DÙNG (4 VAI TRÒ)
 
 Hệ thống dùng Custom User Model kế thừa `AbstractUser` (đăng nhập bằng email), cột `role` quyết định vai trò. Decorator `@role_required` chặn sai vai trò và trả trang 403; dữ liệu "của mình" được lọc ngay trong truy vấn nên sửa ID trên URL cũng không lấy được dữ liệu người khác.
 
 | Vai trò | Giá trị `role` | Quyền hạn và trách nhiệm nghiệp vụ |
 | :--- | :--- | :--- |
-| **1. Super Admin** | `SUPER_ADMIN` (không có hồ sơ nhân sự) | **Chỉ phần kỹ thuật:** quản lý tài khoản (thêm, đổi vai trò, khóa, mở khóa), xem nhật ký hoạt động, chạy tác vụ hằng ngày. Không vào các trang nghiệp vụ nhân sự, không duyệt yêu cầu. |
-| **2. Giám đốc** | `DIRECTOR` (không có hồ sơ nhân sự) | Quản lý cấp cao: duyệt giấy tờ, đơn nghỉ và giải trình **của Quản lý**; xem toàn trung tâm (danh sách và hồ sơ nhân sự, hợp đồng và hợp đồng sắp hết hạn, cảnh báo giấy tờ, lịch, buổi cần dạy thay, tổng hợp công và nghỉ phép, Dashboard tổng quan và tab Kế toán xem quỹ lương); chỉ xem, không thao tác thay Quản lý. |
-| **3. Quản lý** | `MANAGER` | Tuyển dụng, tiếp nhận nhân sự (Onboarding), hợp đồng, tạo lớp, xếp ca và xử lý dạy thay; duyệt giấy tờ, đơn nghỉ và giải trình **của Nhân viên và Kế toán**; xem tổng hợp công và nghỉ phép. |
-| **4. Kế toán** | `ACCOUNTANT` | Cấu hình lương, lập, tính lại, chốt & phát hành bảng lương (một nút); xem bảng tổng hợp công; đồng thời là nhân sự bình thường (chấm công, xin nghỉ, xem phiếu lương của mình). |
-| **5. Nhân viên** | `EMPLOYEE` | Chấm công, gửi giải trình, xin nghỉ, xem lịch, hồ sơ và phiếu lương của chính mình; nhân viên Part-time đăng ký vào khung ca do Quản lý mở (đăng ký là có ca ngay). |
+| **1. Giám đốc** | `DIRECTOR` (không có hồ sơ nhân sự) | Quản lý cấp cao: duyệt giấy tờ, đơn nghỉ và giải trình **của Quản lý**; xem toàn trung tâm (danh sách và hồ sơ nhân sự, hợp đồng và hợp đồng sắp hết hạn, cảnh báo giấy tờ, lịch, buổi cần dạy thay, tổng hợp công và nghỉ phép, Dashboard tổng quan và tab Kế toán xem quỹ lương); chỉ xem, không thao tác thay Quản lý. |
+| **2. Quản lý** | `MANAGER` | Tuyển dụng, tiếp nhận nhân sự (Onboarding), hợp đồng, tạo lớp, xếp ca và xử lý dạy thay; duyệt giấy tờ, đơn nghỉ và giải trình **của Nhân viên và Kế toán**; xem tổng hợp công và nghỉ phép. **Quản trị hệ thống:** quản lý mọi tài khoản (thêm, đổi vai trò, khóa, mở khóa; không tự khóa hay tự đổi vai trò của mình), xem nhật ký hoạt động, chạy tác vụ hằng ngày (Dashboard, tab Hệ thống). |
+| **3. Kế toán** | `ACCOUNTANT` | Cấu hình lương, lập, tính lại, chốt & phát hành bảng lương (một nút); xem bảng tổng hợp công; đồng thời là nhân sự bình thường (chấm công, xin nghỉ, xem phiếu lương của mình). |
+| **4. Nhân viên** | `EMPLOYEE` | Chấm công, gửi giải trình, xin nghỉ, xem lịch, hồ sơ và phiếu lương của chính mình; nhân viên Part-time đăng ký vào khung ca do Quản lý mở (đăng ký là có ca ngay). |
 
 Quy tắc duyệt phân cấp: không ai tự duyệt yêu cầu của mình; yêu cầu của Quản lý chỉ Giám đốc duyệt; yêu cầu của Nhân viên và Kế toán do Quản lý duyệt.
+
+Hệ thống **không có vai trò Super Admin**. Trang quản trị Django (`/admin/`) không thuộc vai trò nào: chỉ tài khoản kỹ thuật của người phát triển, tạo bằng `python manage.py createsuperuser`, mới vào được (`is_staff`, `is_superuser` không gắn với cột `role`). Vì vậy không vai trò nghiệp vụ nào sửa thẳng được dữ liệu ngoài các service nghiệp vụ.
 
 ---
 
@@ -82,7 +83,7 @@ Quy tắc duyệt phân cấp: không ai tự duyệt yêu cầu của mình; y�
 
 | Mã | Tên phân hệ | Số UC | Phụ trách | Tác nhân chính | Tóm tắt nghiệp vụ cốt lõi | Bảng CSDL trọng tâm |
 | :---: | :--- | :---: | :---: | :--- | :--- | :--- |
-| **UC1** | **Xác thực và quản lý tài khoản (`accounts`)** | 6 | **Ngân Giao** | Mọi vai trò, Super Admin | Đăng nhập, quên mật khẩu (nhận đường dẫn đặt lại qua email, hiệu lực 3 ngày, dùng một lần), đổi mật khẩu, tài khoản cá nhân, Super Admin quản lý tài khoản (thêm tài khoản kèm mật khẩu ban đầu, đổi vai trò, khóa và mở khóa, không xóa cứng), đăng xuất. | `users`, `activity_logs` |
+| **UC1** | **Xác thực và quản lý tài khoản (`accounts`)** | 6 | **Ngân Giao** | Mọi vai trò, Quản lý | Đăng nhập, quên mật khẩu (nhận đường dẫn đặt lại qua email, hiệu lực 3 ngày, dùng một lần), đổi mật khẩu, tài khoản cá nhân, Quản lý quản lý tài khoản (thêm tài khoản kèm mật khẩu ban đầu, đổi vai trò, khóa và mở khóa, không xóa cứng), đăng xuất. | `users`, `activity_logs` |
 | **UC2** | **Quản lý nhân sự (`employees`)** | 6 | **Quế Châu** | Quản lý, Kế toán, Nhân viên | Danh sách và hồ sơ nhân sự, Onboarding từ ứng viên (tạo tài khoản kèm mật khẩu ban đầu, quỹ phép), tải và duyệt giấy tờ chứng chỉ, cảnh báo hết hạn. | `employees`, `employee_documents` |
 | **UC3** | **Quản lý hợp đồng (`contracts`)** | 5 | **Ngân Giao** | Quản lý, Kế toán, Nhân viên | Tạo, tra cứu, gia hạn, thanh lý hợp đồng (file scan bản đã ký không bắt buộc khi tạo/gia hạn, bổ sung sau được). Thanh lý chạy trong một giao dịch: khóa tài khoản, kết thúc phân công lớp, tạo yêu cầu dạy thay, trả ca Part-time, đóng cấu hình lương. | `contracts` |
 | **UC4** | **Quản lý chấm công (`attendance`)** | 5 | **Gia Huy** | Quản lý, Kế toán, Nhân viên | Check-in, Check-out theo ca (trễ quá 5 phút, về sớm tự ghi), giải trình (bắt buộc đính kèm file minh chứng), duyệt giải trình, lịch sử và bảng tổng hợp công (ngày công Full-time, giờ công Part-time). | `attendance` |
@@ -90,7 +91,7 @@ Quy tắc duyệt phân cấp: không ai tự duyệt yêu cầu của mình; y�
 | **UC6** | **Lịch làm việc và phân công (`schedule`)** | 4 | **Quế Châu** | Quản lý, Nhân viên | Tạo lớp và sinh buổi dạy (gợi ý giáo viên rảnh và có ca bao trọn giờ học), xem lịch, khung ca Part-time (đăng ký là có ca ngay, an toàn khi nhiều người bấm cùng lúc; Quản lý gán hoặc gỡ người), xử lý dạy thay (chọn người thay hoặc hủy buổi). | `classes`, `class_assignments`, `teaching_sessions`, `shift_assignments`, `substitute_requests` |
 | **UC7** | **Quản lý lương (`payroll`)** | 3 | **Yến Trang** | Kế toán, Quản lý, Nhân viên | Cấu hình lương theo thời gian, lập bảng lương (dòng tự động, thuế TNCN tự tính, thưởng và điều chỉnh), chốt & phát hành trong một bước, phiếu lương cá nhân In hoặc Lưu PDF. | `salary_configs`, `payrolls`, `payroll_details` |
 | **UC8** | **Tuyển dụng (`recruitment`)** | 3 | **Yến Trang** | Quản lý | Đợt tuyển dụng kèm chỉ tiêu (vị trí và số lượng cần tuyển, so với số đã tuyển được), hồ sơ ứng viên, xếp lịch phỏng vấn và dạy thử (kiểm tra trùng lịch; đổi lịch thì hủy rồi xếp lại), đánh giá Đạt / Không đạt kèm nhận xét, chuyển Onboarding khi đạt. | `recruitment_campaigns`, `recruitment_targets`, `candidates`, `recruitment_rounds` |
-| **UC9** | **Dashboard và tác vụ hằng ngày (`dashboard`)** | 2 | **Gia Huy** | Mọi vai trò, Hệ thống, Super Admin | Dashboard riêng cho từng vai trò (mỗi thẻ có link tới trang xử lý; Giám đốc có thêm tab Kế toán, chỉ xem); tác vụ hằng ngày 5 bước (hết hạn và nhắc giấy tờ, nhắc hợp đồng – nhắc một lần khi còn 30 ngày, vắng mặt và quên check-out, trạng thái lớp và buổi dạy, quỹ phép năm), chạy lại không trùng. | Đọc các bảng khác, ghi `activity_logs` |
+| **UC9** | **Dashboard và tác vụ hằng ngày (`dashboard`)** | 2 | **Gia Huy** | Mọi vai trò, Hệ thống, Quản lý | Dashboard riêng cho từng vai trò (mỗi thẻ có link tới trang xử lý; Giám đốc có thêm tab Kế toán, chỉ xem; Quản lý có thêm tab Hệ thống: tài khoản, nhật ký, nút chạy tác vụ); tác vụ hằng ngày 5 bước (hết hạn và nhắc giấy tờ, nhắc hợp đồng – nhắc một lần khi còn 30 ngày, vắng mặt và quên check-out, trạng thái lớp và buổi dạy, quỹ phép năm), chạy lại không trùng. | Đọc các bảng khác, ghi `activity_logs` |
 
 ---
 
@@ -139,7 +140,7 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 | Bảng CSDL | Cột trạng thái | Tập giá trị | Điều kiện chuyển trạng thái | UC |
 | :--- | :--- | :--- | :--- | :---: |
 | `employees` | `status` | `ONBOARDING`, `ACTIVE`, `RESIGNED`, `TERMINATED` | Tạo hợp đồng đầu tiên: ONBOARDING sang ACTIVE; thanh lý hợp đồng: ACTIVE sang RESIGNED hoặc TERMINATED | 3.1, 3.4 |
-| `users` | `is_active` | `True`, `False` | Super Admin khóa hoặc mở khóa; thanh lý hợp đồng tự khóa. **Không xóa cứng tài khoản** | 1.4, 3.4 |
+| `users` | `is_active` | `True`, `False` | Quản lý khóa hoặc mở khóa; thanh lý hợp đồng tự khóa. **Không xóa cứng tài khoản** | 1.4, 3.4 |
 | `contracts` | `status` | `ACTIVE`, `EXPIRED`, `TERMINATED` | Gia hạn: hợp đồng cũ sang EXPIRED; thanh lý: sang TERMINATED. Mỗi nhân sự chỉ một hợp đồng ACTIVE | 3.3, 3.4 |
 | `employee_documents` | `status` | `PENDING`, `APPROVED`, `REJECTED`, `EXPIRED` | Tải giấy tờ: PENDING; duyệt hoặc từ chối; quá ngày hết hạn: APPROVED sang EXPIRED (tác vụ hằng ngày) | 2.2, 2.6, 9.2 |
 | `candidates` | `status` | `NEW`, `SCREENING`, `INTERVIEWING`, `TEACHING_TRIAL`, `PASSED`, `REJECTED`, `HIRED` | Sơ tuyển; xếp lịch phỏng vấn; giáo viên Full-time đạt phỏng vấn thì sang TEACHING_TRIAL, vị trí khác sang PASSED; tạo hồ sơ nhân sự: HIRED | 8.1 - 8.3, 2.5 |
@@ -198,8 +199,8 @@ Mỗi lần chuyển trạng thái do **đúng một hàm service** thực hiệ
 | 34 | UC8 | UC-8.1 | Quản lý đợt tuyển dụng & hồ sơ ứng viên | **Yến Trang** | Bảng ứng viên theo trạng thái, form đợt tuyển dụng | `tao_dot_tuyen_dung`, `them_ung_vien`, `danh_gia_so_tuyen`, `bang_ung_vien` | recruitment_campaigns, candidates | 12 |
 | 35 | UC8 | UC-8.2 | Quản lý lịch phỏng vấn & dạy thử | **Yến Trang** | Ngăn hồ sơ ứng viên, xếp lịch phỏng vấn và dạy thử | `xep_lich_vong`, `huy_vong` | recruitment_rounds, candidates | 12 |
 | 36 | UC8 | UC-8.3 | Đánh giá kết quả & chuyển Onboarding | **Yến Trang** | Danh sách vòng cần đánh giá, form Đạt / Không đạt | `vong_can_danh_gia`, `danh_gia_vong`, `danh_dau_da_tuyen` | recruitment_rounds, candidates | 12 |
-| 37 | UC9 | UC-9.1 | Xem Dashboard theo vai trò | **Gia Huy** | Dashboard theo vai trò | `du_lieu_dashboard`, `du_lieu_quan_ly`, `du_lieu_ke_toan`, `du_lieu_ca_nhan` | Đọc dữ liệu các bảng khác | 13 |
-| 38 | UC9 | UC-9.2 | Chạy tác vụ tự động hằng ngày | **Gia Huy** | Nút "Chạy tác vụ hằng ngày" (Super Admin), lệnh dòng lệnh | `chay_tac_vu_ngay` | employee_documents, attendance, classes, teaching_sessions, substitute_requests, leave_balances, activity_logs | 10 |
+| 37 | UC9 | UC-9.1 | Xem Dashboard theo vai trò | **Gia Huy** | Dashboard theo vai trò | `du_lieu_dashboard`, `du_lieu_quan_ly`, `du_lieu_he_thong`, `du_lieu_ke_toan`, `du_lieu_ca_nhan` | Đọc dữ liệu các bảng khác | 13 |
+| 38 | UC9 | UC-9.2 | Chạy tác vụ tự động hằng ngày | **Gia Huy** | Nút "Chạy tác vụ hằng ngày" (Quản lý, tab Hệ thống), lệnh dòng lệnh | `chay_tac_vu_ngay` | employee_documents, attendance, classes, teaching_sessions, substitute_requests, leave_balances, activity_logs | 10 |
 
 </details>
 
@@ -217,7 +218,7 @@ Hệ thống render HTML phía server (Django Template), không có REST API ri�
 | STT | Mã UC | Method | URL | Quyền truy cập |
 | :---: | :---: | :---: | :--- | :--- |
 | 1 | UC-1.1 | **POST** | `/tai-khoan/dang-nhap/` | Công khai |
-| 2 | UC-1.5 | **POST** | `/tai-khoan/quan-ly/{id}/khoa-mo-khoa/` | Super Admin |
+| 2 | UC-1.5 | **POST** | `/tai-khoan/quan-ly/{id}/khoa-mo-khoa/` | Quản lý |
 | 3 | UC-2.1 | **GET** | `/nhan-su/` | Giám đốc, Quản lý (đầy đủ); Kế toán, Nhân viên (thông tin liên hệ) |
 | 4 | UC-2.5 | **POST** | `/nhan-su/moi/` | Quản lý |
 | 5 | UC-2.6 | **POST** | `/nhan-su/giay-to/{id}/` | Quản lý; Giám đốc (giấy tờ của Quản lý) |
@@ -235,7 +236,7 @@ Hệ thống render HTML phía server (Django Template), không có REST API ri�
 | 17 | UC-7.3 | **GET** | `/luong/phieu/{id}/` | Chủ phiếu (phiếu đã phát hành) |
 | 18 | UC-8.2 | **POST** | `/tuyen-dung/ung-vien/{id}/xep-lich-phong-van/` | Quản lý |
 | 19 | UC-9.1 | **GET** | `/` | Mọi vai trò (nội dung theo vai trò) |
-| 20 | UC-9.2 | **POST** | `/tac-vu-hang-ngay/chay/` | Super Admin |
+| 20 | UC-9.2 | **POST** | `/tac-vu-hang-ngay/chay/` | Quản lý |
 
 </details>
 
@@ -293,7 +294,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 python manage.py runserver            # http://127.0.0.1:8000 – dữ liệu demo có sẵn, không cần tạo
-python manage.py test                 # 559 test (dùng DB tạm riêng, không đụng dữ liệu demo)
+python manage.py test                 # 560 test (dùng DB tạm riêng, không đụng dữ liệu demo)
 python manage.py chay_tac_vu_ngay     # tác vụ hằng ngày (UC 9.2)
 ```
 

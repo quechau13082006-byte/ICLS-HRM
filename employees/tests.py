@@ -49,8 +49,8 @@ HOM_NAY = date.today()
 
 def tao_nguoi(email, vai_tro=UserRole.EMPLOYEE, chuc_danh=Position.TEACHER, loai_hinh=EmploymentType.FULL_TIME,
               ca=WorkShift.SHIFT_1):
-    """Một nhân sự có tài khoản đúng vai trò (Super Admin, Giám đốc thì chỉ có tài khoản, không có hồ sơ – Q1)."""
-    if vai_tro in (UserRole.SUPER_ADMIN, UserRole.DIRECTOR):
+    """Một nhân sự có tài khoản đúng vai trò (Giám đốc thì chỉ có tài khoản, không có hồ sơ – Q1)."""
+    if vai_tro == UserRole.DIRECTOR:
         return User.objects.create_user(email, 'x', role=vai_tro, full_name=email)
     nhan_su = tao_nhan_su(email, vai_tro, chuc_danh, loai_hinh, ca if loai_hinh == EmploymentType.FULL_TIME else '')
     nhan_su.status = EmployeeStatus.ACTIVE
@@ -69,7 +69,7 @@ def tep(ten='a.pdf', kich_thuoc=100, loai='application/pdf'):
 
 
 class UcNhanSuCoSo(TestCase):
-    """Dữ liệu chung: Super Admin, 2 Quản lý, Kế toán, hai Nhân viên."""
+    """Dữ liệu chung: Giám đốc, 2 Quản lý, Kế toán, hai Nhân viên."""
 
     def setUp(self):
         self.gd = tao_nguoi('gd@icls.vn', UserRole.DIRECTOR)
@@ -189,7 +189,7 @@ class CapNhatHoSoTest(UcNhanSuCoSo):            # UC 2.2
         giay_to = EmployeeDocument.objects.get(employee=self.nv, document_name='TOPIK 6')
         self.assertEqual(giay_to.status, DocumentStatus.PENDING)
         self.assertTrue(Notification.objects.filter(recipient=self.ql.user, title=thong_bao.TB_CHO_DUYET_TIEU_DE).exists())
-        self.assertFalse(Notification.objects.filter(recipient=self.gd).exists())   # NV gửi → báo Quản lý, không báo SA
+        self.assertFalse(Notification.objects.filter(recipient=self.gd).exists())   # NV gửi → báo Quản lý, không báo Giám đốc
         self.assertTrue(ActivityLog.objects.filter(action='UPDATE', model_name='Employee', object_id=self.nv.pk).exists())
 
     def test_uc2_2_basic_thong_bao_thanh_cong_co_cau_cho_duyet(self):
@@ -386,18 +386,18 @@ class OnboardingTest(UcNhanSuCoSo):             # UC 2.5
         moi = Employee.objects.get(user__email='moi@icls.vn')
         self.assertFalse(LeaveBalance.objects.filter(employee=moi).exists())        # Q11
 
-    def test_uc2_5_basic_vi_tri_quan_ly_ke_toan_bao_super_admin(self):
-        sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN, full_name='SA')
+    def test_uc2_5_basic_vi_tri_quan_ly_ke_toan_nhac_quan_ly_cap_vai_tro(self):
         self.client.post(self.url, self._du_lieu(position='MANAGER'))
         moi = Employee.objects.get(user__email='moi@icls.vn')
-        self.assertEqual(moi.user.role, UserRole.EMPLOYEE)                          # Q3: QL không tự cấp quyền
-        tb = Notification.objects.get(recipient=sa)                                 # cấp vai trò là việc kỹ thuật của SA
-        self.assertEqual(tb.title, thong_bao.TB_CAP_QUYEN_TIEU_DE)
-        self.assertEqual(tb.related_url, reverse('accounts:user_change_role', args=[moi.user.pk]))
-
-    def test_uc2_5_basic_vi_tri_thuong_khong_bao_super_admin(self):
-        self.client.post(self.url, self._du_lieu())
+        self.assertEqual(moi.user.role, UserRole.EMPLOYEE)                          # Q3: hồ sơ mới luôn là Nhân viên
+        for ql in (self.ql, self.ql2):                                              # cấp vai trò ở UC 1.5 (Quản lý)
+            tb = Notification.objects.get(recipient=ql.user, title=thong_bao.TB_CAP_QUYEN_TIEU_DE)
+            self.assertEqual(tb.related_url, reverse('accounts:user_change_role', args=[moi.user.pk]))
         self.assertFalse(Notification.objects.filter(recipient=self.gd).exists())
+
+    def test_uc2_5_basic_vi_tri_thuong_khong_nhac_cap_vai_tro(self):
+        self.client.post(self.url, self._du_lieu())
+        self.assertFalse(Notification.objects.filter(title=thong_bao.TB_CAP_QUYEN_TIEU_DE).exists())
 
     def test_uc2_5_basic_tu_ung_vien_passed(self):
         uv = self._ung_vien()

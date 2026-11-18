@@ -4,9 +4,8 @@ from django.db import models
 
 
 class UserRole(models.TextChoices):
-    SUPER_ADMIN = 'SUPER_ADMIN', 'Super Admin'        # chỉ phần kỹ thuật: tài khoản, nhật ký, tác vụ hằng ngày
     DIRECTOR = 'DIRECTOR', 'Giám đốc'                 # quản lý cấp cao: duyệt yêu cầu của Quản lý, xem toàn trung tâm
-    MANAGER = 'MANAGER', 'Quản lý'
+    MANAGER = 'MANAGER', 'Quản lý'                    # vận hành nhân sự + quản trị tài khoản, nhật ký, tác vụ hằng ngày
     ACCOUNTANT = 'ACCOUNTANT', 'Kế toán'
     EMPLOYEE = 'EMPLOYEE', 'Nhân viên'
 
@@ -27,9 +26,13 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra):
+        """Tài khoản kỹ thuật cho người phát triển (lệnh `createsuperuser`): chỉ dùng để vào trang /admin/.
+
+        Không phải một vai trò nghiệp vụ, không có trong quy trình; vai trò mặc định là Quản lý cho đủ giá trị cột `role`.
+        """
         extra.setdefault('is_staff', True)
         extra.setdefault('is_superuser', True)
-        extra.setdefault('role', UserRole.SUPER_ADMIN)
+        extra.setdefault('role', UserRole.MANAGER)
         return self.create_user(email, password, **extra)
 
 
@@ -56,10 +59,5 @@ class User(AbstractUser):
     def __str__(self):
         return f'{self.full_name or self.email} ({self.get_role_display()})'
 
-    def save(self, *args, **kwargs):
-        # Chỉ Super Admin được vào trang quản trị Django (/admin/) với toàn quyền; đổi vai trò thì quyền này tự đổi theo.
-        self.is_staff = self.is_superuser = self.role == UserRole.SUPER_ADMIN
-        update_fields = kwargs.get('update_fields')
-        if update_fields is not None and 'role' in update_fields:
-            kwargs['update_fields'] = set(update_fields) | {'is_staff', 'is_superuser'}
-        super().save(*args, **kwargs)
+    # is_staff / is_superuser (vào trang /admin/) KHÔNG gắn với vai trò nghiệp vụ: chỉ tài khoản kỹ thuật tạo bằng
+    # `createsuperuser` mới có. Không form nào trên giao diện sửa được hai cột này (accounts/admin.py để chỉ đọc).

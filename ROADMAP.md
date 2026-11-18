@@ -74,7 +74,7 @@ Tuyển dụng (UC8) → Onboarding (UC 2.5) → Hợp đồng (UC3) → Phân c
 → Gia hạn hoặc Thanh lý hợp đồng (UC3)
 ```
 
-**Bốn vai trò đăng nhập:** Super Admin (SA), Quản lý (QL), Kế toán (KT), Nhân viên (NV). Chi tiết ở §5.
+**Bốn vai trò đăng nhập:** Giám đốc (GD), Quản lý (QL), Kế toán (KT), Nhân viên (NV). Không có vai trò Super Admin. Chi tiết ở §5.
 
 ---
 
@@ -94,7 +94,7 @@ Những thứ không dùng thư viện, và cách làm thay:
 | Biểu đồ (UC 9.1) | Thẻ số liệu, bảng nhỏ, thanh `progress` của Bootstrap |
 | Phiếu lương PDF (UC 7.3) | Nút "In / Lưu PDF" gọi `window.print()` với CSS `@media print` |
 | Ảnh đại diện | `FileField` + kiểm tra đuôi `.jpg/.png`, ≤ 2 MB (không cần Pillow) |
-| Tác vụ hằng ngày (UC 9.2) | Lệnh `python manage.py chay_tac_vu_ngay`, cộng nút của Super Admin |
+| Tác vụ hằng ngày (UC 9.2) | Lệnh `python manage.py chay_tac_vu_ngay`, cộng nút của Quản lý (Dashboard, tab Hệ thống) |
 | Email | Khi demo dùng `django.core.mail.backends.console.EmailBackend` (in ra terminal) |
 | Xác nhận thao tác | `onclick="return confirm('…')"` |
 
@@ -181,7 +181,7 @@ Ví dụ Quản lý bấm "Duyệt đơn" (UC 5.2):
 
 ```
 Trình duyệt → urls.py → view: kiểm tra đăng nhập + vai trò (@role_required)
-→ lấy đơn, kiểm tra phạm vi duyệt (co_quyen_duyet: không tự duyệt; QL duyệt NV/KT, SA duyệt QL)
+→ lấy đơn, kiểm tra phạm vi duyệt (co_quyen_duyet: không tự duyệt; QL duyệt NV/KT, GD duyệt QL)
 → leave/services.duyet_don_nghi(...) trong 1 transaction: đổi trạng thái, trừ quỹ phép,
   gọi schedule/services.tao_yeu_cau_day_thay(...), tạo thông báo, ghi nhật ký
 → view chuyển về danh sách kèm câu thông báo thành công
@@ -212,9 +212,9 @@ Trình duyệt → urls.py → view: kiểm tra đăng nhập + vai trò (@role_
 
 | # | Quyết định | UC |
 |---|---|---|
-| Q1 | **Super Admin là quản trị hệ thống.** SA không có hồ sơ nhân sự, không vận hành nghiệp vụ, chỉ xem một số bảng tổng hợp | 1.5, 9.x |
-| Q2 | **Không ai tự duyệt yêu cầu của mình.** Yêu cầu của NV và KT do QL duyệt; yêu cầu của QL (đơn nghỉ, giải trình, giấy tờ) do SA duyệt | 2.6, 4.4, 5.2 |
-| Q3 | **QL chỉ tạo tài khoản role EMPLOYEE.** Nâng quyền QL/KT do SA làm, hệ thống tự báo SA | 2.5, 1.5 |
+| Q1 | **Không có vai trò Super Admin.** Quản trị tài khoản, nhật ký và tác vụ hằng ngày do QL làm; GD là cấp quản lý cao nhất (duyệt yêu cầu của QL, xem và ra quyết định), không có hồ sơ nhân sự. Trang `/admin/` chỉ dành cho tài khoản kỹ thuật của người phát triển (`createsuperuser`), không phải vai trò nghiệp vụ | 1.5, 9.x |
+| Q2 | **Không ai tự duyệt yêu cầu của mình.** Yêu cầu của NV và KT do QL duyệt; yêu cầu của QL (đơn nghỉ, giải trình, giấy tờ) do GD duyệt | 2.6, 4.4, 5.2 |
+| Q3 | **Hồ sơ mới (Onboarding) luôn tạo tài khoản role EMPLOYEE.** Cấp vai trò QL/KT làm ở UC 1.5 (Quản lý tài khoản); hệ thống nhắc các QL | 2.5, 1.5 |
 | Q4 | **Nhân viên mới tự đặt mật khẩu qua link** (hiệu lực 24 giờ), không có mật khẩu mặc định | 1.2, 2.5 |
 | Q5 | **Tạo hợp đồng đầu tiên** thì nhân sự `ONBOARDING → ACTIVE` | 3.1 |
 | Q6 | **Hệ thống không tự kết thúc hợp đồng quá hạn**, chỉ nhắc; QL quyết định gia hạn hay thanh lý | 3.5, 9.2 |
@@ -239,7 +239,7 @@ Trình duyệt → urls.py → view: kiểm tra đăng nhập + vai trò (@role_
 | Lọc GV "phù hợp chuyên môn" | Chỉ lọc GV ACTIVE, đúng ca, không trùng giờ, không nghỉ phép | Không có dữ liệu chuyên môn để so |
 | Kiểm tra trùng phòng | So khớp tên phòng cùng giờ | Không có bảng phòng học |
 | Dạy thay | QL chọn trực tiếp, không mời lần lượt | Đơn giản, đủ cho 40 nhân sự |
-| Lịch Tháng/Tuần/Ngày | Tuần và Ngày; Quản lý/SA xem bảng theo nhân sự (gồm ca cố định Full-time) và bảng theo phòng | Không dùng thư viện lịch |
+| Lịch Tháng/Tuần/Ngày | Tuần và Ngày; Quản lý/Giám đốc xem bảng theo nhân sự (gồm ca cố định Full-time) và bảng theo phòng | Không dùng thư viện lịch |
 | PDF phiếu lương | In / Lưu PDF bằng trình duyệt | Không dùng thư viện PDF |
 | Xuất báo cáo Excel/PDF | Không làm, chỉ có Dashboard | Đã bỏ trong đặc tả |
 
@@ -256,39 +256,43 @@ Trình duyệt → urls.py → view: kiểm tra đăng nhập + vai trò (@role_
 
 **Vai trò:**
 
-- **Super Admin:** quản trị hệ thống. Quản lý tài khoản và phân quyền, xem nhật ký hoạt động, chạy tác vụ hằng ngày. Không có hồ sơ nhân sự. Là cấp duyệt các yêu cầu của tài khoản Quản lý.
-- **Quản lý:** điều hành vòng đời nhân sự: tuyển dụng, onboarding, hợp đồng, phân công lớp, xếp ca, duyệt yêu cầu của Nhân viên và Kế toán.
+- **Giám đốc:** quản lý cấp cao. Duyệt giấy tờ, đơn nghỉ và giải trình của Quản lý; xem toàn trung tâm (nhân sự, hợp đồng, lịch, tổng hợp công và nghỉ phép, Dashboard Tổng quan và tab Kế toán) để ra quyết định; không thao tác thay Quản lý. Không có hồ sơ nhân sự.
+- **Quản lý:** điều hành vòng đời nhân sự: tuyển dụng, onboarding, hợp đồng, phân công lớp, xếp ca, duyệt yêu cầu của Nhân viên và Kế toán. Kiêm quản trị hệ thống: quản lý mọi tài khoản (thêm, đổi vai trò, khóa, mở khóa; không tự khóa hay tự đổi vai trò của mình), xem nhật ký hoạt động, chạy tác vụ hằng ngày.
+- **Không có Super Admin:** trang quản trị Django (`/admin/`) chỉ dành cho tài khoản kỹ thuật tạo bằng `createsuperuser`; `is_staff`, `is_superuser` không gắn với cột `role`.
 - **Kế toán:** cấu hình lương, lập, chốt và phát hành bảng lương; xem bảng tổng hợp công và hợp đồng (chỉ xem).
 - **Nhân viên:** giáo viên, trợ giảng, staff. Chấm công, xem lịch, giữ chỗ ca (Part-time), gửi đơn nghỉ, giải trình, cập nhật hồ sơ, xem phiếu lương. Quản lý và Kế toán cũng là nhân sự nên cũng dùng các chức năng cá nhân này.
 
-**Nguyên tắc phê duyệt (Q2):** không ai tự duyệt yêu cầu của mình; yêu cầu của NV và KT do QL duyệt; yêu cầu của tài khoản role MANAGER do SA duyệt.
+**Nguyên tắc phê duyệt (Q2):** không ai tự duyệt yêu cầu của mình; yêu cầu của NV và KT do QL duyệt; yêu cầu của tài khoản role MANAGER do GD duyệt.
 
 **Bảng phân quyền.** Ký hiệu: ✓ = có quyền; ○ = chỉ trên dữ liệu của chính mình; Xem = chỉ xem; – = không có quyền.
 
-| Mã UC | Chức năng | Super Admin | Quản lý | Kế toán | Nhân viên |
+| Mã UC | Chức năng | Giám đốc | Quản lý | Kế toán | Nhân viên |
 |---|---|---|---|---|---|
 | 1.1–1.4, 1.6 | Đăng nhập, quên/đổi mật khẩu, tài khoản cá nhân, đăng xuất | ✓ | ✓ | ✓ | ✓ |
-| 1.5 | Quản lý tài khoản người dùng | ✓ | – | – | – |
+| 1.5 | Quản lý tài khoản người dùng (mọi tài khoản, trừ chính mình) | – | ✓ | – | – |
 | 2.1 | Xem danh sách nhân sự | Xem đầy đủ | ✓ đầy đủ | Thông tin cơ bản | Thông tin cơ bản |
 | 2.2, 2.3 | Cập nhật, xem hồ sơ cá nhân | – | ○ | ○ | ○ |
-| 2.4, 2.5 | Cảnh báo giấy tờ; Onboarding & quản lý hồ sơ | – | ✓ | – | – |
+| 2.4 | Cảnh báo giấy tờ sắp hết hạn | Xem | ✓ | – | – |
+| 2.5 | Onboarding & quản lý hồ sơ | – | ✓ | – | – |
 | 2.6 | Duyệt giấy tờ, chứng chỉ | Giấy tờ của QL | Giấy tờ của NV, KT | – | – |
-| 3.1, 3.3, 3.4, 3.5 | Thêm, gia hạn, thanh lý, theo dõi hợp đồng | – | ✓ | – | – |
-| 3.2 | Tra cứu chi tiết hợp đồng | – | ✓ tất cả | Xem tất cả | ○ |
+| 3.1, 3.3, 3.4 | Thêm, gia hạn, thanh lý hợp đồng | – | ✓ | – | – |
+| 3.2 | Tra cứu chi tiết hợp đồng | Xem tất cả | ✓ tất cả | Xem tất cả | ○ |
+| 3.5 | Theo dõi hợp đồng sắp hết hạn | Xem | ✓ | – | – |
 | 4.1, 4.2, 4.3 | Chấm công, gửi giải trình, lịch sử chấm công | – | ○ | ○ | ○ |
 | 4.4 | Duyệt giải trình chấm công | Giải trình của QL | Giải trình của NV, KT | – | – |
 | 4.5 | Bảng tổng hợp công | Xem | ✓ | ✓ | – |
 | 5.1, 5.3 | Gửi đơn nghỉ, tra cứu quỹ phép | – | ○ | ○ | ○ |
 | 5.2 | Duyệt đơn nghỉ phép | Đơn của QL | Đơn của NV, KT | – | – |
 | 5.4 | Tổng hợp nghỉ phép | Xem | ✓ | – | – |
-| 6.1, 6.4 | Tạo & phân công lớp; xử lý dạy thay | – | ✓ | – | – |
+| 6.1 | Tạo & phân công lớp | – | ✓ | – | – |
 | 6.2 | Xem lịch làm việc & lịch lớp học | Xem toàn bộ | ✓ toàn bộ | ○ + lịch lớp | ○ + lịch lớp |
 | 6.3 | Khung ca Part-time | – | Tạo, chốt ca | – | Giữ chỗ (PT) |
+| 6.4 | Xử lý dạy thay | Xem buổi cần thay | ✓ | – | – |
 | 7.1, 7.2 | Cấu hình lương; lập & chốt bảng lương | – | – | ✓ | – |
 | 7.3 | Tra cứu phiếu lương | – | ○ | ○ | ○ |
 | 8.1–8.3 | Tuyển dụng | – | ✓ | – | – |
-| 9.1 | Dashboard theo vai trò | ✓ | ✓ | ✓ | ✓ |
-| 9.2 | Chạy tác vụ hằng ngày (thủ công) | ✓ | – | – | – |
+| 9.1 | Dashboard theo vai trò | Tổng quan + Kế toán (xem) | Tổng quan + Hệ thống + Cá nhân | Kế toán + Cá nhân | Cá nhân |
+| 9.2 | Chạy tác vụ hằng ngày (thủ công) | – | ✓ | – | – |
 
 **Cài đặt:**
 
@@ -296,9 +300,9 @@ Trình duyệt → urls.py → view: kiểm tra đăng nhập + vai trò (@role_
 - **Dữ liệu "của mình"** được lọc ngay trong truy vấn (`filter(employee=request.user.employee)`). Người sửa ID trên URL không lấy được dữ liệu của người khác.
 - **`co_quyen_duyet(nguoi_duyet, nguoi_gui)`** dùng chung cho 2.6, 4.4, 5.2:
   - Người duyệt là người gửi → **không được**.
-  - Người gửi có role MANAGER → chỉ **SUPER_ADMIN** được duyệt.
+  - Người gửi có role MANAGER → chỉ **DIRECTOR** được duyệt.
   - Người gửi là NV hoặc KT → **MANAGER** được duyệt.
-- **Super Admin không có `employee`:** ẩn menu cá nhân. Mọi view cá nhân kiểm tra `hasattr(request.user, 'employee')`.
+- **Giám đốc không có `employee`:** ẩn menu cá nhân. Mọi view cá nhân kiểm tra `hasattr(request.user, 'employee')`.
 
 ---
 
@@ -427,7 +431,7 @@ Kế thừa AbstractUser của Django. Bỏ các trường username, first_name,
 | `password` | Mật khẩu đã mã hóa | `CharField(max_length=128)` | NOT NULL | Có sẵn. Chưa dùng được khi nhân viên chưa tự đặt mật khẩu (UC 1.2) |
 | `full_name` | Họ và tên hiển thị | `CharField(max_length=150, blank=True)` |  | Đồng bộ từ employees nếu có hồ sơ (UC 1.4, 2.5) |
 | `phone` | Số điện thoại | `CharField(max_length=20, blank=True)` |  | Đồng bộ từ employees nếu có hồ sơ |
-| `role` | Vai trò hệ thống | `CharField(max_length=20, choices=UserRole.choices, default='EMPLOYEE')` | NOT NULL | Enum UserRole; chỉ Super Admin đổi (UC 1.5) |
+| `role` | Vai trò hệ thống | `CharField(max_length=20, choices=UserRole.choices, default='EMPLOYEE')` | NOT NULL | Enum UserRole; chỉ Quản lý đổi (UC 1.5) |
 | `is_active` | Trạng thái tài khoản | `BooleanField(default=True)` | NOT NULL | False = bị khóa (UC 1.5, 3.4) |
 | `avatar` | Ảnh đại diện | `FileField(upload_to='avatars/', blank=True)` |  | Chỉ nhận .jpg/.png ≤ 2 MB; dùng FileField để không cần cài thêm thư viện xử lý ảnh |
 | `last_login` | Lần đăng nhập cuối | `DateTimeField(null=True, blank=True)` | NULL | Có sẵn |
@@ -435,13 +439,13 @@ Kế thừa AbstractUser của Django. Bỏ các trường username, first_name,
 | `date_joined` | Thời điểm tạo tài khoản | `DateTimeField(default=timezone.now)` | NOT NULL | Có sẵn |
 | `updated_at` | Thời điểm cập nhật | `DateTimeField(auto_now=True)` | NOT NULL |  |
 
-- **Enum `UserRole`:** SUPER_ADMIN · MANAGER · ACCOUNTANT · EMPLOYEE
+- **Enum `UserRole`:** DIRECTOR · MANAGER · ACCOUNTANT · EMPLOYEE
 
 #### 7.3.2. `employees` – Hồ sơ nhân sự
 
 Model `Employee` · app `employees`
 
-Mỗi nhân sự có đúng một tài khoản. Super Admin không có hồ sơ nhân sự. Mã NV hiển thị = “NV” + id 4 chữ số (ví dụ NV0012), không lưu cột riêng. Nhân sự không bao giờ bị xóa, chỉ đổi status.
+Mỗi nhân sự có đúng một tài khoản. Giám đốc không có hồ sơ nhân sự. Mã NV hiển thị = “NV” + id 4 chữ số (ví dụ NV0012), không lưu cột riêng. Nhân sự không bao giờ bị xóa, chỉ đổi status.
 
 | Tên trường | Mô tả | Kiểu dữ liệu Django | Ràng buộc | Ghi chú |
 |---|---|---|---|---|
@@ -891,7 +895,7 @@ Ghi mọi thao tác quan trọng: đăng nhập, đăng xuất, tạo, sửa, du
 
 | Enum | Giá trị | Dùng ở bảng |
 |---|---|---|
-| `UserRole` | SUPER_ADMIN · MANAGER · ACCOUNTANT · EMPLOYEE | users |
+| `UserRole` | DIRECTOR · MANAGER · ACCOUNTANT · EMPLOYEE | users |
 | `Gender` | MALE · FEMALE · OTHER | employees |
 | `Department` | ACADEMIC · HR_ADMIN · ACCOUNTING | employees |
 | `Position` | TEACHER · TEACHING_ASSISTANT · STAFF · MANAGER · ACCOUNTANT | employees, candidates |
@@ -931,7 +935,7 @@ Mỗi dòng dưới đây phải có đúng **một hàm service** thực hiện
 |---|---|---|---|
 | employees.status | ONBOARDING → ACTIVE | Tạo hợp đồng đầu tiên | 3.1 |
 |  | ACTIVE → RESIGNED / TERMINATED | Thanh lý hợp đồng | 3.4 |
-| users.is_active | True ↔ False | Super Admin khóa/mở khóa | 1.5 |
+| users.is_active | True ↔ False | Quản lý khóa/mở khóa | 1.5 |
 |  | True → False | Thanh lý hợp đồng | 3.4 |
 | contracts.status | ACTIVE → EXPIRED | Gia hạn (hợp đồng cũ) | 3.3 |
 |  | ACTIVE → TERMINATED | Thanh lý | 3.4 |
@@ -1090,18 +1094,18 @@ Mỗi dòng dưới đây phải có đúng **một hàm service** thực hiện
 
 | Phân hệ | App | Mã UC | Tên use case | Ưu tiên | Tác nhân |
 |---|---|---|---|---|---|
-| UC1: Xác thực & Quản lý người dùng | `accounts` | 1.1 | Đăng nhập | Must Have | Super Admin, Quản lý, Kế toán, Nhân viên |
-|  |  | 1.2 | Quên mật khẩu | High | Super Admin, Quản lý, Kế toán, Nhân viên |
-|  |  | 1.3 | Đổi mật khẩu | Medium | Super Admin, Quản lý, Kế toán, Nhân viên |
-|  |  | 1.4 | Xem & cập nhật tài khoản cá nhân | Medium | Super Admin, Quản lý, Kế toán, Nhân viên |
-|  |  | 1.5 | Quản lý tài khoản người dùng | Must Have | Super Admin |
-|  |  | 1.6 | Đăng xuất | Must Have | Super Admin, Quản lý, Kế toán, Nhân viên |
-| UC2: Quản lý nhân sự | `employees` | 2.1 | Xem danh sách nhân sự | Must Have | Super Admin (chỉ xem), Quản lý, Kế toán, Nhân viên |
+| UC1: Xác thực & Quản lý người dùng | `accounts` | 1.1 | Đăng nhập | Must Have | Giám đốc, Quản lý, Kế toán, Nhân viên |
+|  |  | 1.2 | Quên mật khẩu | High | Giám đốc, Quản lý, Kế toán, Nhân viên |
+|  |  | 1.3 | Đổi mật khẩu | Medium | Giám đốc, Quản lý, Kế toán, Nhân viên |
+|  |  | 1.4 | Xem & cập nhật tài khoản cá nhân | Medium | Giám đốc, Quản lý, Kế toán, Nhân viên |
+|  |  | 1.5 | Quản lý tài khoản người dùng | Must Have | Quản lý |
+|  |  | 1.6 | Đăng xuất | Must Have | Giám đốc, Quản lý, Kế toán, Nhân viên |
+| UC2: Quản lý nhân sự | `employees` | 2.1 | Xem danh sách nhân sự | Must Have | Giám đốc (chỉ xem), Quản lý, Kế toán, Nhân viên |
 |  |  | 2.2 | Cập nhật hồ sơ cá nhân | High | Quản lý, Kế toán, Nhân viên |
 |  |  | 2.3 | Xem hồ sơ cá nhân | Medium | Quản lý, Kế toán, Nhân viên |
 |  |  | 2.4 | Theo dõi cảnh báo giấy tờ sắp hết hạn | Medium | Quản lý |
 |  |  | 2.5 | Tiếp nhận & quản lý hồ sơ nhân sự (Onboarding) | Must Have | Quản lý |
-|  |  | 2.6 | Duyệt giấy tờ, chứng chỉ | High | Quản lý, Super Admin (chỉ giấy tờ của Quản lý) |
+|  |  | 2.6 | Duyệt giấy tờ, chứng chỉ | High | Quản lý, Giám đốc (chỉ giấy tờ của Quản lý) |
 | UC3: Quản lý hợp đồng | `contracts` | 3.1 | Quản lý danh sách hợp đồng | Must Have | Quản lý |
 |  |  | 3.2 | Tra cứu chi tiết hợp đồng | Medium | Quản lý, Kế toán, Nhân viên |
 |  |  | 3.3 | Cập nhật & gia hạn hợp đồng | High | Quản lý |
@@ -1110,14 +1114,14 @@ Mỗi dòng dưới đây phải có đúng **một hàm service** thực hiện
 | UC4: Quản lý chấm công | `attendance` | 4.1 | Chấm công Check-in / Check-out | Must Have | Quản lý, Kế toán, Nhân viên |
 |  |  | 4.2 | Gửi giải trình chấm công | High | Quản lý, Kế toán, Nhân viên |
 |  |  | 4.3 | Xem lịch sử chấm công cá nhân | Medium | Quản lý, Kế toán, Nhân viên |
-|  |  | 4.4 | Duyệt giải trình chấm công | High | Quản lý, Super Admin (chỉ giải trình của Quản lý) |
-|  |  | 4.5 | Quản lý bảng tổng hợp công | Must Have | Quản lý, Kế toán, Super Admin (chỉ xem) |
+|  |  | 4.4 | Duyệt giải trình chấm công | High | Quản lý, Giám đốc (chỉ giải trình của Quản lý) |
+|  |  | 4.5 | Quản lý bảng tổng hợp công | Must Have | Quản lý, Kế toán, Giám đốc (chỉ xem) |
 | UC5: Quản lý nghỉ phép | `leave` | 5.1 | Gửi đơn xin nghỉ phép | High | Quản lý, Kế toán, Nhân viên |
-|  |  | 5.2 | Duyệt đơn xin nghỉ phép | High | Quản lý, Super Admin (chỉ đơn của Quản lý) |
+|  |  | 5.2 | Duyệt đơn xin nghỉ phép | High | Quản lý, Giám đốc (chỉ đơn của Quản lý) |
 |  |  | 5.3 | Tra cứu quỹ phép cá nhân | Medium | Quản lý, Kế toán, Nhân viên |
-|  |  | 5.4 | Tổng hợp lịch sử nghỉ phép | High | Quản lý, Super Admin (chỉ xem) |
+|  |  | 5.4 | Tổng hợp lịch sử nghỉ phép | High | Quản lý, Giám đốc (chỉ xem) |
 | UC6: Lịch làm việc & Phân công | `schedule` | 6.1 | Tạo và phân công lớp học | High | Quản lý |
-|  |  | 6.2 | Xem lịch làm việc & lịch lớp học | High | Super Admin (chỉ xem), Quản lý, Kế toán, Nhân viên |
+|  |  | 6.2 | Xem lịch làm việc & lịch lớp học | High | Giám đốc (chỉ xem), Quản lý, Kế toán, Nhân viên |
 |  |  | 6.3 | Đăng ký & phân công ca làm việc Part-time | High | Quản lý, Nhân viên Part-time |
 |  |  | 6.4 | Xử lý dạy thay | Medium | Quản lý |
 | UC7: Quản lý lương | `payroll` | 7.1 | Quản lý cấu hình lương | Must Have | Kế toán |
@@ -1126,8 +1130,8 @@ Mỗi dòng dưới đây phải có đúng **một hàm service** thực hiện
 | UC8: Quản lý tuyển dụng | `recruitment` | 8.1 | Quản lý đợt tuyển dụng & hồ sơ ứng viên | Must Have | Quản lý |
 |  |  | 8.2 | Quản lý lịch phỏng vấn & dạy thử | High | Quản lý |
 |  |  | 8.3 | Đánh giá kết quả & chuyển Onboarding | High | Quản lý |
-| UC9: Bảng điều khiển & Tác vụ hệ thống | `dashboard` | 9.1 | Xem Dashboard theo vai trò | High | Super Admin, Quản lý, Kế toán, Nhân viên |
-|  |  | 9.2 | Chạy tác vụ tự động hằng ngày | High | Hệ thống (lịch tự động), Super Admin |
+| UC9: Bảng điều khiển & Tác vụ hệ thống | `dashboard` | 9.1 | Xem Dashboard theo vai trò | High | Giám đốc, Quản lý, Kế toán, Nhân viên |
+|  |  | 9.2 | Chạy tác vụ tự động hằng ngày | High | Hệ thống (lịch tự động), Quản lý |
 
 ### 10.2 Đặc tả chi tiết
 
@@ -1139,7 +1143,7 @@ Cách đọc: mỗi use case có bảng thông tin và ba bảng luồng. Số b
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | Must Have |
 | **Mô tả** | Use case mô tả quy trình người dùng xác thực danh tính bằng Email và Mật khẩu để truy cập vào hệ thống theo đúng vai trò được phân quyền. |
 | **Kích hoạt** | Người dùng truy cập vào đường dẫn trang Đăng nhập của hệ thống. |
@@ -1165,15 +1169,15 @@ Cách đọc: mỗi use case có bảng thông tin và ba bảng luồng. Số b
 |---|---|
 | 3.1: Người dùng để trống trường bắt buộc rồi nhấn “Đăng nhập”. | 3.1.1: Hệ thống chặn thao tác và hiển thị cảnh báo màu đỏ tại trường còn trống. Trở lại Bước 1. |
 | 3.2: (Từ bước 4) Email không tồn tại hoặc mật khẩu sai. | 3.2.1: Hệ thống từ chối đăng nhập, ghi nhật ký LOGIN_FAILED và hiển thị thông báo lỗi: “Email/Mật khẩu không đúng”. Trở lại Bước 1. |
-| 3.3: (Từ bước 4) Mật khẩu đúng nhưng tài khoản có is_active = False. | 3.3.1: Hệ thống từ chối đăng nhập và hiển thị: “Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.” Trở lại Bước 1. |
+| 3.3: (Từ bước 4) Mật khẩu đúng nhưng tài khoản có is_active = False. | 3.3.1: Hệ thống từ chối đăng nhập và hiển thị: “Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản lý.” Trở lại Bước 1. |
 
 ##### UC 1.2 – Quên mật khẩu
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | High |
-| **Mô tả** | Use case cho phép người dùng nhận đường dẫn đặt lại mật khẩu qua email đã đăng ký và tự đặt mật khẩu mới. Cơ chế này cũng được dùng để nhân viên mới tự đặt mật khẩu lần đầu (UC 2.5) và tài khoản do Super Admin tạo (UC 1.5). |
+| **Mô tả** | Use case cho phép người dùng nhận đường dẫn đặt lại mật khẩu qua email đã đăng ký và tự đặt mật khẩu mới. Cơ chế này cũng được dùng để nhân viên mới tự đặt mật khẩu lần đầu (UC 2.5) và tài khoản do Quản lý tạo (UC 1.5). |
 | **Kích hoạt** | Người dùng nhấn “Quên mật khẩu?” trên trang Đăng nhập, hoặc mở đường dẫn đặt mật khẩu nhận được qua email. |
 | **Tiền điều kiện** | • Người dùng có tài khoản trên hệ thống.<br>• Người dùng chưa đăng nhập. |
 | **Hậu điều kiện** | • Mật khẩu mới được mã hóa và lưu vào bảng users.<br>• Đường dẫn đã sử dụng không còn hiệu lực.<br>• Hệ thống ghi nhật ký đặt lại mật khẩu. |
@@ -1204,7 +1208,7 @@ Cách đọc: mỗi use case có bảng thông tin và ba bảng luồng. Số b
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | Medium |
 | **Mô tả** | Use case cho phép người dùng đã đăng nhập tự thay đổi mật khẩu của mình. |
 | **Kích hoạt** | Người dùng chọn “Đổi mật khẩu” trong menu tài khoản. |
@@ -1234,7 +1238,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | Medium |
 | **Mô tả** | Use case cho phép người dùng xem thông tin tài khoản và sửa các thông tin liên hệ cơ bản (Họ tên, Số điện thoại, Ảnh đại diện). |
 | **Kích hoạt** | Người dùng nhấn vào ảnh đại diện ở góc phải và chọn “Tài khoản của tôi”. |
@@ -1263,41 +1267,41 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Super Admin |
+| **Actor** | Quản lý |
 | **Ưu tiên** | Must Have |
-| **Mô tả** | Use case cho phép Super Admin xem danh sách tài khoản, phân vai trò, khóa/mở khóa tài khoản và tạo tài khoản trong trường hợp ngoại lệ. Tài khoản nhân viên thông thường được tạo qua UC 2.5. |
-| **Kích hoạt** | Super Admin chọn mục “Quản lý tài khoản” trên menu, hoặc mở thông báo “Yêu cầu cấp quyền” (từ UC 2.5). |
-| **Tiền điều kiện** | • Người dùng đăng nhập với vai trò SUPER_ADMIN. |
+| **Mô tả** | Use case cho phép Quản lý xem danh sách tài khoản, phân vai trò, khóa/mở khóa tài khoản và tạo tài khoản trong trường hợp ngoại lệ. Tài khoản nhân viên thông thường được tạo qua UC 2.5. |
+| **Kích hoạt** | Quản lý chọn mục “Quản lý tài khoản” trên menu, hoặc mở thông báo “Yêu cầu cấp quyền” (từ UC 2.5). |
+| **Tiền điều kiện** | • Người dùng đăng nhập với vai trò MANAGER. |
 | **Hậu điều kiện** | • Vai trò (role) hoặc trạng thái (is_active) của tài khoản được cập nhật và có hiệu lực ngay từ thao tác tiếp theo của tài khoản đó.<br>• Hệ thống ghi nhật ký vào activity_logs. |
 
 **Luồng chính (Basic Flow)**
 
 | Actor Action | System Response |
 |---|---|
-| 1. Super Admin chọn “Quản lý tài khoản”. | 2. Hệ thống hiển thị danh sách toàn bộ tài khoản kèm bộ lọc Vai trò, Trạng thái và ô tìm theo Email/Họ tên. |
-| 3. Super Admin chọn một tài khoản và chọn “Đổi vai trò” hoặc “Khóa/Mở khóa”. | 4. Hệ thống hiển thị hộp xác nhận; khi đổi vai trò, hiển thị kèm chức danh trong hồ sơ nhân sự để đối chiếu. |
-| 5. Super Admin nhấn “Xác nhận”. | 6. Hệ thống cập nhật users.role hoặc users.is_active, ghi nhật ký (UPDATE / LOCK / UNLOCK), gửi thông báo cho người được thay đổi và cập nhật danh sách. |
+| 1. Quản lý chọn “Quản lý tài khoản”. | 2. Hệ thống hiển thị danh sách toàn bộ tài khoản kèm bộ lọc Vai trò, Trạng thái và ô tìm theo Email/Họ tên. |
+| 3. Quản lý chọn một tài khoản và chọn “Đổi vai trò” hoặc “Khóa/Mở khóa”. | 4. Hệ thống hiển thị hộp xác nhận; khi đổi vai trò, hiển thị kèm chức danh trong hồ sơ nhân sự để đối chiếu. |
+| 5. Quản lý nhấn “Xác nhận”. | 6. Hệ thống cập nhật users.role hoặc users.is_active, ghi nhật ký (UPDATE / LOCK / UNLOCK), gửi thông báo cho người được thay đổi và cập nhật danh sách. |
 
 **Luồng thay thế (Alternative Flow)**
 
 | Actor Action | System Response |
 |---|---|
-| 3.1. Super Admin chọn “Thêm tài khoản”, nhập Email, Họ tên, Vai trò. | 3.1.1. Hệ thống tạo bản ghi users chưa có mật khẩu, gửi email đường dẫn đặt mật khẩu (cơ chế UC 1.2) và ghi nhật ký. Chỉ dùng cho trường hợp ngoại lệ (ví dụ: tài khoản Super Admin khác). |
-| 3.2. Super Admin mở thông báo “Yêu cầu cấp quyền” cho nhân sự có vị trí Quản lý hoặc Kế toán. | 3.2.1. Hệ thống mở thẳng tài khoản cần nâng quyền, tiếp tục từ Bước 4. |
+| 3.1. Quản lý chọn “Thêm tài khoản”, nhập Email, Họ tên, Vai trò. | 3.1.1. Hệ thống tạo bản ghi users chưa có mật khẩu, gửi email đường dẫn đặt mật khẩu (cơ chế UC 1.2) và ghi nhật ký. Chỉ dùng cho trường hợp ngoại lệ (ví dụ: tài khoản Giám đốc). |
+| 3.2. Quản lý mở thông báo “Yêu cầu cấp quyền” cho nhân sự có vị trí Quản lý hoặc Kế toán. | 3.2.1. Hệ thống mở thẳng tài khoản cần nâng quyền, tiếp tục từ Bước 4. |
 
 **Luồng ngoại lệ (Exception Flow)**
 
 | Actor Action | System Response |
 |---|---|
 | 3.3: (Từ bước 3.1.1) Email đã tồn tại. | 3.3.1: Hệ thống chặn lưu và hiển thị: “Email này đã được sử dụng.” |
-| 5.1: Super Admin tự khóa hoặc tự đổi vai trò của chính mình. | 5.1.1: Hệ thống chặn và hiển thị: “Không thể tự khóa hoặc đổi quyền tài khoản đang đăng nhập.” |
-| 1.1: Người dùng không phải Super Admin truy cập chức năng. | 1.1.1: Hệ thống hiển thị trang 403: “Bạn không có quyền truy cập chức năng này.” |
+| 5.1: Quản lý tự khóa hoặc tự đổi vai trò của chính mình. | 5.1.1: Hệ thống chặn và hiển thị: “Không thể tự khóa hoặc đổi quyền tài khoản đang đăng nhập.” |
+| 1.1: Người dùng không phải Quản lý truy cập chức năng. | 1.1.1: Hệ thống hiển thị trang 403: “Bạn không có quyền truy cập chức năng này.” |
 
 ##### UC 1.6 – Đăng xuất
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | Must Have |
 | **Mô tả** | Use case cho phép người dùng kết thúc phiên làm việc và quay về trang Đăng nhập. |
 | **Kích hoạt** | Người dùng nhấn nút “Đăng xuất” trên thanh điều hướng. |
@@ -1326,7 +1330,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Super Admin (chỉ xem), Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc (chỉ xem), Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | Must Have |
 | **Mô tả** | Use case cho phép người dùng xem danh sách nhân sự của trung tâm với phạm vi dữ liệu phân theo vai trò. |
 | **Kích hoạt** | Người dùng chọn mục “Nhân sự” trên menu. |
@@ -1337,9 +1341,9 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1. Người dùng chọn “Nhân sự”. | 2. Hệ thống kiểm tra vai trò:<br>• Super Admin, Quản lý: hiển thị đầy đủ cột Mã NV, Họ tên, Vị trí, Phòng ban, Loại hình (FT/PT), Trạng thái, Số điện thoại, Email; gồm mọi trạng thái nhân sự.<br>• Kế toán, Nhân viên: chỉ hiển thị Mã NV, Họ tên, Vị trí, Phòng ban của nhân sự đang ACTIVE.<br>Danh sách được phân trang 20 dòng/trang. |
+| 1. Người dùng chọn “Nhân sự”. | 2. Hệ thống kiểm tra vai trò:<br>• Giám đốc, Quản lý: hiển thị đầy đủ cột Mã NV, Họ tên, Vị trí, Phòng ban, Loại hình (FT/PT), Trạng thái, Số điện thoại, Email; gồm mọi trạng thái nhân sự.<br>• Kế toán, Nhân viên: chỉ hiển thị Mã NV, Họ tên, Vị trí, Phòng ban của nhân sự đang ACTIVE.<br>Danh sách được phân trang 20 dòng/trang. |
 | 3. Người dùng nhập từ khóa (Họ tên hoặc Mã NV) hoặc chọn bộ lọc Vị trí, Loại hình, Trạng thái. | 4. Hệ thống trả về danh sách khớp điều kiện. |
-| 5. Người dùng nhấn vào một dòng. | 6. Quản lý, Super Admin: hệ thống mở hồ sơ chi tiết (thông tin, giấy tờ, hợp đồng). Kế toán, Nhân viên: chỉ hiển thị thông tin liên hệ cơ bản; nếu là hồ sơ của chính mình thì chuyển sang UC 2.3. |
+| 5. Người dùng nhấn vào một dòng. | 6. Quản lý, Giám đốc: hệ thống mở hồ sơ chi tiết (thông tin, giấy tờ, hợp đồng). Kế toán, Nhân viên: chỉ hiển thị thông tin liên hệ cơ bản; nếu là hồ sơ của chính mình thì chuyển sang UC 2.3. |
 
 **Luồng thay thế (Alternative Flow)**
 
@@ -1361,7 +1365,7 @@ _Không có._
 | **Mô tả** | Use case cho phép nhân sự tự cập nhật thông tin cá nhân và tải lên giấy tờ, chứng chỉ. Thông tin thông thường được cập nhật ngay; giấy tờ, chứng chỉ phải chờ duyệt (UC 2.6). |
 | **Kích hoạt** | Người dùng nhấn “Chỉnh sửa” tại màn hình “Hồ sơ của tôi”. |
 | **Tiền điều kiện** | • Người dùng đã đăng nhập và có hồ sơ nhân sự. |
-| **Hậu điều kiện** | • Thông tin cá nhân được cập nhật trong bảng employees (đồng bộ users.phone).<br>• Giấy tờ mới được lưu trong bảng employee_documents với trạng thái PENDING.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Super Admin). |
+| **Hậu điều kiện** | • Thông tin cá nhân được cập nhật trong bảng employees (đồng bộ users.phone).<br>• Giấy tờ mới được lưu trong bảng employee_documents với trạng thái PENDING.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Giám đốc). |
 
 **Luồng chính (Basic Flow)**
 
@@ -1411,7 +1415,7 @@ _Không có._
 | Actor Action | System Response |
 |---|---|
 | 4.1: Mục được chọn chưa có dữ liệu (chưa có hợp đồng, chưa có giấy tờ). | 4.1.1: Hệ thống hiển thị: “Chưa cập nhật”. |
-| 1.1: Tài khoản không có hồ sơ nhân sự (ví dụ Super Admin) truy cập bằng đường dẫn. | 1.1.1: Hệ thống hiển thị: “Tài khoản không có hồ sơ nhân sự.” Menu này không hiển thị với Super Admin. |
+| 1.1: Tài khoản không có hồ sơ nhân sự (Giám đốc) truy cập bằng đường dẫn. | 1.1.1: Hệ thống hiển thị: “Tài khoản không có hồ sơ nhân sự.” Menu này không hiển thị với Giám đốc. |
 
 ##### UC 2.4 – Theo dõi cảnh báo giấy tờ sắp hết hạn
 
@@ -1457,7 +1461,7 @@ _Không có._
 | Actor Action | System Response |
 |---|---|
 | 1. Quản lý nhấn “Chuyển sang Onboarding” hoặc “Thêm nhân sự mới”. | 2. Hệ thống hiển thị form hồ sơ; nếu từ ứng viên thì tự điền Họ tên, Email, Số điện thoại, Vị trí, Loại hình (FT/PT). |
-| 3. Quản lý bổ sung Giới tính, Ngày sinh, Số CCCD, Địa chỉ, Quốc tịch, Phòng ban, Ngày vào làm, Tài khoản ngân hàng, Ca làm việc (chỉ Full-time: Ca 1 08:00–17:00 hoặc Ca 2 13:00–21:00) và nhấn “Lưu hồ sơ”. | 4. Hệ thống kiểm tra trường bắt buộc, định dạng và tính duy nhất của Email, Số CCCD.<br>5. Trong một giao dịch, hệ thống: tạo users (role = EMPLOYEE, chưa có mật khẩu); tạo employees (status = ONBOARDING); nếu Full-time thì tạo leave_balances 12 ngày cho năm hiện tại; nếu từ ứng viên thì cập nhật candidate.status = HIRED.<br>6. Hệ thống gửi email đường dẫn đặt mật khẩu (cơ chế UC 1.2); nếu Vị trí là MANAGER hoặc ACCOUNTANT thì gửi thông báo “Yêu cầu cấp quyền” tới Super Admin (UC 1.5); ghi nhật ký và hiển thị: “Tạo hồ sơ thành công.” |
+| 3. Quản lý bổ sung Giới tính, Ngày sinh, Số CCCD, Địa chỉ, Quốc tịch, Phòng ban, Ngày vào làm, Tài khoản ngân hàng, Ca làm việc (chỉ Full-time: Ca 1 08:00–17:00 hoặc Ca 2 13:00–21:00) và nhấn “Lưu hồ sơ”. | 4. Hệ thống kiểm tra trường bắt buộc, định dạng và tính duy nhất của Email, Số CCCD.<br>5. Trong một giao dịch, hệ thống: tạo users (role = EMPLOYEE, chưa có mật khẩu); tạo employees (status = ONBOARDING); nếu Full-time thì tạo leave_balances 12 ngày cho năm hiện tại; nếu từ ứng viên thì cập nhật candidate.status = HIRED.<br>6. Hệ thống gửi email đường dẫn đặt mật khẩu (cơ chế UC 1.2); nếu Vị trí là MANAGER hoặc ACCOUNTANT thì gửi thông báo “Yêu cầu cấp quyền” tới các Quản lý (cấp vai trò ở UC 1.5); ghi nhật ký và hiển thị: “Tạo hồ sơ thành công.” |
 
 **Luồng thay thế (Alternative Flow)**
 
@@ -1478,9 +1482,9 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Quản lý, Super Admin (chỉ giấy tờ của Quản lý) |
+| **Actor** | Quản lý, Giám đốc (chỉ giấy tờ của Quản lý) |
 | **Ưu tiên** | High |
-| **Mô tả** | Use case cho phép người duyệt kiểm tra giấy tờ, chứng chỉ do nhân sự tải lên và duyệt hoặc từ chối. Quản lý duyệt giấy tờ của Nhân viên và Kế toán; Super Admin duyệt giấy tờ của tài khoản có vai trò Quản lý. Không ai được duyệt giấy tờ của chính mình. |
+| **Mô tả** | Use case cho phép người duyệt kiểm tra giấy tờ, chứng chỉ do nhân sự tải lên và duyệt hoặc từ chối. Quản lý duyệt giấy tờ của Nhân viên và Kế toán; Giám đốc duyệt giấy tờ của tài khoản có vai trò Quản lý. Không ai được duyệt giấy tờ của chính mình. |
 | **Kích hoạt** | Người duyệt chọn mục “Giấy tờ chờ duyệt” hoặc nhấn vào thông báo. |
 | **Tiền điều kiện** | • Người duyệt đã đăng nhập.<br>• Có giấy tờ ở trạng thái PENDING thuộc phạm vi duyệt. |
 | **Hậu điều kiện** | • Giấy tờ chuyển APPROVED hoặc REJECTED (kèm lý do); lưu người duyệt và thời điểm duyệt.<br>• Nhân viên nhận thông báo kết quả; nhật ký được ghi. |
@@ -1489,7 +1493,7 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1. Người duyệt mở “Giấy tờ chờ duyệt”. | 2. Hệ thống hiển thị danh sách giấy tờ PENDING thuộc phạm vi duyệt (Quản lý: của Nhân viên và Kế toán; Super Admin: của Quản lý), không gồm giấy tờ của chính người duyệt. |
+| 1. Người duyệt mở “Giấy tờ chờ duyệt”. | 2. Hệ thống hiển thị danh sách giấy tờ PENDING thuộc phạm vi duyệt (Quản lý: của Nhân viên và Kế toán; Giám đốc: của Quản lý), không gồm giấy tờ của chính người duyệt. |
 | 3. Người duyệt chọn một giấy tờ. | 4. Hệ thống hiển thị: Nhân sự, Loại, Tên giấy tờ, Ngày cấp, Ngày hết hạn, File đính kèm. |
 | 5. Người duyệt nhấn “Duyệt”. | 6. Hệ thống cập nhật status = APPROVED, reviewed_by, reviewed_at, xóa rejection_reason cũ; gửi thông báo cho nhân viên và ghi nhật ký. |
 
@@ -1699,7 +1703,7 @@ _Không có._
 | **Mô tả** | Use case cho phép nhân sự gửi giải trình kèm minh chứng (ảnh/PDF) cho ngày hoặc ca bị ghi nhận đi trễ, về sớm, vắng mặt hoặc thiếu check-out. |
 | **Kích hoạt** | Nhân sự nhấn “Gửi giải trình” tại một dòng có trạng thái lỗi trong Lịch sử chấm công (UC 4.3). |
 | **Tiền điều kiện** | • Bản ghi chấm công có attendance_status là LATE, EARLY_LEAVE, ABSENT hoặc MISSING_CHECKOUT và explanation_status = NONE.<br>• Bảng lương của tháng đó chưa được chốt. |
-| **Hậu điều kiện** | • explanation_status = PENDING; lý do và minh chứng được lưu.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Super Admin). |
+| **Hậu điều kiện** | • explanation_status = PENDING; lý do và minh chứng được lưu.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Giám đốc). |
 
 **Luồng chính (Basic Flow)**
 
@@ -1752,9 +1756,9 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Quản lý, Super Admin (chỉ giải trình của Quản lý) |
+| **Actor** | Quản lý, Giám đốc (chỉ giải trình của Quản lý) |
 | **Ưu tiên** | High |
-| **Mô tả** | Use case cho phép người duyệt xem lý do, minh chứng và chấp thuận hoặc từ chối giải trình. Quản lý duyệt giải trình của Nhân viên và Kế toán; Super Admin duyệt giải trình của Quản lý. Không ai tự duyệt giải trình của mình. |
+| **Mô tả** | Use case cho phép người duyệt xem lý do, minh chứng và chấp thuận hoặc từ chối giải trình. Quản lý duyệt giải trình của Nhân viên và Kế toán; Giám đốc duyệt giải trình của Quản lý. Không ai tự duyệt giải trình của mình. |
 | **Kích hoạt** | Người duyệt mở “Giải trình chờ duyệt” hoặc nhấn vào thông báo. |
 | **Tiền điều kiện** | • Có giải trình ở trạng thái PENDING thuộc phạm vi duyệt.<br>• Bảng lương của tháng đó chưa được chốt. |
 | **Hậu điều kiện** | • Chấp thuận: ngày/ca được tính đủ công theo giờ dự kiến.<br>• Từ chối: giữ nguyên lỗi, lưu lý do từ chối.<br>• Nhân sự nhận thông báo kết quả; nhật ký được ghi. |
@@ -1784,7 +1788,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Quản lý, Kế toán, Super Admin (chỉ xem) |
+| **Actor** | Quản lý, Kế toán, Giám đốc (chỉ xem) |
 | **Ưu tiên** | Must Have |
 | **Mô tả** | Use case cung cấp bảng tổng hợp chấm công toàn trung tâm theo tháng, phục vụ đánh giá chuyên cần và làm dữ liệu đầu vào cho tính lương (UC 7.2). |
 | **Kích hoạt** | Người dùng chọn mục “Bảng tổng hợp công”. |
@@ -1820,7 +1824,7 @@ _Không có._
 | **Mô tả** | Use case cho phép nhân sự tạo đơn xin nghỉ (Phép năm, Nghỉ ốm, Nghỉ không lương, Khác) theo hình thức cả ngày hoặc nửa ngày, và hủy đơn đang chờ duyệt. |
 | **Kích hoạt** | Nhân sự nhấn “Tạo đơn nghỉ phép”. |
 | **Tiền điều kiện** | • Nhân sự đã đăng nhập và có hồ sơ ACTIVE. |
-| **Hậu điều kiện** | • Bản ghi leave_requests được tạo với trạng thái PENDING.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Super Admin). |
+| **Hậu điều kiện** | • Bản ghi leave_requests được tạo với trạng thái PENDING.<br>• Người duyệt nhận thông báo (Quản lý; nếu người gửi là Quản lý thì Giám đốc). |
 
 **Luồng chính (Basic Flow)**
 
@@ -1849,9 +1853,9 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Quản lý, Super Admin (chỉ đơn của Quản lý) |
+| **Actor** | Quản lý, Giám đốc (chỉ đơn của Quản lý) |
 | **Ưu tiên** | High |
-| **Mô tả** | Use case cho phép người duyệt chấp thuận hoặc từ chối đơn nghỉ. Khi duyệt đơn phép năm, hệ thống trừ quỹ phép; khi đơn nghỉ ảnh hưởng tới buổi dạy, hệ thống tự tạo yêu cầu dạy thay. Quản lý duyệt đơn của Nhân viên và Kế toán; Super Admin duyệt đơn của Quản lý. |
+| **Mô tả** | Use case cho phép người duyệt chấp thuận hoặc từ chối đơn nghỉ. Khi duyệt đơn phép năm, hệ thống trừ quỹ phép; khi đơn nghỉ ảnh hưởng tới buổi dạy, hệ thống tự tạo yêu cầu dạy thay. Quản lý duyệt đơn của Nhân viên và Kế toán; Giám đốc duyệt đơn của Quản lý. |
 | **Kích hoạt** | Người duyệt mở “Đơn nghỉ chờ duyệt” hoặc nhấn vào thông báo. |
 | **Tiền điều kiện** | • Có đơn nghỉ ở trạng thái PENDING thuộc phạm vi duyệt; người duyệt không phải người gửi đơn. |
 | **Hậu điều kiện** | • Đơn chuyển APPROVED hoặc REJECTED; lưu reviewed_by, reviewed_at, review_note.<br>• Nếu duyệt đơn ANNUAL: leave_balances.used_days tăng thêm total_days.<br>• Nếu đơn ảnh hưởng buổi dạy chính: needs_substitute = True và substitute_requests được tạo (UC 6.4). |
@@ -1909,7 +1913,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Quản lý, Super Admin (chỉ xem) |
+| **Actor** | Quản lý, Giám đốc (chỉ xem) |
 | **Ưu tiên** | High |
 | **Mô tả** | Use case cho phép Quản lý xem tình hình nghỉ phép của toàn trung tâm theo tháng/năm. |
 | **Kích hoạt** | Người dùng chọn mục “Tổng hợp nghỉ phép”. |
@@ -1973,7 +1977,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Super Admin (chỉ xem), Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc (chỉ xem), Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | High |
 | **Mô tả** | Use case hiển thị lịch dạng bảng theo tuần hoặc theo ngày với hai tab: Lịch làm việc (ca làm việc, buổi dạy của cá nhân) và Lịch lớp học (buổi dạy của toàn trung tâm). Giáo viên ghi nội dung buổi học tại đây. |
 | **Kích hoạt** | Người dùng chọn mục “Lịch trình” trên menu. |
@@ -1984,7 +1988,7 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1. Người dùng chọn “Lịch trình”. | 2. Hệ thống hiển thị tuần hiện tại với hai tab:<br>• Tab Lịch làm việc: Quản lý, Super Admin xem ca làm việc SCHEDULED của toàn trung tâm, có lọc theo tên nhân sự; Kế toán, Nhân viên chỉ xem ca làm việc và buổi dạy/trợ giảng của chính mình.<br>• Tab Lịch lớp học: mọi người xem các buổi dạy của toàn trung tâm (tên lớp, phòng, giáo viên, trợ giảng); Quản lý, Super Admin có thêm bộ lọc Giáo viên, Lớp, Phòng. |
+| 1. Người dùng chọn “Lịch trình”. | 2. Hệ thống hiển thị tuần hiện tại với hai tab:<br>• Tab Lịch làm việc: Quản lý, Giám đốc xem ca làm việc SCHEDULED của toàn trung tâm, có lọc theo tên nhân sự; Kế toán, Nhân viên chỉ xem ca làm việc và buổi dạy/trợ giảng của chính mình.<br>• Tab Lịch lớp học: mọi người xem các buổi dạy của toàn trung tâm (tên lớp, phòng, giáo viên, trợ giảng); Quản lý, Giám đốc có thêm bộ lọc Giáo viên, Lớp, Phòng. |
 | 3. Người dùng chuyển tuần trước/tuần sau hoặc chọn xem theo ngày. | 4. Hệ thống hiển thị lại (theo tuần: bảng 7 cột; theo ngày: danh sách theo giờ). |
 | 5. Người dùng nhấn vào một mục trên lịch. | 6. Hệ thống hiển thị chi tiết: giờ bắt đầu, giờ kết thúc, phòng, giáo viên, trợ giảng, trạng thái, nội dung buổi học. |
 
@@ -2281,7 +2285,7 @@ _Không có._
 
 | | |
 |---|---|
-| **Actor** | Super Admin, Quản lý, Kế toán, Nhân viên |
+| **Actor** | Giám đốc, Quản lý, Kế toán, Nhân viên |
 | **Ưu tiên** | High |
 | **Mô tả** | Use case cung cấp màn hình tổng quan với các thẻ số liệu, bảng nhỏ và danh sách việc cần xử lý, hiển thị riêng theo vai trò người dùng. Mỗi thẻ có liên kết tới trang xử lý tương ứng. |
 | **Kích hoạt** | Người dùng đăng nhập thành công hoặc nhấn “Dashboard” trên menu. |
@@ -2292,30 +2296,30 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1. Người dùng mở Dashboard. | 2. Hệ thống xác định vai trò và hiển thị:<br>• Super Admin: số tài khoản theo vai trò và trạng thái; 10 dòng nhật ký hoạt động mới nhất; số lần đăng nhập thất bại trong 7 ngày; số đơn nghỉ, giải trình, giấy tờ của Quản lý đang chờ duyệt; nút “Chạy tác vụ hằng ngày” (UC 9.2).<br>• Quản lý: tổng số nhân sự, tỉ lệ Full-time/Part-time; số giấy tờ, đơn nghỉ, giải trình chờ duyệt; số hợp đồng và giấy tờ sắp hết hạn trong 30 ngày; số buổi dạy cần người thay; số lớp đang diễn ra và số ca làm việc hôm nay.<br>• Kế toán: tổng thu nhập, tổng thực nhận, tổng thuế của bảng lương gần nhất; trạng thái bảng lương (DRAFT/LOCKED/SENT); tóm tắt chấm công tháng hiện tại.<br>• Nhân viên: lịch dạy/ca làm việc tuần này; trạng thái chấm công hôm nay; số ngày phép năm còn lại (Full-time); các thông báo chưa đọc. |
+| 1. Người dùng mở Dashboard. | 2. Hệ thống xác định vai trò và hiển thị:<br>• Giám đốc: tab Tổng quan như Quản lý (việc chờ duyệt là đơn nghỉ, giải trình, giấy tờ của Quản lý) và tab Kế toán (chỉ xem, không có liên kết sang trang bảng lương).<br>• Quản lý – tab Tổng quan: tổng số nhân sự, tỉ lệ Full-time/Part-time; số giấy tờ, đơn nghỉ, giải trình chờ duyệt; số hợp đồng và giấy tờ sắp hết hạn trong 30 ngày; số buổi dạy cần người thay; số lớp đang diễn ra và số ca làm việc hôm nay.<br>• Quản lý – tab Hệ thống: số tài khoản theo vai trò và trạng thái; 10 dòng nhật ký hoạt động mới nhất; số lần đăng nhập thất bại trong 7 ngày; nút “Chạy tác vụ hằng ngày” (UC 9.2).<br>• Kế toán: tổng thu nhập, tổng thực nhận, tổng thuế của bảng lương gần nhất; trạng thái bảng lương (DRAFT/LOCKED/SENT); tóm tắt chấm công tháng hiện tại.<br>• Nhân viên: lịch dạy/ca làm việc tuần này; trạng thái chấm công hôm nay; số ngày phép năm còn lại (Full-time); các thông báo chưa đọc. |
 | 3. Người dùng nhấn vào một thẻ (ví dụ “3 đơn nghỉ chờ duyệt”). | 4. Hệ thống chuyển tới trang nghiệp vụ tương ứng. |
 
 **Luồng thay thế (Alternative Flow)**
 
 | Actor Action | System Response |
 |---|---|
-| 1.1. Super Admin nhấn “Chạy tác vụ hằng ngày”. | 1.1.1. Hệ thống thực hiện UC 9.2 và hiển thị kết quả. |
+| 1.1. Quản lý nhấn “Chạy tác vụ hằng ngày” (tab Hệ thống). | 1.1.1. Hệ thống thực hiện UC 9.2 và hiển thị kết quả. |
 
 **Luồng ngoại lệ (Exception Flow)**
 
 | Actor Action | System Response |
 |---|---|
 | 1.2: Chưa có số liệu cho kỳ hiện tại. | 1.2.1: Thẻ hiển thị số 0 hoặc thông báo “Chưa có dữ liệu phát sinh”, giao diện không bị lỗi. |
-| 1.3: Tài khoản không phải Super Admin nhưng chưa có hồ sơ nhân sự. | 1.3.1: Hệ thống hiển thị: “Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản trị viên.” |
+| 1.3: Tài khoản không phải Giám đốc nhưng chưa có hồ sơ nhân sự. | 1.3.1: Hệ thống hiển thị: “Tài khoản chưa có hồ sơ nhân sự. Vui lòng liên hệ Quản lý.” |
 
 ##### UC 9.2 – Chạy tác vụ tự động hằng ngày
 
 | | |
 |---|---|
-| **Actor** | Hệ thống (lịch tự động), Super Admin |
+| **Actor** | Hệ thống (lịch tự động), Quản lý |
 | **Ưu tiên** | High |
-| **Mô tả** | Use case mô tả các xử lý hệ thống tự thực hiện mỗi ngày một lần: nhắc hạn giấy tờ, hợp đồng; ghi nhận vắng mặt, thiếu check-out; cập nhật trạng thái buổi dạy, lớp học; tạo quỹ phép năm. Chạy theo lịch tự động của máy chủ hoặc khi Super Admin nhấn nút. |
-| **Kích hoạt** | Đến 06:00 mỗi ngày theo lịch chạy của máy chủ, hoặc Super Admin nhấn “Chạy tác vụ hằng ngày”. |
+| **Mô tả** | Use case mô tả các xử lý hệ thống tự thực hiện mỗi ngày một lần: nhắc hạn giấy tờ, hợp đồng; ghi nhận vắng mặt, thiếu check-out; cập nhật trạng thái buổi dạy, lớp học; tạo quỹ phép năm. Chạy theo lịch tự động của máy chủ hoặc khi Quản lý nhấn nút. |
+| **Kích hoạt** | Đến 06:00 mỗi ngày theo lịch chạy của máy chủ, hoặc Quản lý nhấn “Chạy tác vụ hằng ngày”. |
 | **Tiền điều kiện** | • Hệ thống đang hoạt động. |
 | **Hậu điều kiện** | • Các trạng thái được cập nhật, thông báo được gửi; nhật ký RUN_DAILY_JOB được ghi kèm số bản ghi đã xử lý. |
 
@@ -2323,7 +2327,7 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1. Đến giờ chạy theo lịch, hoặc Super Admin nhấn nút. | 2. Giấy tờ: chuyển giấy tờ APPROVED có expiry_date trước hôm nay sang EXPIRED; gửi nhắc cho nhân sự và Quản lý với giấy tờ còn đúng 30 ngày, 7 ngày hoặc hết hạn hôm nay.<br>3. Hợp đồng: gửi thông báo cho Quản lý với hợp đồng ACTIVE còn đúng 30 ngày, 7 ngày hoặc vừa quá ngày kết thúc (hệ thống không tự đổi trạng thái hợp đồng).<br>4. Chấm công của ngày hôm qua: người có lịch làm việc nhưng không có bản ghi chấm công và không có đơn nghỉ cả ngày đã duyệt → tạo attendance với attendance_status = ABSENT; bản ghi có check-in nhưng không có check-out → attendance_status = MISSING_CHECKOUT; gửi thông báo để nhân sự giải trình (UC 4.2).<br>5. Lịch học: buổi dạy SCHEDULED có ngày trước hôm nay → COMPLETED; buổi đã qua mà còn yêu cầu dạy thay SEARCHING → yêu cầu FAILED, buổi CANCELLED; lớp UPCOMING đến ngày bắt đầu → ACTIVE; lớp ACTIVE quá ngày kết thúc → COMPLETED.<br>6. Quỹ phép: tạo leave_balances (12 ngày) cho nhân sự Full-time ACTIVE chưa có quỹ phép của năm hiện tại.<br>7. Hệ thống ghi nhật ký RUN_DAILY_JOB và (nếu Super Admin chạy) hiển thị số bản ghi đã xử lý ở từng bước. |
+| 1. Đến giờ chạy theo lịch, hoặc Quản lý nhấn nút. | 2. Giấy tờ: chuyển giấy tờ APPROVED có expiry_date trước hôm nay sang EXPIRED; gửi nhắc cho nhân sự và Quản lý với giấy tờ còn đúng 30 ngày, 7 ngày hoặc hết hạn hôm nay.<br>3. Hợp đồng: gửi thông báo cho Quản lý với hợp đồng ACTIVE còn đúng 30 ngày, 7 ngày hoặc vừa quá ngày kết thúc (hệ thống không tự đổi trạng thái hợp đồng).<br>4. Chấm công của ngày hôm qua: người có lịch làm việc nhưng không có bản ghi chấm công và không có đơn nghỉ cả ngày đã duyệt → tạo attendance với attendance_status = ABSENT; bản ghi có check-in nhưng không có check-out → attendance_status = MISSING_CHECKOUT; gửi thông báo để nhân sự giải trình (UC 4.2).<br>5. Lịch học: buổi dạy SCHEDULED có ngày trước hôm nay → COMPLETED; buổi đã qua mà còn yêu cầu dạy thay SEARCHING → yêu cầu FAILED, buổi CANCELLED; lớp UPCOMING đến ngày bắt đầu → ACTIVE; lớp ACTIVE quá ngày kết thúc → COMPLETED.<br>6. Quỹ phép: tạo leave_balances (12 ngày) cho nhân sự Full-time ACTIVE chưa có quỹ phép của năm hiện tại.<br>7. Hệ thống ghi nhật ký RUN_DAILY_JOB và (nếu Quản lý chạy) hiển thị số bản ghi đã xử lý ở từng bước. |
 
 **Luồng thay thế (Alternative Flow)**
 
@@ -2335,7 +2339,7 @@ _Không có._
 
 | Actor Action | System Response |
 |---|---|
-| 1.2: Một bước gặp lỗi khi chạy. | 1.2.1: Hệ thống ghi nhật ký lỗi của bước đó, các bước còn lại vẫn chạy; Super Admin nhận thông báo “Tác vụ hằng ngày: bước [tên bước] gặp lỗi.” |
+| 1.2: Một bước gặp lỗi khi chạy. | 1.2.1: Hệ thống ghi nhật ký lỗi của bước đó, các bước còn lại vẫn chạy; các Quản lý nhận thông báo “Tác vụ hằng ngày: bước [tên bước] gặp lỗi.” |
 
 
 ---
@@ -2379,7 +2383,7 @@ Trong mỗi Phase chức năng: **services → forms → views + templates → t
 - **`accounts.User`** viết đầu tiên, cùng `UserManager` (§7.1). Chạy `makemigrations` + `migrate` một lần cho cả dự án.
 - **`admin.py`:** đăng ký mọi bảng để xem dữ liệu.
 - **Lệnh `tao_du_lieu_mau`** (đặt ở `core/management/commands/`, chạy lại không nhân đôi):
-  - Tài khoản: 1 SA, 2 QL, 1 KT.
+  - Tài khoản: 1 GD, 2 QL, 1 KT.
   - Khoảng 40 nhân sự: GV Full-time Ca 1 và Ca 2, trợ giảng Part-time, Staff Part-time; mỗi người có hợp đồng ACTIVE, cấu hình lương, quỹ phép (Full-time).
   - Một đợt tuyển dụng với vài ứng viên, 20 lớp kèm buổi dạy, vài khung ca, chấm công một tháng.
   - Mật khẩu demo đặt bằng `set_password` trong lệnh này.
@@ -2391,7 +2395,7 @@ Trong mỗi Phase chức năng: **services → forms → views + templates → t
 - **1.1 Đăng nhập:** tự viết view để phân biệt "sai thông tin" (3.2) với "bị khóa" (3.3); ghi `LOGIN` / `LOGIN_FAILED`.
 - **1.2 Quên mật khẩu:** link tạo bằng `default_token_generator` + `urlsafe_base64_encode`; trang đặt mật khẩu dùng `PasswordResetConfirmView` có sẵn. Hàm `gui_link_dat_mat_khau` dùng chung cho 1.5 và 2.5.
 - **1.4 Tài khoản cá nhân:** form chỉ nhận Họ tên, SĐT, Avatar; nếu có hồ sơ thì gọi `employees.dong_bo_ho_ten_sdt`.
-- **1.5 Quản lý tài khoản (SA):** chặn tự khóa, tự đổi quyền; viết `khoa_tai_khoan` (dùng lại ở 3.4).
+- **1.5 Quản lý tài khoản (QL):** chặn tự khóa, tự đổi quyền; viết `khoa_tai_khoan` (dùng lại ở 3.4).
 - **1.6 Đăng xuất:** dùng POST.
 
 ### P3 — `recruitment` (UC 8)
@@ -2406,7 +2410,7 @@ Trong mỗi Phase chức năng: **services → forms → views + templates → t
 - **2.5 Onboarding:**
   - Form có trường Ca làm việc, bắt buộc với Full-time, để trống với Part-time.
   - Một transaction gọi `accounts` (tạo user), tạo employees, gọi `leave.tao_quy_phep` (Full-time) và `recruitment.danh_dau_da_tuyen`.
-  - Gửi link đặt mật khẩu; báo SA nếu vị trí là QL/KT.
+  - Gửi link đặt mật khẩu; nhắc QL cấp vai trò nếu vị trí là QL/KT.
 - **2.2 Cập nhật hồ sơ:** thông tin thường lưu ngay; giấy tờ → PENDING; luồng 1.1 "Tải bản mới".
 - **2.6 Duyệt giấy tờ:** dùng `co_quyen_duyet`.
 - **Viết `dong_bo_ho_ten_sdt`** (dùng ở 1.4) và các hàm đổi trạng thái nhân sự để `contracts` gọi.
@@ -2448,7 +2452,7 @@ Trong mỗi Phase chức năng: **services → forms → views + templates → t
 ### P10 — `dashboard` (UC 9)
 
 - **9.1 Dashboard:** mỗi thẻ có link tới trang xử lý của app tương ứng; chưa có dữ liệu thì hiện 0.
-- **9.2 `chay_tac_vu_ngay(hom_nay)`:** đủ bước 2–6; mỗi bước gọi service của app sở hữu bảng (employees, contracts chỉ nhắc, schedule, attendance, leave), bọc try/except riêng. Lệnh `dashboard/management/commands/chay_tac_vu_ngay.py` và nút của SA gọi cùng một hàm.
+- **9.2 `chay_tac_vu_ngay(hom_nay)`:** đủ bước 2–6; mỗi bước gọi service của app sở hữu bảng (employees, contracts chỉ nhắc, schedule, attendance, leave), bọc try/except riêng. Lệnh `dashboard/management/commands/chay_tac_vu_ngay.py` và nút của QL (tab Hệ thống) gọi cùng một hàm.
 
 ### P11 — Hoàn thiện
 
@@ -2519,7 +2523,7 @@ Trong mỗi Phase chức năng: **services → forms → views + templates → t
 1. **Tuyển dụng:** QL tạo đợt, thêm ứng viên GV Full-time, sơ tuyển đạt, phỏng vấn đạt (TEACHING_TRIAL), Demo đạt (PASSED).
 2. **Onboarding:** "Chuyển sang Onboarding", tạo hồ sơ với Ca 2; link đặt mật khẩu hiện ở terminal. GV đặt mật khẩu, tải chứng chỉ; QL duyệt; QL tạo hợp đồng, GV chuyển ACTIVE.
 3. **Phân công:** QL tạo lớp T2-T4-T6 18:00–20:00; hệ thống chỉ gợi ý GV Ca 2 và sinh buổi. QL mở khung ca Lễ tân 2 chỗ; ba NV Part-time cùng giữ chỗ, người thứ ba nhận "Ca này đã đủ người"; QL chốt.
-4. **Vận hành:** GV check-in trễ, gửi giải trình, QL chấp thuận. GV xin nghỉ một ngày có lớp; QL duyệt, hệ thống tạo yêu cầu dạy thay; QL chốt người thay. QL xin nghỉ, **SA** duyệt. SA bấm "Chạy tác vụ hằng ngày" và xem kết quả.
+4. **Vận hành:** GV check-in trễ, gửi giải trình, QL chấp thuận. GV xin nghỉ một ngày có lớp; QL duyệt, hệ thống tạo yêu cầu dạy thay; QL chốt người thay. QL xin nghỉ, **GD** duyệt. QL bấm "Chạy tác vụ hằng ngày" (tab Hệ thống) và xem kết quả.
 5. **Lương:** KT cấu hình lương, lập bảng lương tháng, thêm thưởng, tính lại, chốt, phát hành; GV mở phiếu lương và bấm In / Lưu PDF.
 6. **Kết thúc:** QL thanh lý hợp đồng một nhân sự. Tài khoản bị khóa, buổi dạy tương lai hiện trong "Buổi dạy cần người thay".
 

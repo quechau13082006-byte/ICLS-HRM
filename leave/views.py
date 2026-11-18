@@ -1,6 +1,6 @@
 """View dạng hàm của app leave (UC 5): kiểm tra quyền → nhận form → gọi service → hiển thị (§0 luật 2).
 
-Phân quyền (§5): gửi đơn, quỹ phép, hủy đơn: mọi vai trò CÓ hồ sơ nhân sự (Super Admin, Giám đốc không có hồ sơ);
+Phân quyền (§5): gửi đơn, quỹ phép, hủy đơn: mọi vai trò CÓ hồ sơ nhân sự (Giám đốc không có hồ sơ);
 duyệt đơn: Quản lý (đơn của Kế toán, Nhân viên) và Giám đốc (đơn của Quản lý), không tự duyệt;
 tổng hợp nghỉ phép: Quản lý, Giám đốc (chỉ xem).
 """
@@ -25,7 +25,7 @@ QL, GD = UserRole.MANAGER, UserRole.DIRECTOR
 
 
 def _nhan_su(user):
-    """Hồ sơ nhân sự của người đăng nhập; None với Super Admin, Giám đốc (§5)."""
+    """Hồ sơ nhân sự của người đăng nhập; None với Giám đốc (§5)."""
     return getattr(user, 'employee', None)
 
 

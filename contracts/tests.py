@@ -73,7 +73,7 @@ def tao_ql_va_nv(email='nv@icls.vn', **kw):
 
 class UcHopDongCoSo(TestCase):
     def setUp(self):
-        self.sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN)
+        self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR)
         self.ql = tao_ql_va_nv('ql@icls.vn', vai_tro=UserRole.MANAGER, chuc_danh=Position.MANAGER)
         self.kt = tao_ql_va_nv('kt@icls.vn', vai_tro=UserRole.ACCOUNTANT, chuc_danh=Position.ACCOUNTANT)
         self.nv = tao_ql_va_nv('nv@icls.vn')
@@ -203,7 +203,7 @@ class ThemHopDongTest(UcHopDongCoSo):            # UC 3.1
         self.assertEqual(Contract.objects.count(), 0)
 
     def test_uc3_1_phan_quyen_them_chi_quan_ly(self):
-        for nguoi in (self.sa, self.kt.user, self.nv.user):
+        for nguoi in (self.gd, self.kt.user, self.nv.user):
             self.client.force_login(nguoi)
             self.assertEqual(self.client.get(self.url).status_code, 403, nguoi)
             self.assertEqual(self.client.post(self.url, self._du_lieu()).status_code, 403)
@@ -259,11 +259,6 @@ class ChiTietHopDongTest(UcHopDongCoSo):         # UC 3.2
         r = self.client.get(reverse('contracts:contract_list'))
         self.assertEqual([hd.contract_number for hd in r.context['trang']], ['HD-NV'])
         self.assertNotContains(r, 'Thêm hợp đồng')
-
-    def test_uc3_2_phan_quyen_super_admin_khong_thuoc_phan_he(self):
-        self.client.force_login(self.sa)
-        self.assertEqual(self.client.get(self._url(self.cua_nv)).status_code, 403)
-        self.assertEqual(self.client.get(reverse('contracts:contract_list')).status_code, 403)
 
     def test_uc3_2_chua_co_file_scan_thi_de_trong_va_nut_tai_len(self):
         trong = self.cua_nv2
@@ -403,7 +398,7 @@ class GiaHanTest(UcHopDongCoSo):                 # UC 3.3
         self.assertEqual(self.cu.status, ContractStatus.EXPIRED)
 
     def test_uc3_3_phan_quyen_chi_quan_ly(self):
-        for nguoi in (self.sa, self.kt.user, self.nv.user):
+        for nguoi in (self.gd, self.kt.user, self.nv.user):
             self.client.force_login(nguoi)
             self.assertEqual(self.client.get(self.url).status_code, 403, nguoi)
             self.assertEqual(self.client.get(reverse('contracts:contract_update_file', args=[self.cu.pk])).status_code, 403)
@@ -559,7 +554,7 @@ class ThanhLyTest(UcHopDongCoSo):                # UC 3.4
         self.assertTrue(r.context['form'].errors['nhan_su'])                              # nhân sự đã nghỉ không được ký
 
     def test_uc3_4_phan_quyen_chi_quan_ly(self):
-        for nguoi in (self.sa, self.kt.user, self.nv.user):
+        for nguoi in (self.gd, self.kt.user, self.nv.user):
             self.client.force_login(nguoi)
             self.assertEqual(self.client.get(self.url).status_code, 403, nguoi)
             self.assertEqual(self.client.post(self.url, {'ngay_thanh_ly': HOM_NAY.isoformat(), 'ly_do': 'x', 'hinh_thuc': 'RESIGNED'}).status_code, 403)
@@ -617,9 +612,11 @@ class SapHetHanTest(UcHopDongCoSo):              # UC 3.5
         self.assertContains(self.client.get(reverse('contracts:contract_expiring')), thong_bao.KHONG_CO_HOP_DONG_SAP_HET_HAN)
 
     def test_uc3_5_phan_quyen_chi_quan_ly(self):
-        for nguoi in (self.sa, self.kt.user, self.nv.user):
+        for nguoi in (self.kt.user, self.nv.user):                       # Giám đốc được xem (chỉ xem)
             self.client.force_login(nguoi)
             self.assertEqual(self.client.get(reverse('contracts:contract_expiring')).status_code, 403, nguoi)
+        self.client.force_login(self.gd)
+        self.assertEqual(self.client.get(reverse('contracts:contract_expiring')).status_code, 200)
 
 
 # ============================================================ UC 9.2 – bước 3: nhắc hợp đồng (P10)

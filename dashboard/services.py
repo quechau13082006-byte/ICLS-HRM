@@ -71,10 +71,10 @@ def chay_tac_vu_ngay(hom_nay=None, nguoi_thuc_hien=None):
     """UC 9.2 – §9.1: chạy lần lượt các bước 2–6, mỗi bước bọc try/except riêng (luồng ngoại lệ 1.2).
 
     Trả về list dict {ten, so, mo_ta, loi} theo thứ tự bước (`loi` là None nếu bước chạy tốt).
-    - Bước lỗi: giao dịch của bước đó được hoàn tác, ghi nhật ký lỗi, các bước sau VẪN chạy; cuối cùng mọi Super Admin
-      nhận thông báo "Tác vụ hằng ngày: bước [tên bước] gặp lỗi."
+    - Bước lỗi: giao dịch của bước đó được hoàn tác, ghi nhật ký lỗi, các bước sau VẪN chạy; cuối cùng mọi Quản lý
+      đang hoạt động nhận thông báo "Tác vụ hằng ngày: bước [tên bước] gặp lỗi."
     - Bước 7: ghi nhật ký RUN_DAILY_JOB kèm số bản ghi đã xử lý.
-    `nguoi_thuc_hien` là Super Admin bấm nút (None khi máy chủ tự chạy lúc 06:00 qua lệnh `chay_tac_vu_ngay`).
+    `nguoi_thuc_hien` là Quản lý bấm nút (None khi máy chủ tự chạy lúc 06:00 qua lệnh `chay_tac_vu_ngay`).
     Chạy lại cùng ngày không tạo trùng vì từng bước chỉ xử lý dữ liệu chưa xử lý (§9.2).
     """
     hom_nay = hom_nay or date.today()
@@ -89,8 +89,8 @@ def chay_tac_vu_ngay(hom_nay=None, nguoi_thuc_hien=None):
             ket_qua.append({'ten': ten, 'so': 0, 'mo_ta': '', 'loi': repr(loi)})
     for buoc in ket_qua:
         if buoc['loi']:
-            for sa in User.objects.filter(role=UserRole.SUPER_ADMIN, is_active=True):
-                tao_thong_bao(sa, NotificationType.SYSTEM, thong_bao.TB_TAC_VU_LOI_TIEU_DE,
+            for ql in User.objects.filter(role=UserRole.MANAGER, is_active=True):
+                tao_thong_bao(ql, NotificationType.SYSTEM, thong_bao.TB_TAC_VU_LOI_TIEU_DE,
                               thong_bao.TAC_VU_BUOC_LOI.format(buoc=buoc['ten']), reverse('dashboard:dashboard'))
     tong = sum(b['so'] for b in ket_qua)
     chi_tiet = '; '.join(f"{b['ten']}: {b['so']}" if not b['loi'] else f"{b['ten']}: LỖI" for b in ket_qua)
@@ -112,34 +112,29 @@ def _phan_tram(phan, tong):
 def du_lieu_dashboard(nguoi_dung, hom_nay=None, tab=''):
     """UC 9.1 – bước 2: xác định vai trò, trả về dict context cho template.
 
-    Khóa `loai` cho template biết dựng phần nào: 'sa', 'ql', 'kt', 'ca_nhan', hoặc 'thieu_ho_so' (luồng 1.3: tài khoản
-    không phải Super Admin/Giám đốc mà chưa có hồ sơ nhân sự). `tabs` là các tab được xem (Figma): Quản lý có Tổng quan +
-    Cá nhân, Kế toán có Kế toán + Cá nhân, Nhân viên chỉ Cá nhân, Super Admin (kỹ thuật) chỉ Tổng quan, Giám đốc có
-    Tổng quan + Kế toán (tab Kế toán của Giám đốc CHỈ XEM: không có nút/link sang trang nghiệp vụ lương của Kế toán).
+    Khóa `loai` cho template biết dựng phần nào: 'ql', 'he_thong', 'kt', 'ca_nhan', hoặc 'thieu_ho_so' (luồng 1.3: tài
+    khoản không phải Giám đốc mà chưa có hồ sơ nhân sự). `tabs` là các tab được xem (Figma): Quản lý có Tổng quan +
+    Hệ thống (tài khoản, nhật ký, tác vụ hằng ngày) + Cá nhân, Kế toán có Kế toán + Cá nhân, Nhân viên chỉ Cá nhân,
+    Giám đốc có Tổng quan + Kế toán (tab Kế toán của Giám đốc CHỈ XEM: không có nút/link sang trang nghiệp vụ lương của Kế toán).
     """
     hom_nay = hom_nay or date.today()
     vai_tro = nguoi_dung.role
-    if vai_tro == UserRole.SUPER_ADMIN:
-        tabs = [('tong_quan', 'Tổng quan')]
-    elif vai_tro == UserRole.DIRECTOR:
+    if vai_tro == UserRole.DIRECTOR:
         tabs = [('tong_quan', 'Tổng quan'), ('ke_toan', 'Kế toán')]
     elif getattr(nguoi_dung, 'employee', None) is None:
         return {'loai': 'thieu_ho_so', 'tabs': [], 'tab': '', 'hom_nay': hom_nay}
     elif vai_tro == UserRole.MANAGER:
-        tabs = [('tong_quan', 'Tổng quan'), ('ca_nhan', 'Cá nhân')]
+        tabs = [('tong_quan', 'Tổng quan'), ('he_thong', 'Hệ thống'), ('ca_nhan', 'Cá nhân')]
     elif vai_tro == UserRole.ACCOUNTANT:
         tabs = [('ke_toan', 'Kế toán'), ('ca_nhan', 'Cá nhân')]
     else:
         tabs = [('ca_nhan', 'Cá nhân')]
     cac_ma = [ma for ma, _ in tabs]
     tab = tab if tab in cac_ma else cac_ma[0]
-    ham = {'tong_quan': du_lieu_quan_ly, 'ke_toan': du_lieu_ke_toan, 'ca_nhan': du_lieu_ca_nhan}
-    if vai_tro == UserRole.SUPER_ADMIN:
-        du_lieu = du_lieu_super_admin(nguoi_dung, hom_nay)
-        du_lieu['loai'] = 'sa'
-    else:
-        du_lieu = ham[tab](nguoi_dung, hom_nay)
-        du_lieu['loai'] = {'tong_quan': 'ql', 'ke_toan': 'kt', 'ca_nhan': 'ca_nhan'}[tab]
+    ham = {'tong_quan': du_lieu_quan_ly, 'he_thong': du_lieu_he_thong, 'ke_toan': du_lieu_ke_toan,
+           'ca_nhan': du_lieu_ca_nhan}
+    du_lieu = ham[tab](nguoi_dung, hom_nay)
+    du_lieu['loai'] = {'tong_quan': 'ql', 'he_thong': 'he_thong', 'ke_toan': 'kt', 'ca_nhan': 'ca_nhan'}[tab]
     du_lieu.update({'tabs': tabs, 'tab': tab, 'hom_nay': hom_nay})
     if vai_tro == UserRole.DIRECTOR and tab == 'ke_toan':
         du_lieu['chi_xem'] = True                   # Giám đốc xem dashboard lương của Kế toán, không thao tác
@@ -148,10 +143,10 @@ def du_lieu_dashboard(nguoi_dung, hom_nay=None, tab=''):
     return du_lieu
 
 
-# ---------------------------------------------------------------- Super Admin (chỉ phần kỹ thuật)
-def du_lieu_super_admin(nguoi_dung, hom_nay):
-    """Super Admin: tài khoản theo vai trò/trạng thái, 10 nhật ký mới nhất, đăng nhập thất bại 7 ngày gần nhất,
-    nút chạy tác vụ (UC 9.2). Không còn việc duyệt: yêu cầu của Quản lý do Giám đốc duyệt."""
+# ---------------------------------------------------------------- Quản lý – tab Hệ thống
+def du_lieu_he_thong(nguoi_dung, hom_nay):
+    """Tab Hệ thống của Quản lý: tài khoản theo vai trò/trạng thái, 10 nhật ký mới nhất, đăng nhập thất bại
+    7 ngày gần nhất, nút chạy tác vụ hằng ngày (UC 9.2)."""
     dem = {}
     for vai_tro, hoat_dong in User.objects.values_list('role', 'is_active'):
         dong = dem.setdefault(vai_tro, {'hoat_dong': 0, 'bi_khoa': 0})

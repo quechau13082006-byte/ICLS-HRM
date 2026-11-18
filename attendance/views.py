@@ -20,7 +20,7 @@ QL, KT, GD = UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.DIRECTOR
 
 
 def _nhan_su(user):
-    """Hồ sơ nhân sự của người đăng nhập; None với Super Admin, Giám đốc (§5)."""
+    """Hồ sơ nhân sự của người đăng nhập; None với Giám đốc (§5)."""
     return getattr(user, 'employee', None)
 
 
@@ -57,7 +57,7 @@ def cua_toi(request):
 
 
 def _can_ho_so(request):
-    """Trả về hồ sơ nhân sự, hoặc None khi tài khoản không có hồ sơ (Super Admin, Giám đốc)."""
+    """Trả về hồ sơ nhân sự, hoặc None khi tài khoản không có hồ sơ (Giám đốc)."""
     return _nhan_su(request.user)
 
 

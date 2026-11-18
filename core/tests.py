@@ -12,7 +12,6 @@ from core.permissions import co_quyen_duyet
 
 class PhanQuyenTest(TestCase):
     def setUp(self):
-        self.sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN)
         self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR)
         self.ql1 = User.objects.create_user('ql1@icls.vn', 'x', role=UserRole.MANAGER)
         self.ql2 = User.objects.create_user('ql2@icls.vn', 'x', role=UserRole.MANAGER)
@@ -28,15 +27,17 @@ class PhanQuyenTest(TestCase):
         self.assertTrue(co_quyen_duyet(self.gd, self.ql1))    # Giám đốc duyệt Quản lý
         self.assertFalse(co_quyen_duyet(self.ql2, self.ql1))  # QL không duyệt QL
         self.assertFalse(co_quyen_duyet(self.gd, self.nv))    # Giám đốc không duyệt NV (việc của Quản lý)
-        self.assertFalse(co_quyen_duyet(self.sa, self.ql1))   # Super Admin chỉ làm kỹ thuật, không duyệt gì
-        self.assertFalse(co_quyen_duyet(self.sa, self.nv))
 
-    def test_super_admin_khong_vao_trang_nghiep_vu(self):
-        self.client.force_login(self.sa)
-        for ten in ('employees:employee_list', 'leave:review', 'attendance:review', 'attendance:summary',
-                    'employees:documents', 'contracts:contract_list'):
-            self.assertEqual(self.client.get(reverse(ten)).status_code, 403, ten)
+    def test_khong_con_vai_tro_super_admin(self):
+        self.assertNotIn('SUPER_ADMIN', UserRole.values)
+        self.assertEqual(set(UserRole.values), {'DIRECTOR', 'MANAGER', 'ACCOUNTANT', 'EMPLOYEE'})
+
+    def test_chi_quan_ly_vao_quan_ly_tai_khoan(self):
+        self.client.force_login(self.ql1)
         self.assertEqual(self.client.get(reverse('accounts:user_list')).status_code, 200)
+        for nguoi in (self.gd, self.kt, self.nv):
+            self.client.force_login(nguoi)
+            self.assertEqual(self.client.get(reverse('accounts:user_list')).status_code, 403, nguoi.role)
 
     def test_giam_doc_vao_trang_duyet_va_xem_nhung_khong_thao_tac_cua_quan_ly(self):
         self.client.force_login(self.gd)
@@ -46,21 +47,21 @@ class PhanQuyenTest(TestCase):
         for ten in ('accounts:user_list', 'contracts:contract_add', 'recruitment:board'):
             self.assertEqual(self.client.get(reverse(ten)).status_code, 403, ten)
 
-    def test_chi_super_admin_vao_trang_quan_tri_django(self):
-        self.client.force_login(self.sa)
-        self.assertEqual(self.client.get('/admin/').status_code, 200)
-        self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 200)
+    def test_khong_vai_tro_nghiep_vu_nao_vao_trang_quan_tri_django(self):
         for nguoi in (self.gd, self.ql1, self.kt, self.nv):
+            self.assertFalse(nguoi.is_staff or nguoi.is_superuser, nguoi.role)
             self.client.force_login(nguoi)
             self.assertEqual(self.client.get('/admin/').status_code, 302, nguoi.role)   # đẩy về trang đăng nhập admin
 
-    def test_doi_vai_tro_thi_quyen_admin_doi_theo(self):
-        self.assertTrue(self.sa.is_staff and self.sa.is_superuser)
-        self.ql1.role = UserRole.SUPER_ADMIN
-        self.ql1.save(update_fields=['role'])
-        self.ql1.refresh_from_db()
-        self.assertTrue(self.ql1.is_staff and self.ql1.is_superuser)
-        self.ql1.role = UserRole.MANAGER
+    def test_chi_tai_khoan_ky_thuat_createsuperuser_vao_trang_quan_tri(self):
+        ky_thuat = User.objects.create_superuser('dev@icls.vn', 'x')
+        self.assertTrue(ky_thuat.is_staff and ky_thuat.is_superuser)
+        self.client.force_login(ky_thuat)
+        self.assertEqual(self.client.get('/admin/').status_code, 200)
+        self.assertEqual(self.client.get('/admin/accounts/user/').status_code, 200)
+
+    def test_doi_vai_tro_khong_cap_quyen_admin(self):
+        self.ql1.role = UserRole.DIRECTOR
         self.ql1.save(update_fields=['role'])
         self.ql1.refresh_from_db()
         self.assertFalse(self.ql1.is_staff or self.ql1.is_superuser)
@@ -95,8 +96,7 @@ class DuLieuMauTest(TestCase):
         self.assertEqual((so_nhan_su, so_lop), (43, 20))
         self.assertEqual((Employee.objects.count(), StudyClass.objects.count()), (43, 20))
         self.assertEqual(Employee.objects.filter(status='ACTIVE').count(), 40)
-        self.assertFalse(User.objects.get(email='sa@icls.vn').is_active is False)
-        self.assertFalse(hasattr(User.objects.get(email='sa@icls.vn'), 'employee'))  # SA không có hồ sơ (Q1)
+        self.assertFalse(User.objects.filter(email='sa@icls.vn').exists())           # không còn tài khoản Super Admin
 
     def test_co_giao_vien_nguoi_han(self):
         from django.core.management import call_command
@@ -137,14 +137,8 @@ class MenuTrai(TestCase):
         r = self.client.get(reverse('dashboard:dashboard'))
         return {m['ten_anh']: m for m in r.context['menu_chinh']}, r
 
-    def test_menu_super_admin_chi_co_overview_va_user_management(self):
-        menu, r = self._menu(UserRole.SUPER_ADMIN)
-        self.assertEqual(set(menu), {'Overview', 'User Management', 'Admin'})   # chỉ phần kỹ thuật, không có mục nghiệp vụ
-        self.assertEqual(menu['User Management']['url'], reverse('accounts:user_list'))   # nằm ở menu trái
-        self.assertEqual(r.content.decode().count('User Management'), 1)                  # không còn lặp ở menu tài khoản
-
     def test_user_management_chi_sang_o_trang_quan_ly_tai_khoan(self):
-        user = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN)
+        user = User.objects.create_user('ql@icls.vn', 'x', role=UserRole.MANAGER)
         self.client.force_login(user)
         for ten_url, mong_doi in (('accounts:user_list', True), ('accounts:user_add', True), ('accounts:my_account', False),
                                   ('accounts:change_password', False), ('dashboard:dashboard', False)):
@@ -162,8 +156,10 @@ class MenuTrai(TestCase):
 
     def test_menu_quan_ly_thay_du_tat_ca(self):
         menu, r = self._menu(UserRole.MANAGER)
-        self.assertEqual(len(menu), 8)
-        self.assertNotContains(r, 'User Management')
+        self.assertEqual(len(menu), 9)
+        self.assertEqual(menu['User Management']['url'], reverse('accounts:user_list'))   # quản lý tài khoản ở menu trái
+        self.assertEqual(r.content.decode().count('User Management'), 1)
+        self.assertNotIn('Admin', menu)                                                    # /admin/ không nằm trong menu
 
     def test_menu_ke_toan_va_nhan_vien_khong_co_recruitment(self):
         for vai_tro in (UserRole.ACCOUNTANT, UserRole.EMPLOYEE):

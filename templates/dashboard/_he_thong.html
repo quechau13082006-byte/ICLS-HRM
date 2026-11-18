@@ -1,8 +1,8 @@
-{# Super Admin (chỉ kỹ thuật): thẻ tài khoản, đăng nhập thất bại, tài khoản theo vai trò, nhật ký, nút chạy tác vụ #}
+{# Quản lý – tab Hệ thống: thẻ tài khoản, đăng nhập thất bại, tài khoản theo vai trò, nhật ký, nút chạy tác vụ #}
 <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
   <div>
     <h2 class="db-tieu-de">Toàn cảnh hệ thống ICLS</h2>
-    <p class="text-muted mb-0">Phần kỹ thuật: tài khoản, nhật ký hoạt động và tác vụ tự động hằng ngày.</p>
+    <p class="text-muted mb-0">Tài khoản người dùng, nhật ký hoạt động và tác vụ tự động hằng ngày.</p>
   </div>
   <form method="post" action="{% url 'dashboard:run_daily_job' %}" onsubmit="return confirm('Chạy tác vụ hằng ngày bây giờ?');">
     {% csrf_token %}

@@ -56,7 +56,7 @@ BAY_GIO = datetime(2026, 10, 9, 9, 0)
 
 
 class NenTangNghi(TestCase):
-    """Dữ liệu chung: Super Admin (không có hồ sơ), 2 Quản lý, Kế toán, giáo viên Full-time Ca 2, nhân viên Part-time."""
+    """Dữ liệu chung: Giám đốc (không có hồ sơ), 2 Quản lý, Kế toán, giáo viên Full-time Ca 2, nhân viên Part-time."""
 
     def setUp(self):
         self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
@@ -407,17 +407,17 @@ class Uc52Test(NenTangNghi):
             self.duyet(don_ql, self.ql.user)
         with self.assertRaises(KhongCoQuyen):                                     # Kế toán, Nhân viên không có quyền duyệt
             self.duyet(self.gui(self.pt, 'SICK'), self.kt.user)
-        self.duyet(don_ql, self.gd)                                               # Super Admin duyệt đơn Quản lý
+        self.duyet(don_ql, self.gd)                                               # Giám đốc duyệt đơn Quản lý
         don_ql.refresh_from_db()
         self.assertEqual((don_ql.status, don_ql.reviewed_by), ('APPROVED', self.gd))
         don_moi = self.gui(self.gv, 'SICK', tu=date(2026, 10, 20), den=date(2026, 10, 20))
-        with self.assertRaises(KhongCoQuyen):                                     # Super Admin không duyệt đơn Nhân viên
+        with self.assertRaises(KhongCoQuyen):                                     # Giám đốc không duyệt đơn Nhân viên
             self.duyet(don_moi, self.gd)
 
     def test_pham_vi_danh_sach_duyet(self):
         don_nv, don_kt, don_ql = self.gui(self.gv), self.gui(self.kt), self.gui(self.ql)
         self.assertEqual(set(services.danh_sach_don_duyet(self.ql.user)), {don_nv, don_kt})   # không có đơn của chính mình / Quản lý
-        self.assertEqual(set(services.danh_sach_don_duyet(self.ql2.user)), {don_nv, don_kt})      # đơn của Quản lý chỉ Super Admin duyệt
+        self.assertEqual(set(services.danh_sach_don_duyet(self.ql2.user)), {don_nv, don_kt})      # đơn của Quản lý chỉ Giám đốc duyệt
         self.assertEqual(set(services.danh_sach_don_duyet(self.gd)), {don_ql})
         self.assertEqual(list(services.danh_sach_don_duyet(self.kt.user)), [])
         self.duyet(don_nv)

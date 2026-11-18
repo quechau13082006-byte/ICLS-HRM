@@ -87,10 +87,10 @@ HOM_NAY = date(2026, 11, 2)           # sau khi tháng 10/2026 kết thúc
 
 
 class NenTangLuong(TestCase):
-    """Super Admin, Kế toán, Quản lý, giáo viên Full-time, nhân viên Part-time, trợ giảng Part-time, mỗi người có cấu hình lương."""
+    """Giám đốc, Kế toán, Quản lý, giáo viên Full-time, nhân viên Part-time, trợ giảng Part-time, mỗi người có cấu hình lương."""
 
     def setUp(self):
-        self.sa = User.objects.create_user('sa@icls.vn', 'x', role=UserRole.SUPER_ADMIN, full_name='SA')
+        self.gd = User.objects.create_user('gd@icls.vn', 'x', role=UserRole.DIRECTOR, full_name='Giám đốc')
         self.kt = hoat_dong('kt@icls.vn', UserRole.ACCOUNTANT, Position.ACCOUNTANT, FT)
         self.ql = hoat_dong('ql@icls.vn', UserRole.MANAGER, Position.MANAGER, FT)
         self.gv = hoat_dong('gv@icls.vn', UserRole.EMPLOYEE, Position.TEACHER, FT, WorkShift.SHIFT_2)
@@ -259,7 +259,7 @@ class Uc71Test(NenTangLuong):
             self.assertEqual(self.client.get(reverse('payroll:config_list')).status_code, 403)
             self.assertEqual(self.client.get(reverse('payroll:config_detail', args=[self.gv.pk])).status_code, 403)
             self.assertEqual(self.client.post(reverse('payroll:config_detail', args=[self.gv.pk]), {'effective_from': '2027-01-01'}).status_code, 403)
-        self.dang_nhap(self.sa)
+        self.dang_nhap(self.gd)
         self.assertEqual(self.client.get(reverse('payroll:config_list')).status_code, 403)
 
 
@@ -575,7 +575,7 @@ class Uc72Test(NenTangLuong):
             self.dang_nhap(nguoi)
             for cach, url in urls:
                 self.assertEqual(getattr(self.client, cach)(url).status_code, 403, (nguoi, url))
-        self.dang_nhap(self.sa)
+        self.dang_nhap(self.gd)
         self.assertEqual(self.client.get(reverse('payroll:period_list')).status_code, 403)
         self.dang_nhap(self.kt)
         for cach, url in urls[:3]:
@@ -746,7 +746,7 @@ class Uc73Test(NenTangLuong):
         for nguoi in (self.ql, self.kt, self.gv, self.pt):
             self.dang_nhap(nguoi)
             self.assertEqual(self.client.get(reverse('payroll:my_payslips')).context['bang'].employee, nguoi)
-        self.dang_nhap(self.sa)                                                    # Super Admin không thuộc phân hệ Lương
+        self.dang_nhap(self.gd)                                                    # Giám đốc không có phiếu lương
         self.assertEqual(self.client.get(reverse('payroll:my_payslips')).status_code, 403)
         self.client.logout()
         self.assertEqual(self.client.get(reverse('payroll:my_payslips')).status_code, 302)

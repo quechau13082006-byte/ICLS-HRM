@@ -275,9 +275,9 @@ def nhac_nho_cap_nhat(nguoi_thuc_hien, giay_to, hom_nay=None):
 # ============================================================ UC 2.5 – Onboarding
 def tao_ho_so_nhan_su(nguoi_thuc_hien, du_lieu, ung_vien=None, hom_nay=None):
     """UC 2.5 – bước 5–6: tạo users + employees (+ quỹ phép nếu Full-time + ứng viên HIRED) TRONG MỘT GIAO DỊCH,
-    rồi báo Super Admin nếu vị trí là Quản lý/Kế toán.
+    rồi nhắc các Quản lý cấp vai trò nếu vị trí là Quản lý/Kế toán.
 
-    Quản lý chỉ tạo tài khoản role EMPLOYEE (Q3); nâng quyền do Super Admin làm.
+    Hồ sơ mới luôn tạo tài khoản role EMPLOYEE (Q3); cấp vai trò Quản lý/Kế toán làm ở UC 1.5 (Quản lý tài khoản).
     `du_lieu` là dict đã kiểm tra từ form (email, mat_khau, full_name, phone, ... gồm cả employment_type và work_shift).
     Tài khoản được tạo với mật khẩu ban đầu Quản lý nhập; nhân sự tự đổi sau khi đăng nhập (UC 1.3).
     """
@@ -301,8 +301,8 @@ def tao_ho_so_nhan_su(nguoi_thuc_hien, du_lieu, ung_vien=None, hom_nay=None):
         ghi_nhat_ky(nguoi_thuc_hien, 'CREATE', 'Employee', nhan_su.pk, f'Tạo hồ sơ nhân sự {nhan_su.code} – {nhan_su.full_name}')
     # Thông báo chạy SAU khi giao dịch đã lưu
     if nhan_su.position in (Position.MANAGER, Position.ACCOUNTANT):
-        for super_admin in User.objects.filter(role=UserRole.SUPER_ADMIN, is_active=True):
-            tao_thong_bao(super_admin, NotificationType.SYSTEM, thong_bao.TB_CAP_QUYEN_TIEU_DE,
+        for quan_ly in User.objects.filter(role=UserRole.MANAGER, is_active=True):
+            tao_thong_bao(quan_ly, NotificationType.SYSTEM, thong_bao.TB_CAP_QUYEN_TIEU_DE,
                           thong_bao.TB_CAP_QUYEN_NOI_DUNG.format(nhan_su=nhan_su.full_name, vi_tri=nhan_su.get_position_display(),
                                                                  email=tai_khoan.email),
                           reverse('accounts:user_change_role', args=[tai_khoan.pk]))

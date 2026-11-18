@@ -31,7 +31,7 @@ TRUONG_LOP = ['class_name', 'subject', 'room_name', 'max_students', 'start_date'
 
 
 def _nhan_su(user):
-    """Hồ sơ nhân sự của người đang đăng nhập; None với Super Admin, Giám đốc (không có hồ sơ, §5)."""
+    """Hồ sơ nhân sự của người đang đăng nhập; None với Giám đốc (không có hồ sơ, §5)."""
     return getattr(user, 'employee', None)
 
 
