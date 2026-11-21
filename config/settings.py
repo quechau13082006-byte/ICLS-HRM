@@ -38,13 +38,26 @@ _doc_file_env(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+# Trên máy nhóm: không cần đặt gì, chạy như cũ (DEBUG bật, mọi host).
+# Khi deploy (PythonAnywhere): đặt các biến DJANGO_* trong file .env trên server, mẫu xem .env.example.
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+t69f3d^)7vi%9@l4kq8nt3v-%jzryb*nk=ig2x8e@dd4&t#fs'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY',
+                            'django-insecure-+t69f3d^)7vi%9@l4kq8nt3v-%jzryb*nk=ig2x8e@dd4&t#fs')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['*']   # demo: cho máy khác trong cùng Wi-Fi vào bằng IP (khi triển khai thật phải liệt kê tên miền cụ thể)
+# Mặc định '*': cho máy khác trong cùng Wi-Fi vào bằng IP khi demo. Deploy thì liệt kê tên miền, cách nhau bằng dấu phẩy.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if h.strip()]
+
+# Server chạy sau proxy HTTPS (PythonAnywhere): tin header X-Forwarded-Proto để Django biết request là https,
+# và cho phép form POST từ chính tên miền https đó (nếu không, đăng nhập sẽ bị lỗi CSRF 403).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [f'https://{h}' for h in ALLOWED_HOSTS if h != '*']
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -148,6 +161,8 @@ USE_TZ = False  # Một múi giờ duy nhất, cho đơn giản
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Khi deploy: `python manage.py collectstatic` gom file tĩnh vào đây, web server phục vụ thư mục này ở /static/
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # File tải lên: KHÔNG mở công khai, chỉ tải qua view core.tai_file có kiểm tra quyền
 MEDIA_ROOT = BASE_DIR / 'media'

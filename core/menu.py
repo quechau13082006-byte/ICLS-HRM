@@ -12,11 +12,10 @@ QL, KT, NV, GD = UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.EMPLOYEE, UserR
 NGHIEP_VU = (GD, QL, KT, NV)
 
 # (khóa app, tên tiếng Anh, tên tiếng Hàn, icon Remix Icon, tên URL trang đầu, vai trò được thấy, tiền tố tên URL để sáng mục)
-# Tiền tố chỉ cần khi nhiều mục chung một app: app `accounts` còn có trang đăng nhập, đổi mật khẩu, tài khoản cá nhân...
-# nên mục "User Management" chỉ sáng ở các trang có tên URL bắt đầu bằng `user_`.
+# Tiền tố chỉ cần khi nhiều mục chung một app (hiện chưa mục nào dùng).
+# "User Management" (UC 1.6, chỉ Quản lý) không nằm ở menu trái mà ở menu nổi của thẻ tài khoản, dưới "Account settings".
 MUC_MENU = [
     ('dashboard', 'Overview', '개요', 'ri-dashboard-horizontal-line', 'dashboard:dashboard', TAT_CA, None),
-    ('accounts', 'User Management', '계정 설정', 'ri-file-settings-line', 'accounts:user_list', (QL,), 'user_'),
     ('recruitment', 'Recruitment', '채용', 'ri-user-search-line', 'recruitment:board', (QL,), None),
     ('employees', 'Employees', '직원', 'ri-user-line', 'employees:employee_list', NGHIEP_VU, None),
     ('contracts', 'Contract', '계약', 'ri-draft-line', 'contracts:contract_list', (GD, QL, KT, NV), None),

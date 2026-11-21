@@ -137,28 +137,33 @@ class MenuTrai(TestCase):
         r = self.client.get(reverse('dashboard:dashboard'))
         return {m['ten_anh']: m for m in r.context['menu_chinh']}, r
 
-    def test_user_management_chi_sang_o_trang_quan_ly_tai_khoan(self):
+    def test_user_management_nam_trong_menu_tai_khoan_va_sang_o_trang_quan_ly_tai_khoan(self):
+        """User management không ở menu trái mà ở menu nổi của thẻ tài khoản, ngay dưới Account settings."""
         user = User.objects.create_user('ql@icls.vn', 'x', role=UserRole.MANAGER)
         self.client.force_login(user)
+        lien_ket = f'href="{reverse('accounts:user_list')}"'
         for ten_url, mong_doi in (('accounts:user_list', True), ('accounts:user_add', True), ('accounts:my_account', False),
                                   ('accounts:change_password', False), ('dashboard:dashboard', False)):
             r = self.client.get(reverse(ten_url))
-            menu = {m['ten_anh']: m for m in r.context['menu_chinh']}
-            self.assertEqual(menu['User Management']['dang_chon'], mong_doi, ten_url)
+            html = r.content.decode()
+            self.assertNotIn('User Management', {m['ten_anh'] for m in r.context['menu_chinh']})
+            vi_tri = html.index(lien_ket)
+            self.assertLess(html.index('Account settings'), vi_tri)
+            self.assertEqual('active' in html[html.rindex('<a', 0, vi_tri):vi_tri], mong_doi, ten_url)
         r = self.client.get(reverse('dashboard:dashboard'))
         self.assertTrue({m['ten_anh']: m for m in r.context['menu_chinh']}['Overview']['dang_chon'])
 
     def test_menu_giam_doc_khong_co_recruitment_payroll(self):
         menu, r = self._menu(UserRole.DIRECTOR)
         self.assertEqual(set(menu), {'Overview', 'Employees', 'Contract', 'Schedule', 'Attendance', 'Leave'})
-        self.assertNotContains(r, 'User Management')
+        self.assertNotContains(r, 'User management')
         self.assertNotContains(r, 'My profile')            # Giám đốc không có hồ sơ nhân sự
 
     def test_menu_quan_ly_thay_du_tat_ca(self):
         menu, r = self._menu(UserRole.MANAGER)
-        self.assertEqual(len(menu), 9)
-        self.assertEqual(menu['User Management']['url'], reverse('accounts:user_list'))   # quản lý tài khoản ở menu trái
-        self.assertEqual(r.content.decode().count('User Management'), 1)
+        self.assertEqual(len(menu), 8)
+        self.assertNotIn('User Management', menu)                                          # nằm ở menu thẻ tài khoản
+        self.assertEqual(r.content.decode().count('User management'), 1)
         self.assertNotIn('Admin', menu)                                                    # /admin/ không nằm trong menu
 
     def test_menu_ke_toan_va_nhan_vien_khong_co_recruitment(self):

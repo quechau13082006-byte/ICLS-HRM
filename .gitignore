@@ -10,6 +10,9 @@ db.sqlite3.bak*
 # Bí mật: mật khẩu ứng dụng Gmail (mẫu xem .env.example)
 .env
 
+# File tĩnh do `collectstatic` sinh ra khi deploy
+staticfiles/
+
 # File của hệ điều hành, IDE trên máy
 .DS_Store
 .idea/
